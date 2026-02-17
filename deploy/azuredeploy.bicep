@@ -48,7 +48,7 @@ var storageAccountName = 'st${generatedToken}func'
 var keyVaultName = 'kv-${appNamePrefix}-${take(generatedToken, 4)}'
 var deploymentStorageContainerName = 'app-package-${take(appNamePrefix, 32)}-${take(generatedToken, 7)}'
 
-var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')
+var roleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')
 
 var acmebotAppSettings = [
   {
