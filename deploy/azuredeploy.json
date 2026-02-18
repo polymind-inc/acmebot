@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.40.2.10011",
-      "templateHash": "14346460954110701477"
+      "templateHash": "7664189418855377656"
     }
   },
   "parameters": {
@@ -89,7 +89,7 @@
     "storageAccountName": "[format('st{0}func', variables('generatedToken'))]",
     "keyVaultName": "[format('kv-{0}-{1}', parameters('appNamePrefix'), take(variables('generatedToken'), 4))]",
     "deploymentStorageContainerName": "[format('app-package-{0}-{1}', take(parameters('appNamePrefix'), 32), take(variables('generatedToken'), 7))]",
-    "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
+    "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
   },
   "resources": [
     {
