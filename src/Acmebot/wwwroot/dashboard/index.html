@@ -3,9 +3,300 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard | Key Vault Acmebot</title>
+  <title>Dashboard | Acmebot for Microsoft Azure</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #0078d4;
+      --primary-dark: #005a9e;
+      --primary-light: #deecf9;
+      --success: #107c10;
+      --warning: #ff8c00;
+      --danger: #d13438;
+      --neutral-bg: #f5f6fa;
+      --card-bg: #ffffff;
+      --text-primary: #1b1b1f;
+      --text-secondary: #5c5c6d;
+      --border-color: #e1e5eb;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    html, body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--neutral-bg);
+      color: var(--text-primary);
+    }
+
+    /* Navbar */
+    .navbar-brand-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      padding: 0.75rem 0;
+      box-shadow: var(--shadow-md);
+    }
+
+    .navbar-brand-section .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: white;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .brand-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      background: rgba(255,255,255,0.2);
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-weight: 500;
+      vertical-align: middle;
+      margin-left: 0.35rem;
+    }
+
+    /* Content */
+    .dashboard-content {
+      padding: 2rem 0 3rem;
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title .icon {
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+
+    .section-count {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 20px;
+      margin-left: 0.25rem;
+    }
+
+    /* Cards */
+    .cert-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .cert-card .table {
+      margin-bottom: 0;
+      background: transparent;
+    }
+
+    .cert-card thead th {
+      background: #f8f9fb;
+      border-bottom: 2px solid var(--border-color);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      padding: 0.85rem 1.25rem;
+      white-space: nowrap;
+    }
+
+    .cert-card tbody td {
+      padding: 0.85rem 1.25rem;
+      vertical-align: middle !important;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f0f1f5;
+    }
+
+    .cert-card tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .cert-card tbody tr:hover {
+      background: #f8f9fd;
+    }
+
+    .cert-card tbody tr.row-expired {
+      background: #fdf2f2;
+    }
+
+    .cert-card tbody tr.row-expired:hover {
+      background: #fce8e8;
+    }
+
+    .cert-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* DNS name tags */
+    .dns-tag {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.2rem 0.6rem;
+      border-radius: 5px;
+      margin: 0.1rem 0.2rem 0.1rem 0;
+      border: 1px solid rgba(0,120,212,0.12);
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .status-badge.is-valid {
+      background: #e6f4e6;
+      color: var(--success);
+    }
+
+    .status-badge.is-warning {
+      background: #fff4ce;
+      color: #9a6700;
+    }
+
+    .status-badge.is-expired {
+      background: #fde7e9;
+      color: var(--danger);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-badge.is-valid .status-dot { background: var(--success); }
+    .status-badge.is-warning .status-dot { background: var(--warning); }
+    .status-badge.is-expired .status-dot { background: var(--danger); }
+
+    /* Action buttons */
+    .btn-action {
+      border: 1px solid var(--border-color);
+      background: white;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-radius: 6px;
+      padding: 0.35rem 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: 1px solid var(--primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 6px;
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border-color);
+      background: white;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 6px;
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Top action bar buttons */
+    .action-bar .button {
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-color: var(--border-color);
+      transition: all 0.15s ease;
+    }
+
+    .action-bar .button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .action-bar .button .icon {
+      font-size: 0.75rem;
+    }
+
+    /* Modal */
     @media screen and (min-width: 769px), print {
       .field-label {
         flex-grow: 2;
@@ -18,6 +309,327 @@
       }
     }
 
+    .modal-card {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-card-head {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-bottom: none;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .modal-card-title {
+      color: white !important;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .modal-card-body {
+      padding: 1.5rem;
+    }
+
+    .modal-card-body .label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .modal-card-foot {
+      background: #f8f9fb;
+      border-top: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+    }
+
+    .modal-card-foot .button.is-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      font-weight: 500;
+      border-radius: 6px;
+    }
+
+    .modal-card-foot .button.is-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
+    .modal-card-foot .button.is-danger {
+      border-radius: 6px;
+    }
+
+    .modal-card-foot .button:not(.is-primary):not(.is-danger) {
+      border-radius: 6px;
+    }
+
+    /* Form controls in modal */
+    .modal-card-body .input,
+    .modal-card-body .select select {
+      border-radius: 6px;
+      border-color: var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    .modal-card-body .input:focus,
+    .modal-card-body .select select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 0.9rem;
+    }
+
+    /* Sub-section cards */
+    .sub-cards .cert-card {
+      margin-bottom: 0;
+    }
+
+    .sub-section-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .sub-section-title .icon {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* Detail modal fields */
+    .detail-field-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .detail-field-value {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    /* Footer */
+    .dashboard-footer {
+      text-align: center;
+      padding: 1.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 1rem;
+    }
+
+    .dashboard-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .dashboard-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Zone group */
+    .zone-group {
+      margin-bottom: 1rem;
+    }
+
+    .zone-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .zone-group-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e8edf2 100%);
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    .zone-group-header:first-child {
+      border-top: none;
+    }
+
+    .zone-group-header:hover {
+      background: linear-gradient(135deg, #e8edf2 0%, #dfe5ec 100%);
+    }
+
+    .zone-group-chevron {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      transition: transform 0.2s ease;
+      width: 14px;
+      text-align: center;
+    }
+
+    .zone-group-chevron.is-open {
+      transform: rotate(90deg);
+    }
+
+    .zone-group-icon {
+      color: var(--primary);
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .zone-group-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .zone-group-count {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .zone-group-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .zone-status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .zone-status-indicator .status-dot {
+      width: 5px;
+      height: 5px;
+    }
+
+    .zone-status-indicator.has-expired .status-dot { background: var(--danger); }
+    .zone-status-indicator.has-warning .status-dot { background: var(--warning); }
+    .zone-status-indicator.has-valid .status-dot { background: var(--success); }
+
+    .zone-group-body {
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+    }
+
+    .zone-group-body .table {
+      margin-bottom: 0;
+    }
+
+    .zone-group-body thead th {
+      background: #fbfbfd;
+      font-size: 0.7rem;
+      padding: 0.6rem 1.25rem;
+    }
+
+    .zone-group-body tbody td {
+      padding: 0.7rem 1.25rem;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .filter-search {
+      position: relative;
+      flex: 1;
+      max-width: 320px;
+    }
+
+    .filter-search input {
+      width: 100%;
+      padding: 0.4rem 0.75rem 0.4rem 2rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      background: white;
+      color: var(--text-primary);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .filter-search input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .filter-search input::placeholder {
+      color: #aab0bb;
+    }
+
+    .filter-search .search-icon {
+      position: absolute;
+      left: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      color: #aab0bb;
+      pointer-events: none;
+    }
+
+    .expand-collapse-btn {
+      font-size: 0.78rem;
+      color: var(--primary);
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .expand-collapse-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* Loading skeleton */
+    .table-loading {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
     td {
       vertical-align: middle !important;
     }
@@ -25,125 +637,223 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js" integrity="sha512-Tn2m0TIpgVyTzzvmxLNuqbSJH3JP8jm+Cy3hvHrW7ndTDcJ1w5mBiksqDBb8GpE2ksktFvDB/ykZ0mDpsZj20w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-  <section class="section">
+  <div class="navbar-brand-section">
     <div class="container">
-      <h1 class="title">
-        Key Vault Acmebot
-      </h1>
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <span class="brand-text">Acmebot for Microsoft Azure<span class="brand-badge">Dashboard</span></span>
+      </div>
+    </div>
+  </div>
+  <section class="dashboard-content">
+    <div class="container">
       <div id="app">
-        <h2 class="title is-4">
-          Managed certificates
-          <div class="buttons are-small is-inline-block is-pulled-right">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="icon"><i class="fas fa-certificate"></i></span>
+            Managed Certificates
+            <span class="section-count" v-if="managedCertificates.length">{{ managedCertificates.length }}</span>
+          </div>
+          <div class="buttons are-small action-bar">
             <a class="button" @click="openAdd">
               <span class="icon">
                 <i class="fas fa-plus"></i>
               </span>
-              <span>Add</span>
+              <span>Add Certificate</span>
             </a>
             <a class="button" @click="refresh" :class="{ 'is-loading': loading }">
               <span class="icon">
-                <i class="fas fa-sync"></i>
+                <i class="fas fa-sync-alt"></i>
               </span>
               <span>Refresh</span>
             </a>
           </div>
-        </h2>
-        <table class="table is-hoverable is-fullwidth">
-          <thead>
-            <tr>
-              <th>Certificate name</th>
-              <th>DNS Names</th>
-              <th>Created On</th>
-              <th>Expires On</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="certificate in managedCertificates" :class="{ 'has-background-danger-light': certificate.isExpired }">
-              <td>{{ certificate.name }}</td>
-              <td>
-                <div class="tags">
-                  <span v-for="dnsName in certificate.dnsNames" class="tag is-light is-medium">
-                    {{ toUnicode(dnsName) }}
-                  </span>
-                </div>
-              </td>
-              <td>{{ formatCreatedOn(certificate.createdOn) }}</td>
-              <td>{{ formatExpiresOn(certificate.expiresOn) }}</td>
-              <td>
-                <div class="buttons are-small">
-                  <button class="button is-info" @click="openDetails(certificate)">Details</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="columns">
-          <div class="column is-half">
-            <h2 class="title is-4">Another CA certificates</h2>
-            <table class="table is-hoverable is-fullwidth">
-              <thead>
-                <tr>
-                  <th>Certificate name</th>
-                  <th>DNS Names</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="certificate in anotherCACertificates">
-                  <td>{{ certificate.name }}</td>
-                  <td>
-                    <div class="tags">
-                      <span v-for="dnsName in certificate.dnsNames" class="tag is-light is-medium">
-                        {{ toUnicode(dnsName) }}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="buttons are-small">
-                      <button class="button is-info" @click="openDetails(certificate)">Details</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        </div>
+        <div class="filter-bar" v-if="managedCertificates.length > 0">
+          <div class="filter-search">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" v-model="searchQuery" placeholder="Search certificates or domains...">
           </div>
-          <div class="column is-half">
-            <h2 class="title is-4">Unmanaged certificates</h2>
-            <table class="table is-hoverable is-fullwidth">
-              <thead>
-                <tr>
-                  <th>Certificate name</th>
-                  <th>DNS Names</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="certificate in unmanagedCertificates">
-                  <td>{{ certificate.name }}</td>
-                  <td>
-                    <div class="tags">
-                      <span v-for="dnsName in certificate.dnsNames" class="tag is-light is-medium">
+          <button class="expand-collapse-btn" @click="toggleAllZones">
+            <i class="fas" :class="allZonesExpanded ? 'fa-compress-alt' : 'fa-expand-alt'" style="margin-right:0.3rem"></i>
+            {{ allZonesExpanded ? 'Collapse All' : 'Expand All' }}
+          </button>
+        </div>
+        <div class="cert-card" v-if="filteredGroupedCertificates.length > 0">
+          <div v-for="group in filteredGroupedCertificates" :key="group.zone" class="zone-group">
+            <div class="zone-group-header" @click="toggleZone(group.zone)">
+              <span class="zone-group-chevron" :class="{ 'is-open': expandedZones[group.zone] }">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+              <span class="zone-group-icon"><i class="fas fa-globe"></i></span>
+              <span class="zone-group-name">{{ toUnicode(group.zone) }}</span>
+              <span class="zone-group-count">{{ group.certificates.length }}</span>
+              <div class="zone-group-status">
+                <span v-if="zoneExpiredCount(group) > 0" class="zone-status-indicator has-expired">
+                  <span class="status-dot"></span>{{ zoneExpiredCount(group) }}
+                </span>
+                <span v-if="zoneWarningCount(group) > 0" class="zone-status-indicator has-warning">
+                  <span class="status-dot"></span>{{ zoneWarningCount(group) }}
+                </span>
+                <span v-if="zoneValidCount(group) > 0" class="zone-status-indicator has-valid">
+                  <span class="status-dot"></span>{{ zoneValidCount(group) }}
+                </span>
+              </div>
+            </div>
+            <div class="zone-group-body" v-show="expandedZones[group.zone]">
+              <table class="table is-hoverable is-fullwidth">
+                <thead>
+                  <tr>
+                    <th>Certificate Name</th>
+                    <th>DNS Names</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="certificate in group.certificates" :class="{ 'row-expired': certificate.isExpired }">
+                    <td><span class="cert-name">{{ certificate.name }}</span></td>
+                    <td>
+                      <span v-for="dnsName in certificate.dnsNames" class="dns-tag">
                         {{ toUnicode(dnsName) }}
                       </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="buttons are-small">
-                      <button class="button is-info" @click="openDetails(certificate)">Details</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td>{{ formatCreatedOn(certificate.createdOn) }}</td>
+                    <td><span :class="statusClass(certificate)" class="status-badge"><span class="status-dot"></span>{{ formatExpiresOn(certificate.expiresOn) }}</span></td>
+                    <td>
+                      <button class="btn-action" @click="openDetails(certificate)">
+                        <i class="fas fa-ellipsis-h"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <!-- Add certificate model -->
+        <div class="cert-card" v-else-if="!loading && searchQuery && managedCertificates.length > 0">
+          <div class="empty-state">
+            <div class="icon"><i class="fas fa-search"></i></div>
+            <p>No certificates match "{{ searchQuery }}"</p>
+          </div>
+        </div>
+        <div class="cert-card" v-else-if="!loading && managedCertificates.length === 0">
+          <div class="empty-state">
+            <div class="icon"><i class="fas fa-certificate"></i></div>
+            <p>No managed certificates found</p>
+          </div>
+        </div>
+        <div class="columns sub-cards">
+          <div class="column is-half">
+            <div class="sub-section-title">
+              <span class="icon"><i class="fas fa-exchange-alt"></i></span>
+              Another CA Certificates
+              <span class="section-count" v-if="anotherCACertificates.length">{{ anotherCACertificates.length }}</span>
+            </div>
+            <div class="cert-card" v-if="groupedAnotherCACertificates.length > 0">
+              <div v-for="group in groupedAnotherCACertificates" :key="'other-' + group.zone" class="zone-group">
+                <div class="zone-group-header" @click="expandedZones['other-' + group.zone] = !expandedZones['other-' + group.zone]">
+                  <span class="zone-group-chevron" :class="{ 'is-open': expandedZones['other-' + group.zone] }">
+                    <i class="fas fa-chevron-right"></i>
+                  </span>
+                  <span class="zone-group-icon"><i class="fas fa-globe"></i></span>
+                  <span class="zone-group-name">{{ toUnicode(group.zone) }}</span>
+                  <span class="zone-group-count">{{ group.certificates.length }}</span>
+                </div>
+                <div class="zone-group-body" v-show="expandedZones['other-' + group.zone]">
+                  <table class="table is-hoverable is-fullwidth">
+                    <thead>
+                      <tr>
+                        <th>Certificate Name</th>
+                        <th>DNS Names</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="certificate in group.certificates">
+                        <td><span class="cert-name">{{ certificate.name }}</span></td>
+                        <td>
+                          <span v-for="dnsName in certificate.dnsNames" class="dns-tag">
+                            {{ toUnicode(dnsName) }}
+                          </span>
+                        </td>
+                        <td>
+                          <button class="btn-action" @click="openDetails(certificate)">
+                            <i class="fas fa-ellipsis-h"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="cert-card" v-else>
+              <div class="empty-state">
+                <p>No certificates</p>
+              </div>
+            </div>
+          </div>
+          <div class="column is-half">
+            <div class="sub-section-title">
+              <span class="icon"><i class="fas fa-unlock-alt"></i></span>
+              Unmanaged Certificates
+              <span class="section-count" v-if="unmanagedCertificates.length">{{ unmanagedCertificates.length }}</span>
+            </div>
+            <div class="cert-card" v-if="groupedUnmanagedCertificates.length > 0">
+              <div v-for="group in groupedUnmanagedCertificates" :key="'unmanaged-' + group.zone" class="zone-group">
+                <div class="zone-group-header" @click="expandedZones['unmanaged-' + group.zone] = !expandedZones['unmanaged-' + group.zone]">
+                  <span class="zone-group-chevron" :class="{ 'is-open': expandedZones['unmanaged-' + group.zone] }">
+                    <i class="fas fa-chevron-right"></i>
+                  </span>
+                  <span class="zone-group-icon"><i class="fas fa-globe"></i></span>
+                  <span class="zone-group-name">{{ toUnicode(group.zone) }}</span>
+                  <span class="zone-group-count">{{ group.certificates.length }}</span>
+                </div>
+                <div class="zone-group-body" v-show="expandedZones['unmanaged-' + group.zone]">
+                  <table class="table is-hoverable is-fullwidth">
+                    <thead>
+                      <tr>
+                        <th>Certificate Name</th>
+                        <th>DNS Names</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="certificate in group.certificates">
+                        <td><span class="cert-name">{{ certificate.name }}</span></td>
+                        <td>
+                          <span v-for="dnsName in certificate.dnsNames" class="dns-tag">
+                            {{ toUnicode(dnsName) }}
+                          </span>
+                        </td>
+                        <td>
+                          <button class="btn-action" @click="openDetails(certificate)">
+                            <i class="fas fa-ellipsis-h"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="cert-card" v-else>
+              <div class="empty-state">
+                <p>No certificates</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Add certificate modal -->
         <div class="modal" :class="{ 'is-active': add.modalActive }">
           <div class="modal-background"></div>
           <div class="modal-card">
             <header class="modal-card-head">
-              <p class="modal-card-title">Add certificate</p>
+              <p class="modal-card-title"><i class="fas fa-plus-circle" style="margin-right:0.5rem;opacity:0.8"></i>Add Certificate</p>
             </header>
             <section class="modal-card-body">
               <div class="field is-horizontal">
@@ -192,7 +902,7 @@
                 <div class="field-body">
                   <div class="content">
                     <div class="tags">
-                      <span v-for="dnsName in add.dnsNames" class="tag is-light is-medium">
+                      <span v-for="dnsName in add.dnsNames" class="dns-tag" style="cursor:default">
                         {{ toUnicode(dnsName) }}
                         <button class="delete is-small" @click="removeDnsName(dnsName)"></button>
                       </span>
@@ -331,7 +1041,7 @@
           <div class="modal-background"></div>
           <div class="modal-card">
             <header class="modal-card-head">
-              <p class="modal-card-title">Details certificate</p>
+              <p class="modal-card-title"><i class="fas fa-info-circle" style="margin-right:0.5rem;opacity:0.8"></i>Certificate Details</p>
             </header>
             <section class="modal-card-body">
               <div v-if="details.certificate !== ''">
@@ -352,7 +1062,7 @@
                   <div class="field-body">
                     <div class="content">
                       <div class="tags">
-                        <span v-for="dnsName in details.certificate.dnsNames" class="tag is-light is-medium">
+                        <span v-for="dnsName in details.certificate.dnsNames" class="dns-tag">
                           {{ toUnicode(dnsName) }}
                         </span>
                       </div>
@@ -481,6 +1191,12 @@
       </div>
     </div>
   </section>
+  <footer class="dashboard-footer">
+    <div class="container">
+      <i class="fas fa-shield-alt" style="margin-right:0.25rem"></i>
+      Powered by <a href="https://github.com/shibayan/keyvault-acmebot" target="_blank" rel="noopener">Acmebot for Microsoft Azure</a>
+    </div>
+  </footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.11/vue.global.prod.min.js" integrity="sha512-RiF+Jrmab5nvkymjQZrHxYRi83mZj3cblSwolvamR1phU+rN9gUBPGEU7P+tvaKncRSk8dXvJhyhKb0BpYgj9A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.4/axios.min.js" integrity="sha512-lTLt+W7MrmDfKam+r3D2LURu0F47a3QaW5nF0c6Hl0JDZ57ruei+ovbg7BrZ+0bjVJ5YgzsAWE+RreERbpPE1g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/punycode/1.4.1/punycode.min.js" integrity="sha512-YZlXEJ9dOHnIn3LXSS3RpbhAtTQZWw2VOywaMsC8p7/0DyGu0gEf0pFhkQtE/i4pQpgGUDY7cicb401Tf/5sRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -494,6 +1210,8 @@
         return {
           certificates: [],
           loading: false,
+          searchQuery: "",
+          expandedZones: {},
           add: {
             zones: {},
             zone: null,
@@ -526,9 +1244,88 @@
         },
         unmanagedCertificates() {
           return this.certificates.filter(x => !x.isIssuedByAcmebot && !x.isIssuedByAcmebot);
+        },
+        groupedManagedCertificates() {
+          return this.groupByZone(this.managedCertificates);
+        },
+        filteredGroupedCertificates() {
+          if (!this.searchQuery) return this.groupedManagedCertificates;
+          const q = this.searchQuery.toLowerCase();
+          const result = [];
+          for (const group of this.groupedManagedCertificates) {
+            const filtered = group.certificates.filter(c =>
+              c.name.toLowerCase().includes(q) ||
+              c.dnsNames.some(d => punycode.toUnicode(d).toLowerCase().includes(q) || d.toLowerCase().includes(q))
+            );
+            if (filtered.length > 0) {
+              result.push({ zone: group.zone, certificates: filtered });
+            }
+          }
+          return result;
+        },
+        allZonesExpanded() {
+          return this.groupedManagedCertificates.length > 0 &&
+            this.groupedManagedCertificates.every(g => this.expandedZones[g.zone]);
+        },
+        groupedAnotherCACertificates() {
+          return this.groupByZone(this.anotherCACertificates);
+        },
+        groupedUnmanagedCertificates() {
+          return this.groupByZone(this.unmanagedCertificates);
         }
       },
       methods: {
+        extractZone(dnsName) {
+          let name = dnsName;
+          if (name.startsWith('*.')) name = name.substring(2);
+          const parts = name.split('.');
+          if (parts.length <= 2) return name;
+          return parts.slice(-2).join('.');
+        },
+        groupByZone(certificates) {
+          const map = {};
+          for (const cert of certificates) {
+            const zone = cert.dnsNames.length > 0 ? this.extractZone(cert.dnsNames[0]) : '(unknown)';
+            if (!map[zone]) map[zone] = [];
+            map[zone].push(cert);
+          }
+          return Object.keys(map).sort().map(zone => ({ zone, certificates: map[zone] }));
+        },
+        toggleZone(zone) {
+          this.expandedZones[zone] = !this.expandedZones[zone];
+        },
+        toggleAllZones() {
+          const expand = !this.allZonesExpanded;
+          for (const group of this.groupedManagedCertificates) {
+            this.expandedZones[group.zone] = expand;
+          }
+        },
+        expandAllZones() {
+          for (const group of this.groupedManagedCertificates) {
+            if (this.expandedZones[group.zone] === undefined) {
+              this.expandedZones[group.zone] = true;
+            }
+          }
+          for (const group of this.groupedAnotherCACertificates) {
+            if (this.expandedZones['other-' + group.zone] === undefined) {
+              this.expandedZones['other-' + group.zone] = true;
+            }
+          }
+          for (const group of this.groupedUnmanagedCertificates) {
+            if (this.expandedZones['unmanaged-' + group.zone] === undefined) {
+              this.expandedZones['unmanaged-' + group.zone] = true;
+            }
+          }
+        },
+        zoneExpiredCount(group) {
+          return group.certificates.filter(c => this.statusClass(c) === 'is-expired').length;
+        },
+        zoneWarningCount(group) {
+          return group.certificates.filter(c => this.statusClass(c) === 'is-warning').length;
+        },
+        zoneValidCount(group) {
+          return group.certificates.filter(c => this.statusClass(c) === 'is-valid').length;
+        },
         async load() {
           this.loading = true;
 
@@ -537,6 +1334,7 @@
 
             if (response.status === 200) {
               this.certificates = response.data.sort((x, y) => x.expiresOn.localeCompare(y.expiresOn));
+              this.$nextTick(() => this.expandAllZones());
             }
           } catch (error) {
             this.handleHttpError(error);
@@ -694,17 +1492,25 @@
         toUnicode(value) {
           return punycode.toUnicode(value);
         },
+        statusClass(certificate) {
+          const date = new Date(certificate.expiresOn);
+          const diff = date - Date.now();
+          const remainDays = Math.round(diff / (1000 * 60 * 60 * 24));
+          if (diff <= 0) return 'is-expired';
+          if (remainDays <= 30) return 'is-warning';
+          return 'is-valid';
+        },
         formatCreatedOn(value) {
-          return new Date(value).toLocaleString();
+          return new Date(value).toLocaleDateString();
         },
         formatExpiresOn(value) {
           const date = new Date(value);
           const diff = date - Date.now();
           const remainDays = Math.round(diff / (1000 * 60 * 60 * 24));
 
-          const remainText = diff > 0 ? `Expires in ${remainDays} days` : `EXPIRED`;
-
-          return `${date.toLocaleString()} (${remainText})`;
+          if (diff <= 0) return 'Expired';
+          if (remainDays <= 30) return `${remainDays}d remaining`;
+          return `${remainDays} days`;
         },
         handleHttpError(error) {
           const problem = error.response.data;
