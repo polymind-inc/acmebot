@@ -623,6 +623,27 @@
       background: var(--primary-light);
     }
 
+    /* Short-lived badge */
+    .shortlived-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: #f0e6ff;
+      color: #7c3aed;
+      border: 1px solid rgba(124,58,237,0.15);
+      white-space: nowrap;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+    }
+
+    .shortlived-badge .fa-bolt {
+      font-size: 0.6rem;
+    }
+
     /* Loading skeleton */
     .table-loading {
       padding: 2rem;
@@ -715,14 +736,17 @@
                 </thead>
                 <tbody>
                   <tr v-for="certificate in group.certificates" :class="{ 'row-expired': certificate.isExpired }">
-                    <td><span class="cert-name">{{ certificate.name }}</span></td>
+                    <td>
+                      <span class="cert-name">{{ certificate.name }}</span>
+                      <span v-if="isShortLived(certificate)" class="shortlived-badge"><i class="fas fa-bolt"></i>Short-lived</span>
+                    </td>
                     <td>
                       <span v-for="dnsName in certificate.dnsNames" class="dns-tag">
                         {{ toUnicode(dnsName) }}
                       </span>
                     </td>
                     <td>{{ formatCreatedOn(certificate.createdOn) }}</td>
-                    <td><span :class="statusClass(certificate)" class="status-badge"><span class="status-dot"></span>{{ formatExpiresOn(certificate.expiresOn) }}</span></td>
+                    <td><span :class="statusClass(certificate)" class="status-badge"><span class="status-dot"></span>{{ formatExpiresOn(certificate) }}</span></td>
                     <td>
                       <button class="btn-action" @click="openDetails(certificate)">
                         <i class="fas fa-ellipsis-h"></i>
@@ -1085,7 +1109,18 @@
                   </div>
                   <div class="field-body">
                     <div class="content">
-                      {{ formatExpiresOn(details.certificate.expiresOn) }}
+                      {{ formatExpiresOn(details.certificate) }}
+                    </div>
+                  </div>
+                </div>
+                <div class="field is-horizontal">
+                  <div class="field-label">
+                    <label class="label">Validity Period</label>
+                  </div>
+                  <div class="field-body">
+                    <div class="content">
+                      {{ formatValidityPeriod(details.certificate) }}
+                      <span v-if="isShortLived(details.certificate)" class="shortlived-badge"><i class="fas fa-bolt"></i>Short-lived</span>
                     </div>
                   </div>
                 </div>
@@ -1492,25 +1527,50 @@
         toUnicode(value) {
           return punycode.toUnicode(value);
         },
+        isShortLived(certificate) {
+          const created = new Date(certificate.createdOn);
+          const expires = new Date(certificate.expiresOn);
+          const validityDays = (expires - created) / (1000 * 60 * 60 * 24);
+          return validityDays <= 10;
+        },
         statusClass(certificate) {
           const date = new Date(certificate.expiresOn);
           const diff = date - Date.now();
           const remainDays = Math.round(diff / (1000 * 60 * 60 * 24));
           if (diff <= 0) return 'is-expired';
-          if (remainDays <= 30) return 'is-warning';
+          if (this.isShortLived(certificate)) {
+            if (remainDays <= 2) return 'is-warning';
+          } else {
+            if (remainDays <= 30) return 'is-warning';
+          }
           return 'is-valid';
         },
         formatCreatedOn(value) {
           return new Date(value).toLocaleDateString();
         },
-        formatExpiresOn(value) {
-          const date = new Date(value);
+        formatExpiresOn(certificate) {
+          const date = new Date(certificate.expiresOn);
           const diff = date - Date.now();
           const remainDays = Math.round(diff / (1000 * 60 * 60 * 24));
+          const remainHours = Math.round(diff / (1000 * 60 * 60));
 
           if (diff <= 0) return 'Expired';
+
+          if (this.isShortLived(certificate)) {
+            if (remainHours < 24) return `${remainHours}h remaining`;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.round((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            return `${days}d ${hours}h remaining`;
+          }
+
           if (remainDays <= 30) return `${remainDays}d remaining`;
           return `${remainDays} days`;
+        },
+        formatValidityPeriod(certificate) {
+          const created = new Date(certificate.createdOn);
+          const expires = new Date(certificate.expiresOn);
+          const validityDays = Math.round((expires - created) / (1000 * 60 * 60 * 24));
+          return `${validityDays} days`;
         },
         handleHttpError(error) {
           const problem = error.response.data;
