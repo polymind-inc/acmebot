@@ -52,6 +52,20 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 ## Deployment
 
+### v5 (Preview)
+
+> **Note:** v5 is currently in preview and not yet a stable release. Use v4 for production environments.
+>
+> v5 is built on [Azure Functions Flex Consumption plan](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan), which provides built-in VNET integration support.
+
+| Azure (Public) | Azure China | Azure Government |
+| :---: | :---: | :---: |
+| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
+
+### v4
+
+> **End of Life:** v4 will reach EOL when .NET 8 support ends (November 2026). Please plan to migrate to v5.
+
 | Azure (Public) | Azure China | Azure Government |
 | :---: | :---: | :---: |
 | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
@@ -77,7 +91,7 @@ Commercial support for Acmebot is planned to be offered by Polymind Inc.
 Details of the support offerings are not yet finalized and will be announced separately.
 Acmebot remains fully open source and free to use under the Apache License 2.0.
 
-If you are interested in future commercial support, please reach out to [Polymind Inc.](https://github.com/polymind-inc).
+If you are interested in future commercial support, please reach out to [Polymind Inc.](https://github.com/polymind-inc)
 
 ## License
 
