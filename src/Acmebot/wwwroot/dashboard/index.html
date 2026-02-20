@@ -365,10 +365,20 @@
 
     /* Form controls in modal */
     .modal-card-body .input,
-    .modal-card-body .select select {
+    .modal-card-body .select select,
+    .modal-card-body .button {
       border-radius: 6px;
       border-color: var(--border-color);
       font-size: 0.9rem;
+      height: 2.5em;
+    }
+
+    .modal-card-body .select {
+      height: 2.5em;
+    }
+
+    .modal-card-body .select select {
+      height: 100%;
     }
 
     .modal-card-body .input:focus,
@@ -654,6 +664,74 @@
     td {
       vertical-align: middle !important;
     }
+
+    /* Notification / Confirm modal */
+    .notify-modal .modal-card {
+      max-width: 480px;
+    }
+
+    .notify-modal .modal-card-head {
+      padding: 1rem 1.25rem;
+    }
+
+    .notify-modal .modal-card-body {
+      padding: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .notify-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .notify-icon.is-success {
+      background: #e6f4e6;
+      color: var(--success);
+    }
+
+    .notify-icon.is-danger {
+      background: #fde7e9;
+      color: var(--danger);
+    }
+
+    .notify-icon.is-warning {
+      background: #fff4ce;
+      color: #9a6700;
+    }
+
+    .notify-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notify-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .notify-message {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .notify-modal .modal-card-foot {
+      padding: 0.75rem 1.25rem;
+    }
+
+    .notify-modal .modal-card-foot .button {
+      min-width: 80px;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js" integrity="sha512-Tn2m0TIpgVyTzzvmxLNuqbSJH3JP8jm+Cy3hvHrW7ndTDcJ1w5mBiksqDBb8GpE2ksktFvDB/ykZ0mDpsZj20w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
@@ -762,6 +840,12 @@
           <div class="empty-state">
             <div class="icon"><i class="fas fa-search"></i></div>
             <p>No certificates match "{{ searchQuery }}"</p>
+          </div>
+        </div>
+        <div class="cert-card" v-else-if="loading">
+          <div class="empty-state">
+            <div class="icon"><i class="fas fa-spinner fa-spin"></i></div>
+            <p>Loading certificates...</p>
           </div>
         </div>
         <div class="cert-card" v-else-if="!loading && managedCertificates.length === 0">
@@ -874,7 +958,7 @@
         </div>
         <!-- Add certificate modal -->
         <div class="modal" :class="{ 'is-active': add.modalActive }">
-          <div class="modal-background"></div>
+          <div class="modal-background" @click="add.sending || (add.modalActive = false)"></div>
           <div class="modal-card">
             <header class="modal-card-head">
               <p class="modal-card-title"><i class="fas fa-plus-circle" style="margin-right:0.5rem;opacity:0.8"></i>Add Certificate</p>
@@ -908,7 +992,7 @@
                 <div class="field-body">
                   <div class="field has-addons">
                     <p class="control">
-                      <input v-model="add.recordName" class="input" type="text" placeholder="Record name" :disabled="add.zone === null">
+                      <input v-model="add.recordName" class="input" type="text" placeholder="Record name" :disabled="add.zone === null" @keyup.enter="addDnsName">
                     </p>
                     <p class="control">
                       <a class="button is-static">
@@ -1062,7 +1146,7 @@
         </div>
         <!-- Details certificate modal -->
         <div class="modal" :class="{ 'is-active': details.modalActive }">
-          <div class="modal-background"></div>
+          <div class="modal-background" @click="details.sending || (details.modalActive = false)"></div>
           <div class="modal-card">
             <header class="modal-card-head">
               <p class="modal-card-title"><i class="fas fa-info-circle" style="margin-right:0.5rem;opacity:0.8"></i>Certificate Details</p>
@@ -1109,7 +1193,8 @@
                   </div>
                   <div class="field-body">
                     <div class="content">
-                      {{ formatExpiresOn(details.certificate) }}
+                      {{ formatCreatedOn(details.certificate.expiresOn) }}
+                      <span :class="statusClass(details.certificate)" class="status-badge" style="margin-left:0.5rem"><span class="status-dot"></span>{{ formatExpiresOn(details.certificate) }}</span>
                     </div>
                   </div>
                 </div>
@@ -1170,7 +1255,7 @@
                   </div>
                   <div class="field-body">
                     <div class="content">
-                      {{ details.certificate.reuseKey }}
+                      {{ details.certificate.reuseKey ? 'Yes' : 'No' }}
                     </div>
                   </div>
                 </div>
@@ -1180,7 +1265,7 @@
                   </div>
                   <div class="field-body">
                     <div class="content">
-                      {{ details.certificate.isIssuedByAcmebot }}
+                      {{ details.certificate.isIssuedByAcmebot ? 'Yes' : 'No' }}
                     </div>
                   </div>
                 </div>
@@ -1220,6 +1305,51 @@
               <button class="button is-primary" @click="renewCertificate" :class="{ 'is-loading': details.sending }">Renew</button>
               <button class="button is-danger" @click="revokeCertificate" :class="{ 'is-loading': details.sending }" v-if="details.certificate.isIssuedByAcmebot && details.certificate.isSameEndpoint && !details.certificate.isExpired">Revoke</button>
               <button class="button" @click="details.modalActive = false" :disabled="details.sending">Close</button>
+            </footer>
+          </div>
+        </div>
+        <!-- Notification modal -->
+        <div class="modal notify-modal" :class="{ 'is-active': notify.active }">
+          <div class="modal-background" @click="closeNotify"></div>
+          <div class="modal-card">
+            <header class="modal-card-head">
+              <p class="modal-card-title">
+                <i class="fas" :class="notify.titleIcon" style="margin-right:0.5rem;opacity:0.8"></i>{{ notify.title }}
+              </p>
+            </header>
+            <section class="modal-card-body">
+              <div class="notify-icon" :class="notify.iconClass">
+                <i class="fas" :class="notify.icon"></i>
+              </div>
+              <div class="notify-body">
+                <div class="notify-message">{{ notify.message }}</div>
+              </div>
+            </section>
+            <footer class="modal-card-foot is-justify-content-flex-end">
+              <button class="button is-primary" @click="closeNotify">OK</button>
+            </footer>
+          </div>
+        </div>
+        <!-- Confirm modal -->
+        <div class="modal notify-modal" :class="{ 'is-active': confirmDialog.active }">
+          <div class="modal-background" @click="cancelConfirm"></div>
+          <div class="modal-card">
+            <header class="modal-card-head">
+              <p class="modal-card-title">
+                <i class="fas fa-exclamation-triangle" style="margin-right:0.5rem;opacity:0.8"></i>Confirm
+              </p>
+            </header>
+            <section class="modal-card-body">
+              <div class="notify-icon is-warning">
+                <i class="fas fa-question"></i>
+              </div>
+              <div class="notify-body">
+                <div class="notify-message">{{ confirmDialog.message }}</div>
+              </div>
+            </section>
+            <footer class="modal-card-foot is-justify-content-flex-end">
+              <button class="button is-danger" @click="acceptConfirm">{{ confirmDialog.okLabel }}</button>
+              <button class="button" @click="cancelConfirm">Cancel</button>
             </footer>
           </div>
         </div>
@@ -1267,6 +1397,21 @@
             certificate: "",
             sending: false,
             modalActive: false
+          },
+          notify: {
+            active: false,
+            title: "",
+            titleIcon: "fa-info-circle",
+            message: "",
+            icon: "fa-check-circle",
+            iconClass: "is-success",
+            _resolve: null
+          },
+          confirmDialog: {
+            active: false,
+            message: "",
+            okLabel: "OK",
+            _resolve: null
           }
         };
       },
@@ -1278,7 +1423,7 @@
           return this.certificates.filter(x => x.isIssuedByAcmebot && !x.isSameEndpoint);
         },
         unmanagedCertificates() {
-          return this.certificates.filter(x => !x.isIssuedByAcmebot && !x.isIssuedByAcmebot);
+          return this.certificates.filter(x => !x.isIssuedByAcmebot);
         },
         groupedManagedCertificates() {
           return this.groupByZone(this.managedCertificates);
@@ -1405,7 +1550,7 @@
           }
 
           if (this.add.dnsProviderName !== "" && this.add.dnsProviderName !== this.add.zone.dnsProviderName) {
-            alert("DNS zones belonging to different DNS Providers cannot be included in the same certificate.");
+            this.showNotify("DNS zones belonging to different DNS Providers cannot be included in the same certificate.", { type: 'warning' });
             return;
           }
 
@@ -1452,7 +1597,6 @@
               response = await axios.get(response.headers["location"]);
 
               if (response.status === 200) {
-                alert("The certificate was successfully issued.");
                 break;
               }
             }
@@ -1463,6 +1607,7 @@
           this.add.sending = false;
           this.add.modalActive = false;
 
+          await this.showNotify("The certificate was successfully issued.");
           await this.refresh();
         },
         async openAdd() {
@@ -1491,7 +1636,6 @@
               response = await axios.get(response.headers["location"]);
 
               if (response.status === 200) {
-                alert("The certificate was successfully renewed.");
                 break;
               }
             }
@@ -1502,27 +1646,52 @@
           this.details.sending = false;
           this.details.modalActive = false;
 
+          await this.showNotify("The certificate was successfully renewed.");
           await this.refresh();
         },
         async revokeCertificate() {
-          if (!confirm(`${this.details.certificate.name} revoke your certificate. Are you sure?`)) {
-            return;
-          }
+          const ok = await this.showConfirm(`Are you sure you want to revoke the certificate "${this.details.certificate.name}"?`, { okLabel: 'Revoke' });
+          if (!ok) return;
 
           this.details.sending = true;
 
           try {
-            const response = await axios.post(`/api/certificate/${this.details.certificate.name}/revoke`);
-
-            if (response.status === 200) {
-              alert("The certificate was successfully revoked.");
-            }
+            await axios.post(`/api/certificate/${this.details.certificate.name}/revoke`);
           } catch (error) {
             this.handleHttpError(error);
           }
 
           this.details.sending = false;
           this.details.modalActive = false;
+
+          await this.showNotify("The certificate was successfully revoked.");
+        },
+        showNotify(message, { type = 'success' } = {}) {
+          const config = {
+            success: { title: 'Success', titleIcon: 'fa-check-circle', icon: 'fa-check-circle', iconClass: 'is-success' },
+            error: { title: 'Error', titleIcon: 'fa-exclamation-circle', icon: 'fa-times-circle', iconClass: 'is-danger' },
+            warning: { title: 'Warning', titleIcon: 'fa-exclamation-triangle', icon: 'fa-exclamation-triangle', iconClass: 'is-warning' }
+          }[type] || { title: 'Notice', titleIcon: 'fa-info-circle', icon: 'fa-info-circle', iconClass: 'is-success' };
+          return new Promise(resolve => {
+            Object.assign(this.notify, { active: true, message, ...config, _resolve: resolve });
+          });
+        },
+        closeNotify() {
+          this.notify.active = false;
+          if (this.notify._resolve) this.notify._resolve();
+        },
+        showConfirm(message, { okLabel = 'OK' } = {}) {
+          return new Promise(resolve => {
+            Object.assign(this.confirmDialog, { active: true, message, okLabel, _resolve: resolve });
+          });
+        },
+        acceptConfirm() {
+          this.confirmDialog.active = false;
+          if (this.confirmDialog._resolve) this.confirmDialog._resolve(true);
+        },
+        cancelConfirm() {
+          this.confirmDialog.active = false;
+          if (this.confirmDialog._resolve) this.confirmDialog._resolve(false);
         },
         toUnicode(value) {
           return punycode.toUnicode(value);
@@ -1559,7 +1728,7 @@
           if (this.isShortLived(certificate)) {
             if (remainHours < 24) return `${remainHours}h remaining`;
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.round((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             return `${days}d ${hours}h remaining`;
           }
 
@@ -1582,13 +1751,13 @@
               errors.push(problem.errors[key][0]);
             }
 
-            alert(errors.join("\n"));
+            this.showNotify(errors.join("\n"), { type: 'error' });
           } else {
             const message = problem.detail ?? problem.output;
             if (message) {
-              alert(message);
+              this.showNotify(message, { type: 'error' });
             } else {
-              alert(`HTTP Response ${error.response.status} Error`);
+              this.showNotify(`HTTP Response ${error.response.status} Error`, { type: 'error' });
             }
           }
         }
