@@ -29,7 +29,7 @@ internal class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnvi
 
         await foreach (var zone in result)
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Data.Name });
+            zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name });
         }
 
         return zones;

@@ -167,7 +167,7 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
         [JsonPropertyName("vanity_name_servers")]
         public string[] VanityNameServers { get; set; }
 
-        [Newtonsoft.Json.JsonIgnore]
+        [JsonIgnore]
         public string[] ActualNameServers => VanityNameServers is { Length: > 0 } ? VanityNameServers : NameServers;
     }
 

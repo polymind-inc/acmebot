@@ -18,6 +18,11 @@ public class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger
     {
         var certificateName = context.GetInput<string>();
 
+        if (string.IsNullOrEmpty(certificateName))
+        {
+            return;
+        }
+
         await context.CallRevokeCertificateAsync(certificateName);
     }
 

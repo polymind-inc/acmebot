@@ -29,7 +29,7 @@ public class AzureDnsProvider(AzureDnsOptions options, AzureEnvironment environm
 
         await foreach (var zone in result)
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Data.Name, NameServers = zone.Data.NameServers });
+            zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name, NameServers = zone.Data.NameServers });
         }
 
         return zones;

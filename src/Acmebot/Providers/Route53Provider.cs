@@ -26,7 +26,7 @@ public class Route53Provider : IDnsProvider
     {
         var zones = new List<HostedZone>();
 
-        ListHostedZonesResponse response = null;
+        ListHostedZonesResponse? response = null;
 
         do
         {

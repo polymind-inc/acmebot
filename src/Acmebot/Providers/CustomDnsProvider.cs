@@ -35,7 +35,7 @@ public class CustomDnsProvider : IDnsProvider
 
         var zones = await response.Content.ReadAsAsync<Zone[]>();
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name, NameServers = x.NameServers }).ToArray();
+        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name, NameServers = x.NameServers ?? [] }).ToArray();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
@@ -59,12 +59,12 @@ public class CustomDnsProvider : IDnsProvider
     private class Zone
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("nameServers")]
-        public string[] NameServers { get; set; }
+        public IReadOnlyList<string>? NameServers { get; set; }
     }
 }

@@ -225,7 +225,7 @@ public class SharedActivity(
     }
 
     [Function(nameof(Dns01Authorization))]
-    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string, IReadOnlyList<string>) input)
+    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<string>) input)
     {
         var (dnsProviderName, dnsAlias, authorizationUrls) = input;
 

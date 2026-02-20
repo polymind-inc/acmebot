@@ -18,6 +18,11 @@ public class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<
     {
         var certificateName = context.GetInput<string>();
 
+        if (string.IsNullOrEmpty(certificateName))
+        {
+            return;
+        }
+
         // 証明書の更新処理を開始
         var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
 

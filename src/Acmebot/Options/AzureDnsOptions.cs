@@ -2,5 +2,5 @@
 
 public class AzureDnsOptions
 {
-    public string SubscriptionId { get; set; }
+    public required string SubscriptionId { get; set; }
 }

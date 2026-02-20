@@ -33,7 +33,7 @@ public class GoogleDnsProvider : IDnsProvider
     {
         var zones = new List<ManagedZone>();
 
-        ManagedZonesListResponse response = null;
+        ManagedZonesListResponse? response = null;
 
         do
         {

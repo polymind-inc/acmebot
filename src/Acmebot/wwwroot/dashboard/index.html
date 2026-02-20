@@ -1137,6 +1137,18 @@
                   </div>
                 </div>
               </div>
+              <div class="field is-horizontal" v-if="add.useAdvancedOptions">
+                <div class="field-label is-normal">
+                  <label class="label">DNS Alias</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <p class="control">
+                      <input v-model="add.dnsAlias" class="input" type="text" placeholder="e.g. alias.example.com">
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
             <footer class="modal-card-foot is-justify-content-flex-end">
               <button class="button is-primary" @click="addCertificate" :class="{ 'is-loading': add.sending }">Add</button>
@@ -1389,6 +1401,7 @@
             keySize: "2048",
             keyCurveName: "P-256",
             reuseKey: false,
+            dnsAlias: "",
             loading: false,
             sending: false,
             modalActive: false
@@ -1579,7 +1592,8 @@
             dnsProviderName: this.add.dnsProviderName,
             certificateName: this.add.certificateName,
             keyType: this.add.keyType,
-            reuseKey: this.add.reuseKey
+            reuseKey: this.add.reuseKey,
+            dnsAlias: this.add.dnsAlias
           };
 
           if (this.add.keyType === "RSA") {
