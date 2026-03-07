@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acmebot for Microsoft Azure - Automated ACME SSL/TLS Certificate Management</title>
+  <meta name="description" content="Automated ACME SSL/TLS certificate management built around Azure Key Vault. Supports App Service, Container Apps, Application Gateway, Front Door, API Management, SignalR, and more.">
+  <meta name="theme-color" content="#0078d4">
+  <link rel="canonical" href="https://acmebot.dev/">
+  <meta property="og:title" content="Acmebot for Microsoft Azure">
+  <meta property="og:description" content="Automated ACME SSL/TLS certificate management built around Azure Key Vault.">
+  <meta property="og:url" content="https://acmebot.dev/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <nav class="nav container">
+      <a href="/" class="nav-brand">
+        <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Acmebot</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#services">Services</a>
+        <a href="#providers">DNS Providers</a>
+        <a href="#deploy">Deploy</a>
+        <a href="https://github.com/shibayan/keyvault-acmebot/wiki" class="nav-link-docs">Docs</a>
+        <a href="https://github.com/shibayan/keyvault-acmebot" class="nav-link-github" aria-label="GitHub">
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">v5 Generally Available</div>
+      <h1 class="hero-title">Automated SSL/TLS Certificate Management<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
+      <p class="hero-description">Securely manage ACME certificates with Azure Key Vault.<br class="hide-mobile"> Issue, renew, and deploy certificates across your Azure services with production-ready automation.</p>
+      <div class="hero-actions">
+        <a href="#deploy" class="btn btn-primary">Deploy to Azure</a>
+        <a href="https://github.com/shibayan/keyvault-acmebot/wiki/Getting-Started" class="btn btn-outline">Get Started</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value">5+</span>
+          <span class="hero-stat-label">Certificate Authorities</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">11+</span>
+          <span class="hero-stat-label">DNS Providers</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">7+</span>
+          <span class="hero-stat-label">Azure Services</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="section">
+    <div class="container">
+      <h2 class="section-title">Why Acmebot?</h2>
+      <p class="section-subtitle">Everything you need for automated certificate management on Azure</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <h3>Secure by Design</h3>
+          <p>Certificates are stored in Azure Key Vault with managed identity authentication. No secrets to manage.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+          </div>
+          <h3>Fully Automated</h3>
+          <p>Automatic certificate issuance and renewal. Set it up once and forget about certificate expiration.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          </div>
+          <h3>Dashboard</h3>
+          <p>Dedicated web-based dashboard for certificate management. View status, issue and revoke certificates with ease.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Multi-Domain Support</h3>
+          <p>Issue certificates for Zone Apex, Wildcard and SANs. Manage multiple domains from a single deployment.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </div>
+          <h3>Webhook Notifications</h3>
+          <p>Get notified via Slack, Microsoft Teams, or custom webhooks when certificates are issued or renewed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <h3>Multiple CAs</h3>
+          <p>Support for Let's Encrypt, ZeroSSL, Google Trust Services, SSL.com, Entrust, and more ACME v2 CAs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What's New in v5 -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">What's New in v5</h2>
+      <p class="section-subtitle">Production-ready on Azure Functions Flex Consumption for modern cloud workloads</p>
+      <div class="v5-grid">
+        <div class="v5-card">
+          <div class="v5-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <h3>Flex Consumption</h3>
+          <p>Built on Azure Functions Flex Consumption for cost-effective, event-driven scaling in production environments.</p>
+        </div>
+        <div class="v5-card">
+          <div class="v5-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Built-in VNET Integration</h3>
+          <p>Native virtual network integration support for secure private connectivity to internal Azure resources.</p>
+        </div>
+        <div class="v5-card">
+          <div class="v5-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          </div>
+          <h3>.NET 10</h3>
+          <p>Runs on .NET 10 for the latest platform improvements, performance updates, and long-term maintainability.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Supported Azure Services -->
+  <section id="services" class="section">
+    <div class="container">
+      <h2 class="section-title">Supported Azure Services</h2>
+      <p class="section-subtitle">Deploy certificates across your entire Azure infrastructure</p>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="18" r="1" fill="currentColor"/></svg>
+          </div>
+          <span>App Service</span>
+          <small>Web Apps / Functions / Containers</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          </div>
+          <span>Container Apps</span>
+          <small>Including custom DNS suffix</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <span>Front Door</span>
+          <small>Standard / Premium</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <span>Application Gateway</span>
+          <small>v2</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <span>API Management</span>
+          <small>Custom domains</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <span>SignalR Service</span>
+          <small>Premium tier</small>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          </div>
+          <span>Virtual Machines</span>
+          <small>Custom certificate deployment</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DNS Providers -->
+  <section id="providers" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">DNS Providers</h2>
+      <p class="section-subtitle">Automatic DNS-01 challenge validation with built-in integrations and custom extensibility</p>
+      <div class="providers-grid">
+        <div class="provider-card">Azure DNS</div>
+        <div class="provider-card">Azure Private DNS</div>
+        <div class="provider-card">Cloudflare</div>
+        <div class="provider-card">Amazon Route 53</div>
+        <div class="provider-card">Google Cloud DNS</div>
+        <div class="provider-card">GoDaddy</div>
+        <div class="provider-card">Akamai Edge DNS</div>
+        <div class="provider-card">DNS Made Easy</div>
+        <div class="provider-card">Gandi LiveDNS</div>
+        <div class="provider-card">TransIP DNS</div>
+        <div class="provider-card">Custom DNS</div>
+      </div>
+      <p class="providers-note">Need another provider? Custom DNS support lets you integrate virtually any DNS service through Azure Functions.</p>
+    </div>
+  </section>
+
+  <!-- Certificate Authorities -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Certificate Authorities</h2>
+      <p class="section-subtitle">Includes first-class support for popular ACME v2 Certificate Authorities</p>
+      <div class="ca-grid">
+        <div class="ca-card">
+          <strong>Let's Encrypt</strong>
+          <span class="ca-badge ca-free">Free</span>
+          <p>The most widely used free CA. No additional credentials required.</p>
+        </div>
+        <div class="ca-card">
+          <strong>ZeroSSL</strong>
+          <span class="ca-badge">EAB</span>
+          <p>Free SSL certificates with ACME support and REST API.</p>
+        </div>
+        <div class="ca-card">
+          <strong>Google Trust Services</strong>
+          <span class="ca-badge">EAB</span>
+          <p>Google's public Certificate Authority for trusted certificates.</p>
+        </div>
+        <div class="ca-card">
+          <strong>SSL.com</strong>
+          <span class="ca-badge">EAB</span>
+          <p>Commercial CA offering free 90-day certificates via ACME.</p>
+        </div>
+        <div class="ca-card">
+          <strong>Entrust</strong>
+          <span class="ca-badge">EAB</span>
+          <p>Enterprise-grade certificates with ACME automation support.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Deploy -->
+  <section id="deploy" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Deploy to Azure</h2>
+      <p class="section-subtitle">One-click deployment to your Azure subscription</p>
+      <div class="deploy-grid">
+        <div class="deploy-card deploy-card-primary">
+          <div class="deploy-version">v5<span class="deploy-tag">Recommended</span></div>
+          <p>Production-ready deployment on Azure Functions Flex Consumption with built-in VNET integration support.</p>
+          <ul class="deploy-features">
+            <li>Flex Consumption plan</li>
+            <li>Built-in VNET integration</li>
+            <li>.NET 10 runtime</li>
+          </ul>
+          <div class="deploy-buttons">
+            <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" class="btn btn-primary btn-deploy">Azure Public</a>
+            <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" class="btn btn-outline btn-deploy">Azure China</a>
+            <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" class="btn btn-outline btn-deploy">Azure Government</a>
+          </div>
+        </div>
+        <div class="deploy-card">
+          <div class="deploy-version">v4<span class="deploy-tag deploy-tag-legacy">Legacy</span></div>
+          <p>Maintenance path for existing deployments. Plan migration to v5 before .NET 8 support ends in November 2026.</p>
+          <ul class="deploy-features">
+            <li>Consumption plan (Y1)</li>
+            <li>.NET 8 runtime</li>
+          </ul>
+          <div class="deploy-buttons">
+            <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" class="btn btn-secondary btn-deploy">Azure Public</a>
+            <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" class="btn btn-outline btn-deploy">Azure China</a>
+            <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" class="btn btn-outline btn-deploy">Azure Government</a>
+          </div>
+        </div>
+      </div>
+      <div class="deploy-alt">
+        <p>Also available on <a href="https://registry.terraform.io/modules/shibayan/keyvault-acmebot/azurerm/latest">Terraform Registry</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Getting Started -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Get Started in Minutes</h2>
+      <p class="section-subtitle">Three simple steps to automated certificate management</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3>Deploy</h3>
+          <p>Choose the v5 Deploy to Azure option and configure your deployment with the Azure Portal wizard.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3>Configure DNS</h3>
+          <p>Grant the managed identity access to your DNS zone for automatic DNS-01 challenge validation.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3>Issue Certificates</h3>
+          <p>Use the built-in dashboard to issue your first certificate. Renewals happen automatically.</p>
+        </div>
+      </div>
+      <div class="steps-cta">
+        <a href="https://github.com/shibayan/keyvault-acmebot/wiki/Getting-Started" class="btn btn-primary">Read the Documentation</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sponsors -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Sponsors</h2>
+      <p class="section-subtitle">Thank you for your support of our development</p>
+      <div class="sponsors-grid">
+        <a href="https://zenarchitects.co.jp" class="sponsor-card">
+          <img src="images/zenarchitects.png" alt="ZEN Architects" loading="lazy">
+        </a>
+      </div>
+      <div class="sponsors-cta">
+        <p>Interested in supporting the project?</p>
+        <a href="https://github.com/sponsors/shibayan" class="btn btn-outline">Become a Sponsor</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Community -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Open Source</h2>
+      <p class="section-subtitle">Apache License 2.0 — free to use, forever</p>
+      <div class="community-grid">
+        <a href="https://github.com/shibayan/keyvault-acmebot" class="community-card">
+          <svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <strong>GitHub</strong>
+          <p>Source code, issues, and contributions</p>
+        </a>
+        <a href="https://github.com/shibayan/keyvault-acmebot/wiki" class="community-card">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+          <strong>Documentation</strong>
+          <p>Setup guides and configuration reference</p>
+        </a>
+        <a href="https://github.com/shibayan/keyvault-acmebot/discussions" class="community-card">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <strong>Discussions</strong>
+          <p>Questions, ideas, and community support</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <strong>Acmebot</strong>
+          <p>Automated ACME SSL/TLS certificate management for Microsoft Azure</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Project</h4>
+            <a href="https://github.com/shibayan/keyvault-acmebot">GitHub</a>
+            <a href="https://github.com/shibayan/keyvault-acmebot/releases">Releases</a>
+            <a href="https://github.com/shibayan/keyvault-acmebot/blob/master/LICENSE">License</a>
+          </div>
+          <div class="footer-col">
+            <h4>Resources</h4>
+            <a href="https://github.com/shibayan/keyvault-acmebot/wiki">Documentation</a>
+            <a href="https://github.com/shibayan/keyvault-acmebot/wiki/Getting-Started">Getting Started</a>
+            <a href="https://github.com/shibayan/keyvault-acmebot/discussions">Discussions</a>
+          </div>
+          <div class="footer-col">
+            <h4>Support</h4>
+            <a href="https://github.com/sponsors/shibayan">Sponsor</a>
+            <a href="https://github.com/polymind-inc">Commercial Support</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Acmebot Project. Licensed under Apache License 2.0.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile nav toggle
+    document.querySelector('.nav-toggle').addEventListener('click', function () {
+      document.querySelector('.nav-links').classList.toggle('active');
+      this.classList.toggle('active');
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.querySelector('.nav-links').classList.remove('active');
+          document.querySelector('.nav-toggle').classList.remove('active');
+        }
+      });
+    });
+
+    // Header scroll effect
+    var header = document.querySelector('.header');
+    window.addEventListener('scroll', function () {
+      if (window.scrollY > 10) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+  </script>
+</body>
+</html>
