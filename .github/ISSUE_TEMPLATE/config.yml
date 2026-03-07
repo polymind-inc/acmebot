@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Ask a question
-    url: https://github.com/shibayan/keyvault-acmebot/discussions/new
+    url: https://github.com/polymind-inc/acmebot/discussions/new
     about: Ask a question for this project

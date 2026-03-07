@@ -6,16 +6,16 @@
   (App Service / Container Apps / Application Gateway / Front Door / CDN / others)
 </p>
 <p align="center">
-  <a href="https://github.com/shibayan/keyvault-acmebot/actions/workflows/build.yml" rel="nofollow"><img src="https://github.com/shibayan/keyvault-acmebot/workflows/Build/badge.svg" alt="Build" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/releases/latest" rel="nofollow"><img src="https://badgen.net/github/release/shibayan/keyvault-acmebot" alt="Release" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/stargazers" rel="nofollow"><img src="https://badgen.net/github/stars/shibayan/keyvault-acmebot" alt="Stargazers" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/network/members" rel="nofollow"><img src="https://badgen.net/github/forks/shibayan/keyvault-acmebot" alt="Forks" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/blob/master/LICENSE"><img src="https://badgen.net/github/license/shibayan/keyvault-acmebot" alt="License" style="max-width: 100%;"></a>
-  <a href="https://registry.terraform.io/modules/shibayan/keyvault-acmebot/azurerm/latest" rel="nofollow"><img src="https://badgen.net/badge/terraform/registry/5c4ee5" alt="Terraform" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/actions/workflows/build.yml" rel="nofollow"><img src="https://github.com/polymind-inc/acmebot/workflows/Build/badge.svg" alt="Build" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/releases/latest" rel="nofollow"><img src="https://badgen.net/github/release/polymind-inc/acmebot" alt="Release" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/stargazers" rel="nofollow"><img src="https://badgen.net/github/stars/polymind-inc/acmebot" alt="Stargazers" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/network/members" rel="nofollow"><img src="https://badgen.net/github/forks/polymind-inc/acmebot" alt="Forks" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/blob/master/LICENSE"><img src="https://badgen.net/github/license/polymind-inc/acmebot" alt="License" style="max-width: 100%;"></a>
+  <a href="https://registry.terraform.io/modules/polymind-inc/acmebot/azurerm/latest" rel="nofollow"><img src="https://badgen.net/badge/terraform/registry/5c4ee5" alt="Terraform" style="max-width: 100%;"></a>
   <br>
-  <a href="https://github.com/shibayan/keyvault-acmebot/commits/master" rel="nofollow"><img src="https://badgen.net/github/last-commit/shibayan/keyvault-acmebot" alt="Last commit" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/wiki" rel="nofollow"><img src="https://badgen.net/badge/documentation/available/ff7733" alt="Documentation" style="max-width: 100%;"></a>
-  <a href="https://github.com/shibayan/keyvault-acmebot/discussions" rel="nofollow"><img src="https://badgen.net/badge/discussions/welcome/ff7733" alt="Discussions" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/commits/master" rel="nofollow"><img src="https://badgen.net/github/last-commit/polymind-inc/acmebot" alt="Last commit" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/wiki" rel="nofollow"><img src="https://badgen.net/badge/documentation/available/ff7733" alt="Documentation" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/discussions" rel="nofollow"><img src="https://badgen.net/badge/discussions/welcome/ff7733" alt="Discussions" style="max-width: 100%;"></a>
 </p>
 
 ## Motivation
@@ -60,7 +60,7 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 | Azure (Public) | Azure China | Azure Government |
 | :---: | :---: | :---: |
-| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
+| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
 
 ### v4
 
@@ -68,9 +68,9 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 | Azure (Public) | Azure China | Azure Government |
 | :---: | :---: | :---: |
-| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
+| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_v4.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
 
-For detailed setup instructions, see: [Getting Started](https://github.com/shibayan/keyvault-acmebot/wiki/Getting-Started)
+For detailed setup instructions, see: [Getting Started](https://github.com/polymind-inc/acmebot/wiki/Getting-Started)
 
 ## Sponsors
 
@@ -95,4 +95,4 @@ If you are interested in future commercial support, please reach out to [Polymin
 
 ## License
 
-This project is licensed under the [Apache License 2.0](https://github.com/shibayan/keyvault-acmebot/blob/master/LICENSE)
+This project is licensed under the [Apache License 2.0](https://github.com/polymind-inc/acmebot/blob/master/LICENSE)
