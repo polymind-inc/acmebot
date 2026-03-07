@@ -464,9 +464,10 @@ img {
   margin-bottom: 12px;
 }
 
-.service-icon svg {
-  width: 28px;
-  height: 28px;
+.service-icon svg,
+.service-icon img {
+  width: 36px;
+  height: 36px;
 }
 
 .service-card span {
