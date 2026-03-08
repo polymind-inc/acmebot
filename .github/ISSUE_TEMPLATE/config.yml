@@ -3,3 +3,6 @@ contact_links:
   - name: Ask a question
     url: https://github.com/polymind-inc/acmebot/discussions/new
     about: Ask a question for this project
+  - name: Report a security vulnerability
+    url: https://github.com/polymind-inc/acmebot/security/policy
+    about: Review the security policy before reporting a vulnerability

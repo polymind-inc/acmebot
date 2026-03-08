@@ -93,6 +93,13 @@ Acmebot remains fully open source and free to use under the Apache License 2.0.
 
 If you are interested in future commercial support, please reach out to [Polymind Inc.](https://github.com/polymind-inc)
 
+## Community
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Support](SUPPORT.md)
+- [Security Policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
 ## License
 
 This project is licensed under the [Apache License 2.0](https://github.com/polymind-inc/acmebot/blob/master/LICENSE)
