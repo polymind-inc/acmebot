@@ -1151,7 +1151,7 @@
               </div>
             </section>
             <footer class="modal-card-foot is-justify-content-flex-end">
-              <button class="button is-primary" @click="addCertificate" :class="{ 'is-loading': add.sending }">Add</button>
+              <button class="button is-primary" @click="addCertificate" :class="{ 'is-loading': add.sending }" :disabled="add.dnsNames.length === 0">Add</button>
               <button class="button" @click="add.modalActive = false" :disabled="add.sending">Cancel</button>
             </footer>
           </div>
