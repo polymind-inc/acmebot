@@ -1,0 +1,26 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request;Exception"
+      }
+    },
+    "logLevel": {
+      "Acmebot.App": "Warning"
+    }
+  },
+  "extensions": {
+    "durableTask": {
+      "useGracefulShutdown": true,
+      "useTablePartitionManagement": true
+    },
+    "http": {
+      "routePrefix": "",
+      "customHeaders": {
+        "Cache-Control": "no-store"
+      }
+    }
+  }
+}
