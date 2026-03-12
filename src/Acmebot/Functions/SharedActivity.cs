@@ -1,14 +1,12 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
 
+using Acmebot.Acme.Challenges;
+using Acmebot.Acme.Models;
 using Acmebot.Internal;
 using Acmebot.Models;
 using Acmebot.Options;
 using Acmebot.Providers;
-
-using ACMESharp.Authorizations;
-using ACMESharp.Protocol;
-using ACMESharp.Protocol.Resources;
 
 using Azure.Security.KeyVault.Certificates;
 
@@ -24,7 +22,7 @@ namespace Acmebot.Functions;
 
 public class SharedActivity(
     LookupClient lookupClient,
-    AcmeProtocolClientFactory acmeProtocolClientFactory,
+    AcmeClientFactory acmeClientFactory,
     IEnumerable<IDnsProvider> dnsProviders,
     CertificateClient certificateClient,
     WebhookInvoker webhookInvoker,
@@ -36,7 +34,8 @@ public class SharedActivity(
     [Function(nameof(GetRenewalCertificates))]
     public async Task<IReadOnlyList<CertificateItem>> GetRenewalCertificates([ActivityTrigger] object input)
     {
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeClient = acmeContext.Client;
 
         var certificateProperties = certificateClient.GetPropertiesOfCertificatesAsync();
 
@@ -56,13 +55,13 @@ public class SharedActivity(
             var certificate = await certificateClient.GetCertificateAsync(properties.Name);
 
             // ACME Renewal Information が有効な場合は優先して使う
-            if (acmeProtocolClient.Directory.RenewalInfo is not null)
+            if (acmeContext.Directory.RenewalInfo is not null)
             {
                 var certificateId = X509CertificateLoader.LoadCertificate(certificate.Value.Cer).GetCertificateId();
 
                 if (certificateId is not null)
                 {
-                    var renewalInfo = await acmeProtocolClient.GetRenewalInfoAsync(certificateId);
+                    var renewalInfo = (await acmeClient.GetRenewalInfoAsync(certificateId)).Resource;
 
                     // 推奨ウィンドウが始まった場合は更新する
                     if (renewalInfo.SuggestedWindow.Start < now)
@@ -136,17 +135,26 @@ public class SharedActivity(
     {
         var response = await certificateClient.GetCertificateAsync(certificateName);
 
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
-        await acmeProtocolClient.RevokeCertificateAsync(response.Value.Cer);
+        await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer);
     }
 
     [Function(nameof(Order))]
     public async Task<OrderDetails> Order([ActivityTrigger] IReadOnlyList<string> dnsNames)
     {
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
-        return await acmeProtocolClient.CreateOrderAsync(dnsNames, preferredProfile: _options.PreferredProfile);
+        var result = await acmeContext.Client.CreateOrderAsync(
+            acmeContext.Account,
+            dnsNames.Select(x => new AcmeIdentifier
+            {
+                Type = AcmeIdentifierTypes.Dns,
+                Value = x
+            }).ToArray(),
+            profile: _options.PreferredProfile);
+
+        return OrderDetails.FromResult(result);
     }
 
     [Function(nameof(Dns01Precondition))]
@@ -225,41 +233,42 @@ public class SharedActivity(
     }
 
     [Function(nameof(Dns01Authorization))]
-    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<string>) input)
+    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<Uri>) input)
     {
         var (dnsProviderName, dnsAlias, authorizationUrls) = input;
 
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeClient = acmeContext.Client;
 
         var challengeResults = new List<AcmeChallengeResult>();
 
         foreach (var authorizationUrl in authorizationUrls)
         {
             // Authorization の詳細を取得
-            var authorization = await acmeProtocolClient.GetAuthorizationDetailsAsync(authorizationUrl);
+            var authorization = (await acmeClient.GetAuthorizationAsync(acmeContext.Account, authorizationUrl)).Resource;
 
             // ignore authorizations that are already valid 
-            if (authorization.Status == "valid")
+            if (authorization.Status == AcmeAuthorizationStatuses.Valid)
             {
                 continue;
             }
 
             // DNS-01 Challenge の情報を拾う
-            var challenge = authorization.Challenges.FirstOrDefault<Challenge>(x => x.Type == "dns-01");
+            var challenge = authorization.Challenges.FirstOrDefault(x => x.Type == AcmeChallengeTypes.Dns01);
 
             if (challenge is null)
             {
                 throw new PreconditionException("DNS-01 cannot be used for domains for which a certificate has already been issued using HTTP-01.");
             }
 
-            var challengeValidationDetails = AuthorizationDecoder.ResolveChallengeForDns01(authorization, challenge, acmeProtocolClient.Signer);
+            var challengeInstruction = AcmeChallengeInstructions.CreateDns01(acmeContext.Account, authorization, challenge);
 
             // Challenge の情報を保存する
             challengeResults.Add(new AcmeChallengeResult
             {
-                Url = challenge.Url,
-                DnsRecordName = string.IsNullOrEmpty(dnsAlias) ? challengeValidationDetails.DnsRecordName : $"_acme-challenge.{dnsAlias}",
-                DnsRecordValue = challengeValidationDetails.DnsRecordValue
+                Url = challenge.Url.OriginalString,
+                DnsRecordName = string.IsNullOrEmpty(dnsAlias) ? challengeInstruction.RecordName.TrimEnd('.') : $"_acme-challenge.{dnsAlias}",
+                DnsRecordValue = challengeInstruction.RecordValue
             });
         }
 
@@ -332,12 +341,12 @@ public class SharedActivity(
     [Function(nameof(AnswerChallenges))]
     public async Task AnswerChallenges([ActivityTrigger] IReadOnlyList<AcmeChallengeResult> challengeResults)
     {
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         // Answer の準備が出来たことを通知
         foreach (var challengeResult in challengeResults)
         {
-            await acmeProtocolClient.AnswerChallengeAsync(challengeResult.Url);
+            await acmeContext.Client.AnswerChallengeAsync(acmeContext.Account, new Uri(challengeResult.Url));
         }
     }
 
@@ -346,19 +355,20 @@ public class SharedActivity(
     {
         var (orderDetails, challengeResults) = input;
 
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeClient = acmeContext.Client;
 
-        orderDetails = await acmeProtocolClient.GetOrderDetailsAsync(orderDetails.OrderUrl, orderDetails);
+        orderDetails = OrderDetails.FromResult(await acmeClient.GetOrderAsync(acmeContext.Account, orderDetails.OrderUrl), orderDetails.OrderUrl);
 
-        if (orderDetails.Payload.Status == "invalid")
+        if (orderDetails.Payload.Status == AcmeOrderStatuses.Invalid)
         {
-            var problems = new List<Problem>();
+            var problems = new List<AcmeProblemDetails>();
 
             foreach (var challengeResult in challengeResults)
             {
-                var challenge = await acmeProtocolClient.GetChallengeDetailsAsync(challengeResult.Url);
+                var challenge = (await acmeClient.GetChallengeAsync(acmeContext.Account, new Uri(challengeResult.Url))).Resource;
 
-                if (challenge.Status != "invalid" || challenge.Error is null)
+                if (challenge.Status != AcmeChallengeStatuses.Invalid || challenge.Error is null)
                 {
                     continue;
                 }
@@ -369,7 +379,7 @@ public class SharedActivity(
             }
 
             // 全てのエラーが dns 関係の場合は Orchestrator からリトライさせる
-            if (problems.All(x => x.Type == "urn:ietf:params:acme:error:dns"))
+            if (problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
             {
                 throw new RetriableOrchestratorException("ACME validation status is invalid, but retriable error. It will retry automatically.");
             }
@@ -378,7 +388,7 @@ public class SharedActivity(
             throw new InvalidOperationException($"ACME validation status is invalid. Required retry at first.\nLastError = {JsonConvert.SerializeObject(problems.Last())}");
         }
 
-        if (orderDetails.Payload.Status != "ready")
+        if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
         {
             // ready 以外の場合はリトライする
             throw new RetriableActivityException($"ACME validation status is {orderDetails.Payload.Status}. It will retry automatically.");
@@ -409,25 +419,30 @@ public class SharedActivity(
         }
 
         // Order の最終処理を実行する
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
-        return await acmeProtocolClient.FinalizeOrderAsync(orderDetails.Payload.Finalize, csr);
+        return OrderDetails.FromResult(
+            await acmeContext.Client.FinalizeOrderAsync(
+                acmeContext.Account,
+                orderDetails.Payload.Finalize ?? throw new InvalidOperationException("The ACME order does not include a finalize URL."),
+                csr),
+            orderDetails.OrderUrl);
     }
 
     [Function(nameof(CheckIsValid))]
     public async Task<OrderDetails> CheckIsValid([ActivityTrigger] OrderDetails orderDetails)
     {
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
-        orderDetails = await acmeProtocolClient.GetOrderDetailsAsync(orderDetails.OrderUrl, orderDetails);
+        orderDetails = OrderDetails.FromResult(await acmeContext.Client.GetOrderAsync(acmeContext.Account, orderDetails.OrderUrl), orderDetails.OrderUrl);
 
-        if (orderDetails.Payload.Status == "invalid")
+        if (orderDetails.Payload.Status == AcmeOrderStatuses.Invalid)
         {
             // invalid の場合は最初から実行が必要なので失敗させる
             throw new InvalidOperationException("Finalize request is invalid. Required retry at first.");
         }
 
-        if (orderDetails.Payload.Status != "valid")
+        if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
         {
             // valid 以外の場合はリトライする
             throw new RetriableActivityException($"Finalize request is {orderDetails.Payload.Status}. It will retry automatically.");
@@ -441,10 +456,10 @@ public class SharedActivity(
     {
         var (certificateName, orderDetails) = input;
 
-        var acmeProtocolClient = await acmeProtocolClientFactory.CreateClientAsync();
+        using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         // 証明書をダウンロードして Key Vault へ格納
-        var x509Certificates = await acmeProtocolClient.GetOrderCertificateAsync(orderDetails, _options.PreferredChain);
+        var x509Certificates = await acmeContext.Client.GetOrderCertificateAsync(acmeContext.Account, orderDetails, _options.PreferredChain);
 
         var mergeCertificateOptions = new MergeCertificateOptions(
             certificateName,

@@ -82,7 +82,7 @@ builder.Services.AddSingleton(provider =>
     return new CertificateClient(new Uri(options.Value.VaultBaseUrl), credential);
 });
 
-builder.Services.AddSingleton<AcmeProtocolClientFactory>();
+builder.Services.AddSingleton<AcmeClientFactory>();
 
 // Add Webhook invoker
 builder.Services.AddSingleton<WebhookInvoker>();
