@@ -1616,9 +1616,11 @@
             }
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.add.sending = false;
           }
 
-          this.add.sending = false;
           this.add.modalActive = false;
 
           await this.showNotify("The certificate was successfully issued.");
@@ -1655,9 +1657,11 @@
             }
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.details.sending = false;
           }
 
-          this.details.sending = false;
           this.details.modalActive = false;
 
           await this.showNotify("The certificate was successfully renewed.");
@@ -1673,9 +1677,11 @@
             await axios.post(`/api/certificate/${this.details.certificate.name}/revoke`);
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.details.sending = false;
           }
 
-          this.details.sending = false;
           this.details.modalActive = false;
 
           await this.showNotify("The certificate was successfully revoked.");
