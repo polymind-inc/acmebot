@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Acmebot.Acme\Acmebot.Acme.csproj" />
+    <ProjectReference Include="..\..\src\Acmebot.Acme\Acmebot.Acme.csproj" />
   </ItemGroup>
 
 </Project>
