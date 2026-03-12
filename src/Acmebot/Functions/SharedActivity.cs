@@ -226,7 +226,7 @@ public class SharedActivity(
             }
 
             // 単一の DNS Provider で構成されている場合は問題ない
-            dnsProvider = dnsProviders.First();
+            dnsProvider = foundDnsProviders[0];
         }
 
         return dnsProvider.Name;
@@ -379,7 +379,7 @@ public class SharedActivity(
             }
 
             // 全てのエラーが dns 関係の場合は Orchestrator からリトライさせる
-            if (problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
+            if (problems.Count > 0 && problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
             {
                 throw new RetriableOrchestratorException("ACME validation status is invalid, but retriable error. It will retry automatically.");
             }

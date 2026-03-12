@@ -43,7 +43,7 @@ internal class AccountKey
         {
             var rsa = RSA.Create();
 
-            if (KeyExport.TrimStart().StartsWith("<", StringComparison.Ordinal))
+            if (KeyExport.TrimStart().StartsWith('<'))
             {
                 rsa.FromXmlString(KeyExport);
             }
@@ -60,7 +60,7 @@ internal class AccountKey
 
     private bool IsLegacyEcExport()
     {
-        return KeyExport.TrimStart().StartsWith("{", StringComparison.Ordinal);
+        return KeyExport.TrimStart().StartsWith('{');
     }
 
     private void ImportLegacyEcKey(ECDsa ecdsa)
