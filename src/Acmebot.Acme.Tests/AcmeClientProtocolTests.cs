@@ -25,7 +25,7 @@ public sealed class AcmeClientProtocolTests
 
         AcmeTestSupport.EnqueueDirectory(handler);
 
-        _ = await client.GetDirectoryAsync();
+        _ = await client.GetDirectoryAsync(TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests);
         Assert.Equal("Acmebot.Acme.Tests/1.0", Assert.Single(request.Headers["User-Agent"]));
@@ -46,7 +46,7 @@ public sealed class AcmeClientProtocolTests
         AcmeTestSupport.EnqueueDirectory(handler, newNonce: newNonceUrl);
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: null));
 
-        var exception = await Assert.ThrowsAsync<AcmeProtocolException>(() => client.GetOrderAsync(AcmeTestSupport.CreateAccountHandle(signer), orderUrl));
+        var exception = await Assert.ThrowsAsync<AcmeProtocolException>(() => client.GetOrderAsync(AcmeTestSupport.CreateAccountHandle(signer), orderUrl, TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.OK, exception.StatusCode);
         Assert.Equal(newNonceUrl, exception.RequestUri);
@@ -67,13 +67,11 @@ public sealed class AcmeClientProtocolTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateJsonResponse(HttpStatusCode.Created, new { status = "valid" }, replayNonce: "bm9uY2Uy"));
 
-        var exception = await Assert.ThrowsAsync<AcmeProtocolException>(() => client.CreateAccountAsync(
-            signer,
-            new AcmeNewAccountRequest
-            {
-                Contact = ["mailto:admin@example.com"],
-                TermsOfServiceAgreed = true
-            }));
+        var exception = await Assert.ThrowsAsync<AcmeProtocolException>(() => client.CreateAccountAsync(signer, new AcmeNewAccountRequest
+        {
+            Contact = ["mailto:admin@example.com"],
+            TermsOfServiceAgreed = true
+        }, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.Created, exception.StatusCode);
         Assert.Equal(newAccountUrl, exception.RequestUri);
@@ -95,7 +93,7 @@ public sealed class AcmeClientProtocolTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, nonCertificatePem, AcmeTestSupport.PemCertificateChainMediaType, replayNonce: "bm9uY2Uy"));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl, TestContext.Current.CancellationToken));
 
         Assert.Equal("The PEM response contains data other than certificates.", exception.Message);
     }

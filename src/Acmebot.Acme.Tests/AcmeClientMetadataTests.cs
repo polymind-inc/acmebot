@@ -38,7 +38,7 @@ public sealed class AcmeClientMetadataTests
         var result = await client.CreateOrderAsync(account, new AcmeNewOrderRequest
         {
             Identifiers = [new AcmeIdentifier { Type = AcmeIdentifierTypes.Dns, Value = "example.com" }]
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.Equal(orderUrl, result.Location);
         Assert.Equal(TimeSpan.FromSeconds(30), result.RetryAfter);
@@ -82,7 +82,7 @@ public sealed class AcmeClientMetadataTests
         var exception = await Assert.ThrowsAsync<AcmeProtocolException>(() => client.CreateOrderAsync(account, new AcmeNewOrderRequest
         {
             Identifiers = [new AcmeIdentifier { Type = AcmeIdentifierTypes.Dns, Value = "example.com" }]
-        }));
+        }, TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.TooManyRequests, exception.StatusCode);
         Assert.Equal(newOrderUrl, exception.RequestUri);

@@ -36,7 +36,7 @@ public sealed class AcmeClientResourceTests
             orders = new[] { "https://example.com/acme/order/1" }
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.GetOrdersAsync(account);
+        var result = await client.GetOrdersAsync(account, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(ordersUrl, request.RequestUri);
@@ -68,7 +68,7 @@ public sealed class AcmeClientResourceTests
             replayNonce: "bm9uY2Uy",
             location: orderUrl));
 
-        var result = await client.CreateOrderAsync(account, requestModel);
+        var result = await client.CreateOrderAsync(account, requestModel, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -109,7 +109,7 @@ public sealed class AcmeClientResourceTests
                 Type = AcmeIdentifierTypes.Dns,
                 Value = "example.org"
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -139,7 +139,7 @@ public sealed class AcmeClientResourceTests
             challenges = Array.Empty<object>()
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.GetAuthorizationAsync(account, authorizationUrl);
+        var result = await client.GetAuthorizationAsync(account, authorizationUrl, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(authorizationUrl, request.RequestUri);
@@ -167,7 +167,7 @@ public sealed class AcmeClientResourceTests
             challenges = Array.Empty<object>()
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.DeactivateAuthorizationAsync(account, authorizationUrl);
+        var result = await client.DeactivateAuthorizationAsync(account, authorizationUrl, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -195,7 +195,7 @@ public sealed class AcmeClientResourceTests
             status = "valid"
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.GetChallengeAsync(account, challengeUrl);
+        var result = await client.GetChallengeAsync(account, challengeUrl, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(challengeUrl, request.RequestUri);
@@ -218,9 +218,9 @@ public sealed class AcmeClientResourceTests
                 ["tlsserver"] = "TLS Server"
             });
 
-        var profiles = await client.GetAdvertisedProfilesAsync();
-        var advertised = await client.IsProfileAdvertisedAsync("tlsserver");
-        await client.EnsureProfileIsAdvertisedAsync("tlsserver");
+        var profiles = await client.GetAdvertisedProfilesAsync(TestContext.Current.CancellationToken);
+        var advertised = await client.IsProfileAdvertisedAsync("tlsserver", TestContext.Current.CancellationToken);
+        await client.EnsureProfileIsAdvertisedAsync("tlsserver", TestContext.Current.CancellationToken);
 
         Assert.Equal("TLS Server", profiles["tlsserver"]);
         Assert.True(advertised);
@@ -237,7 +237,7 @@ public sealed class AcmeClientResourceTests
 
         AcmeTestSupport.EnqueueDirectory(handler, profiles: new Dictionary<string, string>());
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.EnsureProfileIsAdvertisedAsync("missing"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.EnsureProfileIsAdvertisedAsync("missing", TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the 'missing' profile.", exception.Message);
     }
@@ -263,7 +263,7 @@ public sealed class AcmeClientResourceTests
             }
         }));
 
-        _ = await client.GetRenewalInfoAsync(certificate);
+        _ = await client.GetRenewalInfoAsync(certificate, TestContext.Current.CancellationToken);
 
         Assert.Single(handler.Requests, x => x.RequestUri == new Uri($"{renewalInfoUrl}/{expectedIdentifier}"));
     }

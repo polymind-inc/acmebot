@@ -27,8 +27,8 @@ public sealed class AcmeClientTests
                 ["tlsserver"] = "TLS Server"
             });
 
-        var first = await client.GetDirectoryAsync();
-        var second = await client.GetDirectoryAsync();
+        var first = await client.GetDirectoryAsync(TestContext.Current.CancellationToken);
+        var second = await client.GetDirectoryAsync(TestContext.Current.CancellationToken);
 
         Assert.Same(first, second);
         Assert.Equal("TLS Server", first.Metadata?.Profiles["tlsserver"]);
@@ -58,19 +58,16 @@ public sealed class AcmeClientTests
             replayNonce: "bm9uY2Uy",
             location: accountUrl));
 
-        var result = await client.CreateAccountAsync(
-            signer,
-            new AcmeNewAccountRequest
-            {
-                Contact = ["mailto:admin@example.com"],
-                TermsOfServiceAgreed = true
-            },
-            new AcmeExternalAccountBindingOptions
-            {
-                KeyIdentifier = "kid-1",
-                HmacKey = "secret-key"u8.ToArray(),
-                Algorithm = "HS256"
-            });
+        var result = await client.CreateAccountAsync(signer, new AcmeNewAccountRequest
+        {
+            Contact = ["mailto:admin@example.com"],
+            TermsOfServiceAgreed = true
+        }, new AcmeExternalAccountBindingOptions
+        {
+            KeyIdentifier = "kid-1",
+            HmacKey = "secret-key"u8.ToArray(),
+            Algorithm = "HS256"
+        }, TestContext.Current.CancellationToken);
 
         var accountRequest = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = accountRequest.GetPayloadJson();
@@ -103,7 +100,7 @@ public sealed class AcmeClientTests
             replayNonce: "bm9uY2Uy",
             location: accountUrl));
 
-        var result = await client.FindAccountAsync(signer);
+        var result = await client.FindAccountAsync(signer, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -129,7 +126,7 @@ public sealed class AcmeClientTests
             contact = new[] { "mailto:updated@example.com" }
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.GetAccountAsync(account);
+        var result = await client.GetAccountAsync(account, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(account.AccountUrl, request.RequestUri);
@@ -155,7 +152,7 @@ public sealed class AcmeClientTests
             contact = new[] { "mailto:new@example.com" }
         }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.UpdateAccountAsync(account, new AcmeUpdateAccountRequest { Contact = ["mailto:new@example.com"] });
+        var result = await client.UpdateAccountAsync(account, new AcmeUpdateAccountRequest { Contact = ["mailto:new@example.com"] }, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -179,7 +176,7 @@ public sealed class AcmeClientTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateJsonResponse(HttpStatusCode.OK, new { status = "deactivated" }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.DeactivateAccountAsync(account);
+        var result = await client.DeactivateAccountAsync(account, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -203,14 +200,14 @@ public sealed class AcmeClientTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: "application/json", replayNonce: "bm9uY2Uy"));
 
-        var result = await client.ChangeAccountKeyAsync(account, newSigner);
+        var result = await client.ChangeAccountKeyAsync(account, newSigner, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var outerProtectedHeader = request.GetProtectedHeaderJson();
         using var outerPayload = request.GetPayloadJson();
         var innerJws = JsonSerializer.Deserialize<AcmeSignedMessage>(outerPayload.RootElement.GetRawText());
         Assert.NotNull(innerJws);
-        using var innerProtectedHeader = JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(innerJws!.Protected));
+        using var innerProtectedHeader = JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(innerJws.Protected));
         using var innerPayload = JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(innerJws.Payload));
 
         Assert.Equal(keyChangeUrl, request.RequestUri);
@@ -261,7 +258,8 @@ public sealed class AcmeClientTests
             profile: "tlsserver",
             replaces: "old-cert",
             notBefore: notBefore,
-            notAfter: notAfter);
+            notAfter: notAfter,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -290,7 +288,7 @@ public sealed class AcmeClientTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateJsonResponse(HttpStatusCode.OK, new { status = "processing" }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.FinalizeOrderAsync(account, finalizeUrl, csr);
+        var result = await client.FinalizeOrderAsync(account, finalizeUrl, csr, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -313,7 +311,7 @@ public sealed class AcmeClientTests
         AcmeTestSupport.EnqueueNonce(handler);
         handler.Enqueue(_ => AcmeTestSupport.CreateJsonResponse(HttpStatusCode.OK, new { type = "http-01", url = challengeUrl, status = "pending" }, replayNonce: "bm9uY2Uy"));
 
-        var result = await client.AnswerChallengeAsync(account, challengeUrl);
+        var result = await client.AnswerChallengeAsync(account, challengeUrl, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -344,7 +342,7 @@ public sealed class AcmeClientTests
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: null, replayNonce: "bm9uY2Ux"));
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: "application/json", replayNonce: "bm9uY2Uy"));
 
-        await client.RevokeCertificateAsync(account, certificateDer, reason: 1);
+        await client.RevokeCertificateAsync(account, certificateDer, reason: 1, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = request.GetPayloadJson();
@@ -375,7 +373,7 @@ public sealed class AcmeClientTests
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: null, replayNonce: "bm9uY2Ux"));
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, string.Empty, contentType: "application/json", replayNonce: "bm9uY2Uy"));
 
-        await client.RevokeCertificateAsync(certificateSigner, certificateDer, reason: 0);
+        await client.RevokeCertificateAsync(certificateSigner, certificateDer, reason: 0, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var protectedHeader = request.GetProtectedHeaderJson();
@@ -420,7 +418,7 @@ public sealed class AcmeClientTests
             },
             replayNonce: "bm9uY2Uz"));
 
-        var result = await client.GetOrderAsync(AcmeTestSupport.CreateAccountHandle(signer), orderUrl);
+        var result = await client.GetOrderAsync(AcmeTestSupport.CreateAccountHandle(signer), orderUrl, TestContext.Current.CancellationToken);
 
         var postRequests = handler.Requests.Where(x => x.Method == HttpMethod.Post).ToArray();
         Assert.Equal(2, postRequests.Length);
@@ -453,7 +451,7 @@ public sealed class AcmeClientTests
             }
         }));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetRenewalInfoAsync(certificateIdentifier));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetRenewalInfoAsync(certificateIdentifier, TestContext.Current.CancellationToken));
 
         var renewalRequest = Assert.Single(handler.Requests, x => x.RequestUri == new Uri($"{renewalInfoUrl}/{certificateIdentifier}"));
         Assert.Equal(["application/json"], renewalRequest.AcceptMediaTypes);
@@ -488,7 +486,7 @@ public sealed class AcmeClientTests
             return response;
         });
 
-        var result = await client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl);
+        var result = await client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl, TestContext.Current.CancellationToken);
 
         var certificateRequest = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(certificateUrl, certificateRequest.RequestUri);
@@ -517,7 +515,7 @@ public sealed class AcmeClientTests
         handler.Enqueue(_ => AcmeTestSupport.CreateResponse(HttpStatusCode.OK, certificate.ExportCertificatePem(), "application/pkix-cert", replayNonce: "bm9uY2Uy"));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl));
+            () => client.DownloadCertificateAsync(AcmeTestSupport.CreateAccountHandle(signer), certificateUrl, TestContext.Current.CancellationToken));
 
         Assert.Equal(
             $"The ACME server returned 'application/pkix-cert' instead of '{AcmeTestSupport.PemCertificateChainMediaType}' for the certificate chain.",

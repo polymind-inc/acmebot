@@ -16,7 +16,7 @@ public sealed class AcmeClientErrorTests
         using var client = new AcmeClient(httpClient, directoryUrl);
         var account = AcmeTestSupport.CreateAccountHandle(signer);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetOrdersAsync(account));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetOrdersAsync(account, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal("The account resource does not include an orders URL.", exception.Message);
         Assert.Empty(handler.Requests);
@@ -35,7 +35,7 @@ public sealed class AcmeClientErrorTests
 
         AcmeTestSupport.EnqueueDirectory(handler);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.ChangeAccountKeyAsync(account, newSigner));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.ChangeAccountKeyAsync(account, newSigner, TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the keyChange resource.", exception.Message);
         Assert.Single(handler.Requests, x => x.Method == HttpMethod.Get);
@@ -62,7 +62,8 @@ public sealed class AcmeClientErrorTests
                     Type = AcmeIdentifierTypes.Dns,
                     Value = "example.org"
                 }
-            }));
+            },
+            TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the newAuthz resource.", exception.Message);
         Assert.Single(handler.Requests, x => x.Method == HttpMethod.Get);
@@ -78,7 +79,7 @@ public sealed class AcmeClientErrorTests
 
         AcmeTestSupport.EnqueueDirectory(handler);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetRenewalInfoAsync("AQID.f4CB"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetRenewalInfoAsync("AQID.f4CB", TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the renewalInfo resource.", exception.Message);
         Assert.Single(handler.Requests, x => x.Method == HttpMethod.Get);
@@ -96,7 +97,7 @@ public sealed class AcmeClientErrorTests
 
         AcmeTestSupport.EnqueueDirectory(handler);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.RevokeCertificateAsync(account, new byte[] { 1, 2, 3, 4 }));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.RevokeCertificateAsync(account, new byte[] { 1, 2, 3, 4 }, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the revokeCert resource.", exception.Message);
         Assert.Single(handler.Requests, x => x.Method == HttpMethod.Get);
@@ -113,7 +114,7 @@ public sealed class AcmeClientErrorTests
 
         AcmeTestSupport.EnqueueDirectory(handler);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.RevokeCertificateAsync(certificateSigner, new byte[] { 5, 6, 7, 8 }));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.RevokeCertificateAsync(certificateSigner, new byte[] { 5, 6, 7, 8 }, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal("The ACME server does not advertise the revokeCert resource.", exception.Message);
         Assert.Single(handler.Requests, x => x.Method == HttpMethod.Get);
