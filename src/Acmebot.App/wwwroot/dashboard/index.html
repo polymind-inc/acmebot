@@ -1151,7 +1151,7 @@
               </div>
             </section>
             <footer class="modal-card-foot is-justify-content-flex-end">
-              <button class="button is-primary" @click="addCertificate" :class="{ 'is-loading': add.sending }">Add</button>
+              <button class="button is-primary" @click="addCertificate" :class="{ 'is-loading': add.sending }" :disabled="add.dnsNames.length === 0">Add</button>
               <button class="button" @click="add.modalActive = false" :disabled="add.sending">Cancel</button>
             </footer>
           </div>
@@ -1616,9 +1616,11 @@
             }
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.add.sending = false;
           }
 
-          this.add.sending = false;
           this.add.modalActive = false;
 
           await this.showNotify("The certificate was successfully issued.");
@@ -1655,9 +1657,11 @@
             }
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.details.sending = false;
           }
 
-          this.details.sending = false;
           this.details.modalActive = false;
 
           await this.showNotify("The certificate was successfully renewed.");
@@ -1673,9 +1677,11 @@
             await axios.post(`/api/certificate/${this.details.certificate.name}/revoke`);
           } catch (error) {
             this.handleHttpError(error);
+            return;
+          } finally {
+            this.details.sending = false;
           }
 
-          this.details.sending = false;
           this.details.modalActive = false;
 
           await this.showNotify("The certificate was successfully revoked.");
