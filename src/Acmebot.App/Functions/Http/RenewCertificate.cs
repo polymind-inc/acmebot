@@ -27,7 +27,7 @@ public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, 
         // 証明書の更新処理を開始
         var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
 
-        await context.CallSubOrchestratorAsync(nameof(SharedOrchestrator.IssueCertificate), certificatePolicyItem);
+        await context.CallSubOrchestratorAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
     }
 
     [Function($"{nameof(RenewCertificate)}_{nameof(HttpStart)}")]

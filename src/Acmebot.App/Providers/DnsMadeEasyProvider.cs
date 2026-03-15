@@ -72,7 +72,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
             var domains = await response.Content.ReadAsAsync<ListDomainsResult>();
 
-            return domains.Domains;
+            return domains?.Domains ?? [];
         }
 
         public async Task<IReadOnlyList<DnsEntry>> ListRecordsAsync(string zoneId)
@@ -83,7 +83,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
             var entries = await response.Content.ReadAsAsync<ListDnsEntriesResponse>();
 
-            return entries.DnsEntries;
+            return entries?.DnsEntries ?? [];
         }
 
         public async Task DeleteRecordAsync(string zoneId, DnsEntry entry)

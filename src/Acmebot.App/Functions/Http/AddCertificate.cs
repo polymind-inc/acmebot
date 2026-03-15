@@ -43,7 +43,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, IL
         }
 
         // Function input comes from the request content.
-        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(SharedOrchestrator.IssueCertificate), certificatePolicyItem);
+        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
 
         LogOrchestrationStarted(logger, certificatePolicyItem.CertificateName, instanceId);
 

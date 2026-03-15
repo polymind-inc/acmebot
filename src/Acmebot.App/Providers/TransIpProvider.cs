@@ -82,7 +82,7 @@ public class TransIpProvider : IDnsProvider
         private readonly string _customerName;
         private readonly CryptographyClient _cryptoClient;
 
-        private TransIpToken _token;
+        private TransIpToken? _token;
 
         public async Task<IReadOnlyList<Domain>> ListZonesAsync()
         {
@@ -94,7 +94,7 @@ public class TransIpProvider : IDnsProvider
 
             var domains = await response.Content.ReadAsAsync<ListDomainsResult>();
 
-            return domains.Domains;
+            return domains?.Domains ?? [];
         }
 
         public async Task<IReadOnlyList<DnsEntry>> ListRecordsAsync(string zoneName)
@@ -107,7 +107,7 @@ public class TransIpProvider : IDnsProvider
 
             var entries = await response.Content.ReadAsAsync<ListDnsEntriesResponse>();
 
-            return entries.DnsEntries;
+            return entries?.DnsEntries ?? [];
         }
 
         public async Task DeleteRecordAsync(string zoneName, DnsEntry entry)

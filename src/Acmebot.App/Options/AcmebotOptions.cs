@@ -44,8 +44,6 @@ public class AcmebotOptions
 
     public DnsMadeEasyOptions? DnsMadeEasy { get; set; }
 
-    public GandiOptions? Gandi { get; set; }
-
     public GandiLiveDnsOptions? GandiLiveDns { get; set; }
 
     public GoDaddyOptions? GoDaddy { get; set; }

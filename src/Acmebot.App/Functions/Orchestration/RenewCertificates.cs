@@ -38,7 +38,7 @@ public partial class RenewCertificates(ILogger<RenewCertificates> logger)
                 // 証明書の更新処理を開始
                 var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificate.Name);
 
-                await context.CallSubOrchestratorAsync(nameof(SharedOrchestrator.IssueCertificate), certificatePolicyItem, TaskOptions.FromRetryPolicy(_retryOptions));
+                await context.CallSubOrchestratorAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem, TaskOptions.FromRetryPolicy(_retryOptions));
             }
             catch (Exception ex)
             {

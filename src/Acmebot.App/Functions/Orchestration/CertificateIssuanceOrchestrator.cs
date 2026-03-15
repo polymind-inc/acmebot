@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Orchestration;
 
-public partial class SharedOrchestrator
+public partial class CertificateIssuanceOrchestrator
 {
     [Function(nameof(IssueCertificate))]
     public async Task IssueCertificate([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var logger = context.CreateReplaySafeLogger(nameof(SharedOrchestrator));
+        var logger = context.CreateReplaySafeLogger<CertificateIssuanceOrchestrator>();
         var certificatePolicyItem = context.GetInput<CertificatePolicyItem>();
 
         if (certificatePolicyItem is null)

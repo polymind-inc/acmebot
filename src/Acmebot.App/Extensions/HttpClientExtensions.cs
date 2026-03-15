@@ -5,23 +5,23 @@ namespace Acmebot.App.Extensions;
 
 internal static class HttpClientExtensions
 {
-    public static Task<HttpResponseMessage> PostAsync<T>(this HttpClient client, Uri requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
-
-    public static Task<HttpResponseMessage> PostAsync<T>(this HttpClient client, string requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
-
-    public static Task<HttpResponseMessage> PutAsync<T>(this HttpClient client, string requestUri, T value) => client.PutAsync(requestUri, SerializeToJson(value));
-
-    public static Task<HttpResponseMessage> PatchAsync<T>(this HttpClient client, string requestUri, T value) => client.PatchAsync(requestUri, SerializeToJson(value));
-
-    public static Task<HttpResponseMessage> DeleteAsync<T>(this HttpClient client, string requestUri, T value)
+    extension(HttpClient client)
     {
-        var request = new HttpRequestMessage(HttpMethod.Delete, requestUri)
-        {
-            Content = SerializeToJson(value)
-        };
+        public Task<HttpResponseMessage> PostAsync<T>(Uri requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
+        public Task<HttpResponseMessage> PostAsync<T>(string requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
+        public Task<HttpResponseMessage> PutAsync<T>(string requestUri, T value) => client.PutAsync(requestUri, SerializeToJson(value));
+        public Task<HttpResponseMessage> PatchAsync<T>(string requestUri, T value) => client.PatchAsync(requestUri, SerializeToJson(value));
 
-        return client.SendAsync(request);
+        public Task<HttpResponseMessage> DeleteAsync<T>(string requestUri, T value)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, requestUri)
+            {
+                Content = SerializeToJson(value)
+            };
+
+            return client.SendAsync(request);
+        }
     }
 
-    private static HttpContent SerializeToJson<T>(T value) => new StringContent(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json");
+    private static StringContent SerializeToJson<T>(T value) => new(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json");
 }

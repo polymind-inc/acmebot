@@ -1,4 +1,6 @@
-﻿using Acmebot.App.Extensions;
+﻿using System.Net;
+
+using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 using Microsoft.Extensions.Logging;
@@ -44,5 +46,5 @@ public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder
     }
 
     [LoggerMessage(LogLevel.Warning, "Webhook delivery failed. StatusCode: {ResponseStatusCode}. ResponseBody: {Reason}")]
-    private static partial void LogFailedInvokeWebhook(ILogger logger, System.Net.HttpStatusCode responseStatusCode, string reason);
+    private static partial void LogFailedInvokeWebhook(ILogger logger, HttpStatusCode responseStatusCode, string reason);
 }
