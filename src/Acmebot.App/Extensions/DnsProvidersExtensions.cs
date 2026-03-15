@@ -4,15 +4,19 @@ namespace Acmebot.App.Extensions;
 
 internal static class DnsProvidersExtensions
 {
-    public static async Task<IReadOnlyList<(string, IReadOnlyList<DnsZone>)>> ListAllZonesAsync(this IEnumerable<IDnsProvider> dnsProviders)
+    public static async Task<IReadOnlyList<(string, IReadOnlyList<DnsZone>?)>> ListAllZonesAsync(this IEnumerable<IDnsProvider> dnsProviders, CancellationToken cancellationToken = default)
     {
-        async Task<(string, IReadOnlyList<DnsZone>)> ListDnsZones(IDnsProvider dnsProvider)
+        async Task<(string, IReadOnlyList<DnsZone>?)> ListDnsZones(IDnsProvider dnsProvider)
         {
             try
             {
-                var dnsZones = await dnsProvider.ListZonesAsync();
+                var dnsZones = await dnsProvider.ListZonesAsync(cancellationToken);
 
                 return (dnsProvider.Name, dnsZones);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch
             {
@@ -25,7 +29,7 @@ internal static class DnsProvidersExtensions
         return zones;
     }
 
-    public static async Task<IReadOnlyList<DnsZone>> ListZonesAsync(this IEnumerable<IDnsProvider> dnsProviders, string dnsProviderName)
+    public static async Task<IReadOnlyList<DnsZone>> ListZonesAsync(this IEnumerable<IDnsProvider> dnsProviders, string dnsProviderName, CancellationToken cancellationToken = default)
     {
         var dnsProvider = dnsProviders.FirstOrDefault(x => x.Name == dnsProviderName);
 
@@ -34,16 +38,16 @@ internal static class DnsProvidersExtensions
             return [];
         }
 
-        var dnsZones = await dnsProvider.ListZonesAsync();
+        var dnsZones = await dnsProvider.ListZonesAsync(cancellationToken);
 
         return dnsZones;
     }
 
-    public static async Task<IReadOnlyList<DnsZone>> FlattenAllZonesAsync(this IEnumerable<IDnsProvider> dnsProviders)
+    public static async Task<IReadOnlyList<DnsZone>> FlattenAllZonesAsync(this IEnumerable<IDnsProvider> dnsProviders, CancellationToken cancellationToken = default)
     {
-        var zones = await dnsProviders.ListAllZonesAsync();
+        var zones = await dnsProviders.ListAllZonesAsync(cancellationToken);
 
-        return zones.Where(x => x.Item2 is not null).SelectMany(x => x.Item2).ToArray();
+        return zones.Where(x => x.Item2 is not null).SelectMany(x => x.Item2!).ToArray();
     }
 
     public static void TryAdd<TOption>(this IList<IDnsProvider> dnsProviders, TOption? options, Func<TOption, IDnsProvider> factory)

@@ -2,7 +2,7 @@
 
 public class TransIpOptions
 {
-    public string? CustomerName { get; set; }
+    public required string CustomerName { get; set; }
 
-    public string? PrivateKeyName { get; set; }
+    public required string PrivateKeyName { get; set; }
 }

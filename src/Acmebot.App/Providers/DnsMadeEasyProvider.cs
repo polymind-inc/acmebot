@@ -1,10 +1,10 @@
-﻿using System.Globalization;
+﻿using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
@@ -15,38 +15,46 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
     public string Name => "DNS Made Easy";
 
-    public int PropagationSeconds => 30;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(30);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _client.ListZonesAsync();
+        var zones = await _client.ListDomainsAsync(cancellationToken);
 
         return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name }).ToArray();
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
         foreach (var value in values)
         {
-            await _client.AddRecordAsync(zone.Id, new DnsEntry
+            var record = new TxtRecordParam
             {
                 Name = relativeRecordName,
-                Type = "TXT",
-                Expire = 60,
-                Content = value
-            });
+                Ttl = 60,
+                Value = value
+            };
+
+            await _client.AddRecordAsync(zone.Id, record, cancellationToken);
         }
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var records = await _client.ListRecordsAsync(zone.Id);
+        var records = await _client.ListRecordsAsync(zone.Id, cancellationToken);
 
         var recordsToDelete = records.Where(x => x.Name == relativeRecordName && x.Type == "TXT");
 
-        foreach (var record in recordsToDelete)
+        try
         {
-            await _client.DeleteRecordAsync(zone.Id, record);
+            foreach (var record in recordsToDelete)
+            {
+                await _client.DeleteRecordAsync(zone.Id, record.Id, cancellationToken);
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // ignored
         }
     }
 
@@ -64,91 +72,51 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<Domain>> ListZonesAsync()
+        public async Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync("managed");
+            var result = await _httpClient.GetFromJsonAsync<PaginationArray<Domain>>("managed", cancellationToken);
 
-            response.EnsureSuccessStatusCode();
-
-            var domains = await response.Content.ReadAsAsync<ListDomainsResult>();
-
-            return domains?.Domains ?? [];
+            return result?.Data ?? [];
         }
 
-        public async Task<IReadOnlyList<DnsEntry>> ListRecordsAsync(string zoneId)
+        public async Task<IReadOnlyList<TxtRecord>> ListRecordsAsync(string zoneId, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync($"managed/{zoneId}/records");
+            var entries = await _httpClient.GetFromJsonAsync<PaginationArray<TxtRecord>>($"managed/{zoneId}/records", cancellationToken);
 
-            response.EnsureSuccessStatusCode();
-
-            var entries = await response.Content.ReadAsAsync<ListDnsEntriesResponse>();
-
-            return entries?.DnsEntries ?? [];
+            return entries?.Data ?? [];
         }
 
-        public async Task DeleteRecordAsync(string zoneId, DnsEntry entry)
+        public async Task DeleteRecordAsync(string zoneId, string recordId, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"managed/{zoneId}/records/{entry.Id}");
+            var response = await _httpClient.DeleteAsync($"managed/{zoneId}/records/{recordId}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task AddRecordAsync(string zoneId, DnsEntry entry)
+        public async Task AddRecordAsync(string zoneId, TxtRecordParam txtRecord, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsync($"managed/{zoneId}/records", entry);
+            var response = await _httpClient.PostAsJsonAsync($"managed/{zoneId}/records", txtRecord, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        private sealed class ApiKeyHandler : DelegatingHandler
+        private sealed class ApiKeyHandler(string apiKey, string secretKey, HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
         {
-            private string ApiKey { get; }
+            private string ApiKey { get; } = apiKey;
 
             // ReSharper disable once InconsistentNaming
-            private HMACSHA1 HMAC { get; }
-
-            public ApiKeyHandler(string apiKey, string secretKey, HttpMessageHandler innerHandler)
-                : base(innerHandler)
-            {
-                ArgumentNullException.ThrowIfNull(apiKey);
-                ArgumentNullException.ThrowIfNull(secretKey);
-                ArgumentNullException.ThrowIfNull(innerHandler);
-
-                if (string.IsNullOrWhiteSpace(apiKey))
-                {
-                    throw new ArgumentException("A DNS Made Easy API key must be provided.", nameof(apiKey));
-                }
-
-                if (string.IsNullOrWhiteSpace(secretKey))
-                {
-                    throw new ArgumentException("A DNS Made Easy secret key must be provided.", nameof(secretKey));
-                }
-
-                ApiKey = apiKey;
-
-#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - external specification
-                HMAC = new HMACSHA1(Encoding.UTF8.GetBytes(secretKey));
-#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
-            }
+            private HMACSHA1 HMAC { get; } = new(Encoding.UTF8.GetBytes(secretKey));
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                var currentTimeStr = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-                var hmac = ComputeHash(currentTimeStr);
+                var requestDate = DateTimeOffset.UtcNow.ToString("r");
+                var hmacHash = Convert.ToHexStringLower(HMAC.ComputeHash(Encoding.UTF8.GetBytes(requestDate)));
 
-                request.Headers.Add("x-dnsme-apikey", ApiKey);
-                request.Headers.Add("x-dnsme-requestdate", currentTimeStr);
-                request.Headers.Add("x-dnsme-hmac", hmac);
+                request.Headers.Add("x-dnsme-apiKey", ApiKey);
+                request.Headers.Add("x-dnsme-requestDate", requestDate);
+                request.Headers.Add("x-dnsme-hmac", hmacHash);
 
                 return base.SendAsync(request, cancellationToken);
-            }
-
-            private string ComputeHash(string s)
-            {
-                lock (HMAC)
-                {
-                    return BitConverter.ToString(HMAC.ComputeHash(Encoding.UTF8.GetBytes(s))).Replace("-", "").ToLowerInvariant();
-                }
             }
 
             protected override void Dispose(bool disposing)
@@ -163,42 +131,42 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
         }
     }
 
-    private class ListDomainsResult
+    internal class PaginationArray<T>
     {
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
         [JsonPropertyName("data")]
-        public IReadOnlyList<Domain>? Domains { get; set; }
+        public T[]? Data { get; set; }
     }
 
-    private class Domain
+    internal class Domain
     {
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
     }
 
-    private class ListDnsEntriesResponse
+    internal class TxtRecordParam
     {
-        [JsonPropertyName("data")]
-        public IReadOnlyList<DnsEntry>? DnsEntries { get; set; }
-    }
-
-    private class DnsEntry
-    {
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("ttl")]
-        public int Expire { get; set; }
+        public int Ttl { get; set; }
 
         [JsonPropertyName("type")]
-        public string? Type { get; set; }
+        public string Type => "TXT";
 
         [JsonPropertyName("value")]
-        public string? Content { get; set; }
+        public string? Value { get; set; }
+    }
+
+    internal class TxtRecord : TxtRecordParam
+    {
+        [JsonPropertyName("id")]
+        public required string Id { get; set; }
     }
 }

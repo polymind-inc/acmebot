@@ -5,6 +5,7 @@ namespace Acmebot.App.Providers;
 public class DnsZone(IDnsProvider dnsProvider) : IEquatable<DnsZone>
 {
     private static readonly IdnMapping s_idnMapping = new();
+    private static readonly StringComparer s_stringComparer = StringComparer.Ordinal;
 
     public required string Id { get; init; }
 
@@ -25,10 +26,10 @@ public class DnsZone(IDnsProvider dnsProvider) : IEquatable<DnsZone>
             return false;
         }
 
-        return Id == other.Id;
+        return s_stringComparer.Equals(Id, other.Id) && s_stringComparer.Equals(DnsProvider.Name, other.DnsProvider.Name);
     }
 
     public override bool Equals(object? obj) => Equals(obj as DnsZone);
 
-    public override int GetHashCode() => Id.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(s_stringComparer.GetHashCode(Id), s_stringComparer.GetHashCode(DnsProvider.Name));
 }

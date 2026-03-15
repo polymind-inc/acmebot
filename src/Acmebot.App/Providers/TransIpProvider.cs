@@ -1,6 +1,8 @@
 ﻿using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Acmebot.App.Extensions;
@@ -8,9 +10,6 @@ using Acmebot.App.Options;
 
 using Azure.Core;
 using Azure.Security.KeyVault.Keys.Cryptography;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Acmebot.App.Providers;
 
@@ -28,38 +27,40 @@ public class TransIpProvider : IDnsProvider
 
     public string Name => "TransIP DNS";
 
-    public int PropagationSeconds => 360;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(360);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _transIpClient.ListZonesAsync();
+        var zones = await _transIpClient.ListDomainsAsync(cancellationToken);
 
         return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.Name }).ToArray();
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
         foreach (var value in values)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             await _transIpClient.AddRecordAsync(zone.Name, new DnsEntry
             {
                 Name = relativeRecordName,
                 Type = "TXT",
                 Expire = 60,
                 Content = value
-            });
+            }, cancellationToken);
         }
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var records = await _transIpClient.ListRecordsAsync(zone.Name);
+        var records = await _transIpClient.ListRecordsAsync(zone.Name, cancellationToken);
 
         var recordsToDelete = records.Where(r => r.Name == relativeRecordName && r.Type == "TXT");
 
         foreach (var record in recordsToDelete)
         {
-            await _transIpClient.DeleteRecordAsync(zone.Name, record);
+            cancellationToken.ThrowIfCancellationRequested();
+            await _transIpClient.DeleteRecordAsync(zone.Name, record, cancellationToken);
         }
     }
 
@@ -84,61 +85,53 @@ public class TransIpProvider : IDnsProvider
 
         private TransIpToken? _token;
 
-        public async Task<IReadOnlyList<Domain>> ListZonesAsync()
+        public async Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
         {
-            await EnsureLoggedInAsync();
+            await EnsureLoggedInAsync(cancellationToken);
 
-            var response = await _httpClient.GetAsync("domains");
-
-            response.EnsureSuccessStatusCode();
-
-            var domains = await response.Content.ReadAsAsync<ListDomainsResult>();
+            var domains = await _httpClient.GetFromJsonAsync<ListDomainsResult>("domains", cancellationToken);
 
             return domains?.Domains ?? [];
         }
 
-        public async Task<IReadOnlyList<DnsEntry>> ListRecordsAsync(string zoneName)
+        public async Task<IReadOnlyList<DnsEntry>> ListRecordsAsync(string zoneName, CancellationToken cancellationToken = default)
         {
-            await EnsureLoggedInAsync();
+            await EnsureLoggedInAsync(cancellationToken);
 
-            var response = await _httpClient.GetAsync($"domains/{zoneName}/dns");
-
-            response.EnsureSuccessStatusCode();
-
-            var entries = await response.Content.ReadAsAsync<ListDnsEntriesResponse>();
+            var entries = await _httpClient.GetFromJsonAsync<ListDnsEntriesResponse>($"domains/{zoneName}/dns", cancellationToken);
 
             return entries?.DnsEntries ?? [];
         }
 
-        public async Task DeleteRecordAsync(string zoneName, DnsEntry entry)
+        public async Task DeleteRecordAsync(string zoneName, DnsEntry entry, CancellationToken cancellationToken = default)
         {
-            await EnsureLoggedInAsync();
+            await EnsureLoggedInAsync(cancellationToken);
 
             var request = new DnsEntryRequest
             {
                 DnsEntry = entry
             };
 
-            var response = await _httpClient.DeleteAsync($"domains/{zoneName}/dns", request);
+            var response = await _httpClient.DeleteAsync($"domains/{zoneName}/dns", request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task AddRecordAsync(string zoneName, DnsEntry entry)
+        public async Task AddRecordAsync(string zoneName, DnsEntry entry, CancellationToken cancellationToken = default)
         {
-            await EnsureLoggedInAsync();
+            await EnsureLoggedInAsync(cancellationToken);
 
             var request = new DnsEntryRequest
             {
                 DnsEntry = entry
             };
 
-            var response = await _httpClient.PostAsync($"domains/{zoneName}/dns", request);
+            var response = await _httpClient.PostAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        private async Task EnsureLoggedInAsync()
+        private async Task EnsureLoggedInAsync(CancellationToken cancellationToken = default)
         {
             if (_token?.IsValid() == true)
             {
@@ -153,7 +146,7 @@ public class TransIpProvider : IDnsProvider
                 {
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token.Token);
 
-                    var testResponse = await _httpClient.GetAsync("api-test");
+                    var testResponse = await _httpClient.GetAsync("api-test", cancellationToken);
 
                     if (testResponse.IsSuccessStatusCode)
                     {
@@ -163,10 +156,10 @@ public class TransIpProvider : IDnsProvider
 
             }
 
-            await CreateNewTokenAsync();
+            await CreateNewTokenAsync(cancellationToken);
         }
 
-        private async Task CreateNewTokenAsync()
+        private async Task CreateNewTokenAsync(CancellationToken cancellationToken = default)
         {
             var nonce = new byte[16];
 
@@ -178,18 +171,26 @@ public class TransIpProvider : IDnsProvider
                 Nonce = Convert.ToBase64String(nonce)
             };
 
-            var (signature, body) = await SignRequestAsync(request);
+            var (signature, body) = await SignRequestAsync(request, cancellationToken);
 
-            var response = await new HttpClient().SendAsync(
-                new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress, "auth"))
+            var response = await new HttpClient
+            {
+                BaseAddress = _httpClient.BaseAddress
+            }.SendAsync(
+                new HttpRequestMessage(HttpMethod.Post, new Uri("auth"))
                 {
                     Headers = { { "Signature", signature } },
                     Content = new StringContent(body, Encoding.UTF8, "application/json")
-                });
+                }, cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
             var tokenResponse = await response.Content.ReadAsAsync<TokenResponse>();
+
+            if (tokenResponse is null)
+            {
+                throw new Exception();
+            }
 
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.Token);
 
@@ -203,14 +204,14 @@ public class TransIpProvider : IDnsProvider
             StoreToken(_token);
         }
 
-        private async Task<(string token, string body)> SignRequestAsync(object request)
+        private async Task<(string token, string body)> SignRequestAsync(object request, CancellationToken cancellationToken = default)
         {
-            var body = JsonConvert.SerializeObject(request);
+            var body = JsonSerializer.Serialize(request);
 
             using var hasher = SHA512.Create();
             var bytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(body));
 
-            var signature = await _cryptoClient.SignAsync(SignatureAlgorithm.RS512, bytes);
+            var signature = await _cryptoClient.SignAsync(SignatureAlgorithm.RS512, bytes, cancellationToken);
 
             return (Convert.ToBase64String(signature.Signature), body);
         }
@@ -220,12 +221,12 @@ public class TransIpProvider : IDnsProvider
             var fullPath = Environment.ExpandEnvironmentVariables("%HOME%/.acmebot/transip_token.json");
             var directoryPath = Path.GetDirectoryName(fullPath);
 
-            if (!Directory.Exists(directoryPath))
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
 
-            var json = JsonConvert.SerializeObject(token, Formatting.Indented);
+            var json = JsonSerializer.Serialize(token);
 
             File.WriteAllText(fullPath, json);
         }
@@ -241,7 +242,7 @@ public class TransIpProvider : IDnsProvider
 
             var json = File.ReadAllText(fullPath);
 
-            return JsonConvert.DeserializeObject<TransIpToken>(json);
+            return JsonSerializer.Deserialize<TransIpToken>(json);
         }
     }
 
@@ -253,27 +254,23 @@ public class TransIpProvider : IDnsProvider
 
         public DateTimeOffset Expires { get; init; }
 
-        public bool IsValid()
-        {
-            return !string.IsNullOrEmpty(Token) && Expires - DateTimeOffset.Now > TimeSpan.FromMinutes(1);
-        }
+        public bool IsValid() => !string.IsNullOrEmpty(Token) && Expires - DateTimeOffset.Now > TimeSpan.FromMinutes(1);
     }
 
     private class TokenResponse
     {
         [JsonPropertyName("token")]
-        public string? Token { get; set; }
+        public required string Token { get; set; }
 
         public long GetTokenExpiration()
         {
             var token = Token.Split('.')[1];
-            token = token.PadRight(token.Length + (4 - token.Length % 4) % 4, '=');
 
-            var tokenBytes = Convert.FromBase64String(token);
+            var tokenBytes = System.Buffers.Text.Base64Url.DecodeFromChars(token);
 
-            var tokenObject = JObject.Parse(Encoding.UTF8.GetString(tokenBytes));
+            var tokenObject = JsonSerializer.Deserialize<JsonElement>(Encoding.UTF8.GetString(tokenBytes));
 
-            return tokenObject.Value<long>("exp");
+            return tokenObject.GetProperty("exp").GetInt64();
         }
     }
 
@@ -292,7 +289,7 @@ public class TransIpProvider : IDnsProvider
         public string ExpirationTime { get; set; } = "4 weeks";
 
         [JsonPropertyName("label")]
-        public string Label { get; set; } = "KeyVault.Acmebot." + DateTime.UtcNow;
+        public string Label { get; set; } = "Acmebot." + DateTime.UtcNow;
 
         [JsonPropertyName("global_key")]
         public bool GlobalKey { get; set; } = true;
@@ -307,7 +304,7 @@ public class TransIpProvider : IDnsProvider
     private class Domain
     {
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
     }
 
     private class ListDnsEntriesResponse

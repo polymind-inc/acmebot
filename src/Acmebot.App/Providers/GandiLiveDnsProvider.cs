@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
@@ -13,23 +13,28 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
     public string Name => "Gandi LiveDNS";
 
-    public int PropagationSeconds => 300;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(300);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _client.ListZonesAsync();
+        var zones = await _client.ListZonesAsync(cancellationToken);
 
         return zones.Select(x => new DnsZone(this) { Id = x.Fqdn, Name = x.FqdnUnicode }).ToArray();
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
-    {
-        return _client.AddRecordAsync(zone.Name, relativeRecordName, values);
-    }
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+        => _client.AddRecordAsync(zone.Name, relativeRecordName, values, cancellationToken);
 
-    public Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        return _client.DeleteRecordAsync(zone.Name, relativeRecordName);
+        try
+        {
+            await _client.DeleteRecordAsync(zone.Name, relativeRecordName, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // ignored
+        }
     }
 
     private class GandiLiveDnsClient
@@ -49,41 +54,36 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<Domain>> ListZonesAsync()
+        public async Task<IReadOnlyList<Domain>> ListZonesAsync(CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync("domain/domains");
+            var domains = await _httpClient.GetFromJsonAsync<Domain[]>("domain/domains", cancellationToken) ?? [];
+
+            return domains.Where(x => x.Nameserver?.Current == "livedns").ToArray();
+        }
+
+        public async Task DeleteRecordAsync(string zoneName, string relativeRecordName, CancellationToken cancellationToken = default)
+        {
+            var response = await _httpClient.DeleteAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT", cancellationToken);
 
             response.EnsureSuccessStatusCode();
-            var domains = await response.Content.ReadAsAsync<Domain[]>();
-
-            return domains.Where(x => x.Nameserver.Current == "livedns").ToArray();
         }
 
-        public async Task DeleteRecordAsync(string zoneName, string relativeRecordName)
+        public async Task AddRecordAsync(string zoneName, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT");
-
-            if (response.StatusCode != HttpStatusCode.NotFound)
-            {
-                response.EnsureSuccessStatusCode();
-            }
-        }
-
-        public async Task AddRecordAsync(string zoneName, string relativeRecordName, IEnumerable<string> values)
-        {
-            var response = await _httpClient.PostAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT", new
+            var response = await _httpClient.PostAsJsonAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT", new
             {
                 rrset_values = values.ToArray(),
                 rrset_ttl = 300 //300 is the minimal value
-            });
+            }, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
     }
+
     public class Domain
     {
         [JsonPropertyName("fqdn")]
-        public string? Fqdn { get; set; }
+        public required string Fqdn { get; set; }
 
         [JsonPropertyName("tld")]
         public string? Tld { get; set; }
@@ -119,7 +119,7 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
         public string? Href { get; set; }
 
         [JsonPropertyName("fqdn_unicode")]
-        public string? FqdnUnicode { get; set; }
+        public required string FqdnUnicode { get; set; }
     }
 
     public class Dates

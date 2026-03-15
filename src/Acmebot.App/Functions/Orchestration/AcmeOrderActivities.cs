@@ -49,7 +49,7 @@ public partial class AcmeOrderActivities(
 
         foreach (var challengeResult in challengeResults)
         {
-            await acmeContext.Client.AnswerChallengeAsync(acmeContext.Account, new Uri(challengeResult.Url));
+            await acmeContext.Client.AnswerChallengeAsync(acmeContext.Account, challengeResult.Url);
         }
     }
 
@@ -69,7 +69,7 @@ public partial class AcmeOrderActivities(
 
             foreach (var challengeResult in challengeResults)
             {
-                var challenge = (await acmeClient.GetChallengeAsync(acmeContext.Account, new Uri(challengeResult.Url))).Resource;
+                var challenge = (await acmeClient.GetChallengeAsync(acmeContext.Account, challengeResult.Url)).Resource;
 
                 if (challenge.Status != AcmeChallengeStatuses.Invalid || challenge.Error is null)
                 {

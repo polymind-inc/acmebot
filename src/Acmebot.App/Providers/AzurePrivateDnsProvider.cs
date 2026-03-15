@@ -11,23 +11,21 @@ using Azure.ResourceManager.PrivateDns.Models;
 
 namespace Acmebot.App.Providers;
 
-internal class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnvironment environment, TokenCredential credential) : IDnsProvider
+public class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnvironment environment, TokenCredential credential) : IDnsProvider
 {
     private readonly ArmClient _armClient = new(credential, options.SubscriptionId, new ArmClientOptions { Environment = environment.ResourceManager });
 
     public string Name => "Azure Private DNS";
 
-    public int PropagationSeconds => 10;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(10);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
         var zones = new List<DnsZone>();
 
-        var subscription = await _armClient.GetDefaultSubscriptionAsync();
+        var subscription = await _armClient.GetDefaultSubscriptionAsync(cancellationToken);
 
-        var result = subscription.GetPrivateDnsZonesAsync();
-
-        await foreach (var zone in result)
+        await foreach (var zone in subscription.GetPrivateDnsZonesAsync(cancellationToken: cancellationToken))
         {
             zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name });
         }
@@ -35,10 +33,13 @@ internal class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnvi
         return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
         // TXT レコードに値をセットする
-        var txtRecordData = new PrivateDnsTxtRecordData() { TtlInSeconds = 3600 };
+        var txtRecordData = new PrivateDnsTxtRecordData
+        {
+            TtlInSeconds = 3600
+        };
 
         foreach (var value in values)
         {
@@ -49,18 +50,18 @@ internal class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnvi
 
         var dnsTxtRecords = dnsZoneResource.GetPrivateDnsTxtRecords();
 
-        return dnsTxtRecords.CreateOrUpdateAsync(WaitUntil.Completed, relativeRecordName, txtRecordData);
+        return dnsTxtRecords.CreateOrUpdateAsync(WaitUntil.Completed, relativeRecordName, txtRecordData, cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var dnsZoneResource = _armClient.GetPrivateDnsZoneResource(new ResourceIdentifier(zone.Id));
 
         try
         {
-            PrivateDnsTxtRecordResource dnsTxtRecordResource = await dnsZoneResource.GetPrivateDnsTxtRecordAsync(relativeRecordName);
+            var dnsTxtRecordResource = await dnsZoneResource.GetPrivateDnsTxtRecordAsync(relativeRecordName, cancellationToken);
 
-            await dnsTxtRecordResource.DeleteAsync(WaitUntil.Completed);
+            await dnsTxtRecordResource.Value.DeleteAsync(WaitUntil.Completed, cancellationToken: cancellationToken);
         }
         catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
         {
