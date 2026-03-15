@@ -116,9 +116,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
     private string[] GetContacts() => [$"mailto:{_options.Contacts}"];
 
     private static bool ContactsEqual(IReadOnlyList<string>? actualContacts, IReadOnlyList<string> expectedContacts)
-    {
-        return actualContacts is not null && actualContacts.SequenceEqual(expectedContacts, StringComparer.Ordinal);
-    }
+        => actualContacts is not null && actualContacts.SequenceEqual(expectedContacts, StringComparer.Ordinal);
 
     private TState? LoadState<TState>(string path)
     {
@@ -139,7 +137,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
         var fullPath = ResolveStateFullPath(path);
         var directoryPath = Path.GetDirectoryName(fullPath);
 
-        if (!Directory.Exists(directoryPath))
+        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
         {
             Directory.CreateDirectory(directoryPath);
         }

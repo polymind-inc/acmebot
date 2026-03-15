@@ -2,7 +2,7 @@
 
 public class DnsMadeEasyOptions
 {
-    public string? ApiKey { get; set; }
+    public required string ApiKey { get; set; }
 
-    public string? SecretKey { get; set; }
+    public required string SecretKey { get; set; }
 }

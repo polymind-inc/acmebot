@@ -23,11 +23,12 @@ public class DnsChallengeActivities(
         {
             var zones = await dnsProviders.ListAllZonesAsync();
 
-            return zones.Select(x => new DnsZoneGroup
-            {
-                DnsProviderName = x.Item1,
-                DnsZones = x.Item2.Select(xs => xs.ToDnsZoneItem()).OrderBy(xs => xs.Name).ToArray()
-            }).ToArray();
+            return zones.Where(x => x.Item2 is not null)
+                        .Select(x => new DnsZoneGroup
+                        {
+                            DnsProviderName = x.Item1,
+                            DnsZones = x.Item2!.Select(xs => xs.ToDnsZoneItem()).OrderBy(xs => xs.Name).ToArray()
+                        }).ToArray();
         }
         catch
         {
@@ -98,7 +99,7 @@ public class DnsChallengeActivities(
     }
 
     [Function(nameof(Dns01Authorization))]
-    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<Uri>) input)
+    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<Uri>) input, CancellationToken cancellationToken)
     {
         var (dnsProviderName, dnsAlias, authorizationUrls) = input;
 
@@ -127,13 +128,13 @@ public class DnsChallengeActivities(
 
             challengeResults.Add(new AcmeChallengeResult
             {
-                Url = challenge.Url.OriginalString,
+                Url = challenge.Url,
                 DnsRecordName = string.IsNullOrEmpty(dnsAlias) ? challengeInstruction.RecordName.TrimEnd('.') : $"_acme-challenge.{dnsAlias}",
                 DnsRecordValue = challengeInstruction.RecordValue
             });
         }
 
-        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync() : dnsProviders.ListZonesAsync(dnsProviderName));
+        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync(cancellationToken) : dnsProviders.ListZonesAsync(dnsProviderName, cancellationToken));
 
         var propagationSeconds = 0;
 
@@ -150,10 +151,10 @@ public class DnsChallengeActivities(
 
             var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
 
-            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName);
-            await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue));
+            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+            await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue), cancellationToken);
 
-            propagationSeconds = Math.Max(propagationSeconds, zone.DnsProvider.PropagationSeconds);
+            propagationSeconds = Math.Max(propagationSeconds, (int)zone.DnsProvider.PropagationDelay.TotalSeconds);
         }
 
         return (challengeResults, propagationSeconds);
@@ -192,11 +193,11 @@ public class DnsChallengeActivities(
     }
 
     [Function(nameof(CleanupDnsChallenge))]
-    public async Task CleanupDnsChallenge([ActivityTrigger] (string, IReadOnlyList<AcmeChallengeResult>) input)
+    public async Task CleanupDnsChallenge([ActivityTrigger] (string, IReadOnlyList<AcmeChallengeResult>) input, CancellationToken cancellationToken)
     {
         var (dnsProviderName, challengeResults) = input;
 
-        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync() : dnsProviders.ListZonesAsync(dnsProviderName));
+        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync(cancellationToken) : dnsProviders.ListZonesAsync(dnsProviderName, cancellationToken));
 
         foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
         {
@@ -211,7 +212,7 @@ public class DnsChallengeActivities(
 
             var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
 
-            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName);
+            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
         }
     }
 }

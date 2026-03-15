@@ -7,19 +7,19 @@ internal static class HttpClientExtensions
 {
     extension(HttpClient client)
     {
-        public Task<HttpResponseMessage> PostAsync<T>(Uri requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
-        public Task<HttpResponseMessage> PostAsync<T>(string requestUri, T value) => client.PostAsync(requestUri, SerializeToJson(value));
-        public Task<HttpResponseMessage> PutAsync<T>(string requestUri, T value) => client.PutAsync(requestUri, SerializeToJson(value));
-        public Task<HttpResponseMessage> PatchAsync<T>(string requestUri, T value) => client.PatchAsync(requestUri, SerializeToJson(value));
+        public Task<HttpResponseMessage> PostAsync<T>(Uri requestUri, T value, CancellationToken cancellationToken = default) => client.PostAsync(requestUri, SerializeToJson(value), cancellationToken);
+        public Task<HttpResponseMessage> PostAsync<T>(string requestUri, T value, CancellationToken cancellationToken = default) => client.PostAsync(requestUri, SerializeToJson(value), cancellationToken);
+        public Task<HttpResponseMessage> PutAsync<T>(string requestUri, T value, CancellationToken cancellationToken = default) => client.PutAsync(requestUri, SerializeToJson(value), cancellationToken);
+        public Task<HttpResponseMessage> PatchAsync<T>(string requestUri, T value, CancellationToken cancellationToken = default) => client.PatchAsync(requestUri, SerializeToJson(value), cancellationToken);
 
-        public Task<HttpResponseMessage> DeleteAsync<T>(string requestUri, T value)
+        public Task<HttpResponseMessage> DeleteAsync<T>(string requestUri, T value, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Delete, requestUri)
             {
                 Content = SerializeToJson(value)
             };
 
-            return client.SendAsync(request);
+            return client.SendAsync(request, cancellationToken);
         }
     }
 

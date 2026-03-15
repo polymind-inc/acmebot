@@ -34,25 +34,25 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
 
     public string Name => "Akamai Edge DNS";
 
-    public int PropagationSeconds => 120;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(120);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await ListZonesInternalAsync();
+        var zones = await ListZonesInternalAsync(cancellationToken);
 
         var primaryZones = zones.Where(x => x.Type == "PRIMARY")
                     .Select(x => new DnsZone(this)
                     {
                         Id = x.Zone,
                         Name = x.Zone,
-                        NameServers = Array.Empty<string>()
+                        NameServers = []
                     })
                     .ToArray();
 
         return primaryZones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
         var recordData = values.ToArray();
@@ -65,17 +65,17 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
             Rdata = recordData
         };
 
-        await CreateOrUpdateRecordAsync(zone.Name, recordName, "TXT", recordSet);
+        await CreateOrUpdateRecordAsync(zone.Name, recordName, "TXT", recordSet, cancellationToken);
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
-        await DeleteRecordAsync(zone.Name, recordName, "TXT");
+        await DeleteRecordAsync(zone.Name, recordName, "TXT", cancellationToken);
     }
 
-    private async Task<IReadOnlyList<ZoneResult>> ListZonesInternalAsync()
+    private async Task<IReadOnlyList<ZoneResult>> ListZonesInternalAsync(CancellationToken cancellationToken = default)
     {
         var allZones = new List<ZoneResult>();
         var page = 1;
@@ -84,7 +84,7 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
         while (true)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}zones?page={page}&pageSize={pageSize}");
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
@@ -108,10 +108,10 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
         return allZones;
     }
 
-    private async Task<bool> RecordExistsAsync(string zone, string name, string type)
+    private async Task<bool> RecordExistsAsync(string zone, string name, string type, CancellationToken cancellationToken = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}zones/{zone}/names/{name}/types/{type}");
-        var response = await _httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -128,9 +128,9 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
         return false;
     }
 
-    private async Task CreateOrUpdateRecordAsync(string zone, string name, string type, RecordSet recordSet)
+    private async Task CreateOrUpdateRecordAsync(string zone, string name, string type, RecordSet recordSet, CancellationToken cancellationToken = default)
     {
-        var recordExists = await RecordExistsAsync(zone, name, type);
+        var recordExists = await RecordExistsAsync(zone, name, type, cancellationToken);
         var jsonContent = System.Text.Json.JsonSerializer.Serialize(recordSet);
 
         var httpMethod = recordExists ? HttpMethod.Put : HttpMethod.Post;
@@ -140,15 +140,15 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
             Content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json")
         };
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request, cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task DeleteRecordAsync(string zone, string name, string type)
+    private async Task DeleteRecordAsync(string zone, string name, string type, CancellationToken cancellationToken = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Delete, $"{_baseUrl}zones/{zone}/names/{name}/types/{type}");
-        var response = await _httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -182,7 +182,7 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
     private class ZoneResult
     {
         [JsonPropertyName("zone")]
-        public string? Zone { get; set; }
+        public required string Zone { get; set; }
 
         [JsonPropertyName("type")]
         public string? Type { get; set; }

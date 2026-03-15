@@ -5,13 +5,13 @@ namespace Acmebot.App.Models;
 public class CertificateItem
 {
     [JsonProperty("id")]
-    public Uri? Id { get; set; }
+    public required Uri Id { get; set; }
 
     [JsonProperty("name")]
-    public string? Name { get; set; }
+    public required string Name { get; set; }
 
     [JsonProperty("dnsNames")]
-    public IReadOnlyList<string>? DnsNames { get; set; }
+    public required IReadOnlyList<string> DnsNames { get; set; }
 
     [JsonProperty("dnsProviderName")]
     public string? DnsProviderName { get; set; }

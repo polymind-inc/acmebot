@@ -1,4 +1,5 @@
-﻿using Acmebot.App.Models;
+﻿using Acmebot.Acme.Models;
+using Acmebot.App.Models;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
@@ -14,7 +15,7 @@ public partial class CertificateIssuanceOrchestrator
         var logger = context.CreateReplaySafeLogger<CertificateIssuanceOrchestrator>();
         var certificatePolicyItem = context.GetInput<CertificatePolicyItem>();
 
-        if (certificatePolicyItem is null)
+        if (certificatePolicyItem is null || string.IsNullOrEmpty(certificatePolicyItem.CertificateName))
         {
             return;
         }
@@ -30,7 +31,7 @@ public partial class CertificateIssuanceOrchestrator
             var orderDetails = await context.CallOrderAsync(certificatePolicyItem.DnsNames);
 
             // 既に確認済みの場合は Challenge をスキップする
-            if (orderDetails.Payload.Status != "ready")
+            if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
             {
                 // ACME DNS-01 Challenge を実行
                 var (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations));
@@ -57,7 +58,7 @@ public partial class CertificateIssuanceOrchestrator
             orderDetails = await context.CallFinalizeOrderAsync((certificatePolicyItem, orderDetails));
 
             // Finalize の時点でステータスが valid の時点はスキップ
-            if (orderDetails.Payload.Status != "valid")
+            if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
             {
                 // Finalize 後のステータスが valid になるまで 60 秒待機
                 orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(_retryPolicy));

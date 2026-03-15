@@ -43,7 +43,7 @@ public partial class RenewCertificates(ILogger<RenewCertificates> logger)
             catch (Exception ex)
             {
                 // 失敗した場合はログに詳細を書き出して続きを実行する
-                LogFailedSubOrchestration(logger, ex, certificate.Name, string.Join((string?)",", certificate.DnsNames));
+                LogFailedSubOrchestration(logger, ex, certificate.Name, string.Join(",", certificate.DnsNames));
             }
         }
     }

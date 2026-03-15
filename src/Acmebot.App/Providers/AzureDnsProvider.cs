@@ -17,17 +17,15 @@ public class AzureDnsProvider(AzureDnsOptions options, AzureEnvironment environm
 
     public string Name => "Azure DNS";
 
-    public int PropagationSeconds => 10;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(10);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
         var zones = new List<DnsZone>();
 
-        var subscription = await _armClient.GetDefaultSubscriptionAsync();
+        var subscription = await _armClient.GetDefaultSubscriptionAsync(cancellationToken);
 
-        var result = subscription.GetDnsZonesAsync();
-
-        await foreach (var zone in result)
+        await foreach (var zone in subscription.GetDnsZonesAsync(cancellationToken: cancellationToken))
         {
             zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name, NameServers = zone.Data.NameServers });
         }
@@ -35,35 +33,35 @@ public class AzureDnsProvider(AzureDnsOptions options, AzureEnvironment environm
         return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
-        // TXT レコードに TTL と値をセットする
-        var recordSet = new DnsTxtRecordData
+        // TXT レコードに値をセットする
+        var txtRecordData = new DnsTxtRecordData
         {
             TtlInSeconds = 60
         };
 
         foreach (var value in values)
         {
-            recordSet.DnsTxtRecords.Add(new DnsTxtRecordInfo { Values = { value } });
+            txtRecordData.DnsTxtRecords.Add(new DnsTxtRecordInfo { Values = { value } });
         }
 
         var dnsZoneResource = _armClient.GetDnsZoneResource(new ResourceIdentifier(zone.Id));
 
-        var recordSets = dnsZoneResource.GetDnsTxtRecords();
+        var dnsTxtRecords = dnsZoneResource.GetDnsTxtRecords();
 
-        return recordSets.CreateOrUpdateAsync(WaitUntil.Completed, relativeRecordName, recordSet);
+        return dnsTxtRecords.CreateOrUpdateAsync(WaitUntil.Completed, relativeRecordName, txtRecordData, cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var dnsZoneResource = _armClient.GetDnsZoneResource(new ResourceIdentifier(zone.Id));
 
         try
         {
-            var recordSets = await dnsZoneResource.GetDnsTxtRecordAsync(relativeRecordName);
+            var dnsTxtRecordResource = await dnsZoneResource.GetDnsTxtRecordAsync(relativeRecordName, cancellationToken);
 
-            await recordSets.Value.DeleteAsync(WaitUntil.Completed);
+            await dnsTxtRecordResource.Value.DeleteAsync(WaitUntil.Completed, cancellationToken: cancellationToken);
         }
         catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
         {

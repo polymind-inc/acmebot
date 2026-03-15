@@ -2,7 +2,7 @@
 
 public class AcmeChallengeResult
 {
-    public string? Url { get; set; }
-    public string? DnsRecordName { get; set; }
-    public string? DnsRecordValue { get; set; }
+    public required Uri Url { get; set; }
+    public required string DnsRecordName { get; set; }
+    public required string DnsRecordValue { get; set; }
 }

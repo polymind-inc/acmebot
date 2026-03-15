@@ -1,54 +1,67 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
 
 public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 {
-    private readonly CloudflareDnsClient _cloudflareDnsClient = new(options.ApiToken);
+    private readonly CloudflareClient _cloudflareClient = new(options.ApiToken);
 
     public string Name => "Cloudflare";
 
-    public int PropagationSeconds => 10;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(10);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _cloudflareDnsClient.ListAllZonesAsync();
+        var zones = new List<DnsZone>();
 
-        // Zone API は Punycode されていない値を返すのでエンコードが必要
-        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name, NameServers = x.ActualNameServers ?? [] }).ToArray();
+        await foreach (var zone in _cloudflareClient.ListAllZonesAsync(cancellationToken))
+        {
+            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Name, NameServers = zone.ActualNameServers });
+        }
+
+        return zones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
         // 必要な検証用の値の数だけ新しく追加する
         foreach (var value in values)
         {
-            await _cloudflareDnsClient.CreateDnsRecordAsync(zone.Id, recordName, value);
+            await _cloudflareClient.CreateDnsRecordAsync(zone.Id, recordName, value, cancellationToken);
         }
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
-        var records = await _cloudflareDnsClient.GetDnsRecordsAsync(zone.Id, recordName);
+        var records = await _cloudflareClient.ListDnsRecordsAsync(zone.Id, recordName, cancellationToken);
 
-        // 該当する全てのレコードを削除する
-        foreach (var record in records)
+        try
         {
-            await _cloudflareDnsClient.DeleteDnsRecordAsync(zone.Id, record.Id);
+            // 該当する全てのレコードを削除する
+            foreach (var record in records)
+            {
+                await _cloudflareClient.DeleteDnsRecordAsync(zone.Id, record.Id, cancellationToken);
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // ignored
         }
     }
 
-    private class CloudflareDnsClient
+    private class CloudflareClient
     {
-        public CloudflareDnsClient(string apiToken)
+        public CloudflareClient(string apiToken)
         {
             _httpClient = new HttpClient
             {
@@ -61,60 +74,59 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<ZoneResult>> ListAllZonesAsync()
+        public async IAsyncEnumerable<Zone> ListAllZonesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var page = 1;
-            var zones = new List<ZoneResult>();
 
-            ApiResult<ZoneResult> result;
+            PagePaginationArray<Zone>? result;
 
             do
             {
-                result = await ListZonesAsync(page);
+                result = await _httpClient.GetFromJsonAsync<PagePaginationArray<Zone>>($"zones?page={page}&per_page=50&status=active", cancellationToken);
 
-                zones.AddRange(result.Result);
+                if (result is null)
+                {
+                    break;
+                }
 
-            } while (page++ < result.ResultInfo.TotalPages);
+                foreach (var zone in result.Result ?? [])
+                {
+                    yield return zone;
+                }
 
-            return zones;
+            } while (page++ < (result.ResultInfo?.TotalPages ?? 1));
         }
 
-        public async Task<IReadOnlyList<DnsRecordResult>> GetDnsRecordsAsync(string zone, string name)
+        public async Task<IReadOnlyList<TxtRecord>> ListDnsRecordsAsync(string zone, string name, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync($"zones/{zone}/dns_records?type=TXT&name={name}&per_page=100");
-
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadAsAsync<ApiResult<DnsRecordResult>>();
+            var result = await _httpClient.GetFromJsonAsync<PagePaginationArray<TxtRecord>>($"zones/{zone}/dns_records?type=TXT&name={name}&per_page=100", cancellationToken);
 
             return result?.Result ?? [];
         }
 
-        public async Task CreateDnsRecordAsync(string zone, string name, string content)
+        public async Task CreateDnsRecordAsync(string zone, string name, string content, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsync($"zones/{zone}/dns_records", new { type = "TXT", name, content, ttl = 60 });
+            var recordParam = new TxtRecordParam
+            {
+                Name = name,
+                Content = content,
+                Ttl = 60
+            };
+
+            var response = await _httpClient.PostAsJsonAsync($"zones/{zone}/dns_records", recordParam, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task DeleteDnsRecordAsync(string zone, string id)
+        public async Task DeleteDnsRecordAsync(string zone, string id, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"zones/{zone}/dns_records/{id}");
+            var response = await _httpClient.DeleteAsync($"zones/{zone}/dns_records/{id}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
-        }
-
-        private async Task<ApiResult<ZoneResult>> ListZonesAsync(int page)
-        {
-            var response = await _httpClient.GetAsync($"zones?page={page}&per_page=50&status=active");
-
-            response.EnsureSuccessStatusCode();
-
-            return await response.Content.ReadAsAsync<ApiResult<ZoneResult>>() ?? new ApiResult<ZoneResult>();
         }
     }
 
-    private class ApiResult<T>
+    internal class PagePaginationArray<T>
     {
         [JsonPropertyName("result")]
         public T[]? Result { get; set; }
@@ -124,66 +136,50 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         [JsonPropertyName("success")]
         public bool Success { get; set; }
-
-        [JsonPropertyName("errors")]
-        public object[]? Errors { get; set; }
-
-        [JsonPropertyName("messages")]
-        public object[]? Messages { get; set; }
     }
 
-    private class ResultInfo
+    internal class ResultInfo
     {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("per_page")]
-        public int PerPage { get; set; }
-
         [JsonPropertyName("total_pages")]
-        public int TotalPages { get; set; }
-
-        [JsonPropertyName("count")]
-        public int Count { get; set; }
-
-        [JsonPropertyName("total_count")]
-        public int TotalCount { get; set; }
+        public int? TotalPages { get; set; }
     }
 
-    private class ZoneResult
+    internal class Zone
     {
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
-
-        [JsonPropertyName("status")]
-        public string? Status { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("name_servers")]
-        public string[]? NameServers { get; set; }
+        public required string[] NameServers { get; set; }
 
         [JsonPropertyName("vanity_name_servers")]
         public string[]? VanityNameServers { get; set; }
 
         [JsonIgnore]
-        public string[]? ActualNameServers => VanityNameServers is { Length: > 0 } ? VanityNameServers : NameServers;
+        public string[] ActualNameServers => VanityNameServers is { Length: > 0 } ? VanityNameServers : NameServers;
     }
 
-    private class DnsRecordResult
+    internal class TxtRecordParam
     {
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
+
+        [JsonPropertyName("ttl")]
+        public int Ttl { get; set; } = 1;
+
+        [JsonPropertyName("type")]
+        public string Type => "TXT";
 
         [JsonPropertyName("content")]
         public string? Content { get; set; }
+    }
 
-        // ReSharper disable once InconsistentNaming
-        [JsonPropertyName("ttl")]
-        public int TTL { get; set; }
+    internal class TxtRecord : TxtRecordParam
+    {
+        [JsonPropertyName("id")]
+        public required string Id { get; set; }
     }
 }
