@@ -2,20 +2,24 @@
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
+using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class SharedOrchestrator
+public partial class SharedOrchestrator
 {
     [Function(nameof(IssueCertificate))]
     public async Task IssueCertificate([OrchestrationTrigger] TaskOrchestrationContext context)
     {
+        var logger = context.CreateReplaySafeLogger(nameof(SharedOrchestrator));
         var certificatePolicyItem = context.GetInput<CertificatePolicyItem>();
 
         if (certificatePolicyItem is null)
         {
             return;
         }
+
+        LogCertificateIssuanceStarted(logger, certificatePolicyItem.CertificateName, string.Join(",", certificatePolicyItem.DnsNames));
 
         try
         {
@@ -32,6 +36,8 @@ public class SharedOrchestrator
                 var (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations));
 
                 // DNS Provider が指定した分だけ後続の処理を遅延させる
+                LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
+
                 await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
 
                 // 正しく追加した DNS TXT レコードが引けるか確認
@@ -62,9 +68,13 @@ public class SharedOrchestrator
 
             // 証明書の更新が完了後に Webhook を送信する
             await context.CallSendCompletedEventAsync((certificate.Name, certificate.ExpiresOn, certificatePolicyItem.DnsNames));
+
+            LogCertificateIssuanceCompleted(logger, certificate.Name, certificate.ExpiresOn);
         }
-        catch
+        catch (Exception ex)
         {
+            LogCertificateIssuanceFailed(logger, ex, certificatePolicyItem.CertificateName, string.Join(",", certificatePolicyItem.DnsNames));
+
             await context.CallSendFailedEventAsync((certificatePolicyItem.CertificateName, certificatePolicyItem.DnsNames));
 
             throw;
@@ -75,4 +85,16 @@ public class SharedOrchestrator
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
     };
+
+    [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
+    private static partial void LogCertificateIssuanceStarted(ILogger logger, string certificateName, string dnsNames);
+
+    [LoggerMessage(LogLevel.Information, "DNS challenge propagation wait started. CertificateName: {CertificateName}. DelaySeconds: {DelaySeconds}")]
+    private static partial void LogDnsChallengePropagationDelay(ILogger logger, string certificateName, long delaySeconds);
+
+    [LoggerMessage(LogLevel.Information, "Certificate issuance completed. CertificateName: {CertificateName}. ExpiresOn: {ExpiresOn}")]
+    private static partial void LogCertificateIssuanceCompleted(ILogger logger, string certificateName, DateTimeOffset expiresOn);
+
+    [LoggerMessage(LogLevel.Error, "Certificate issuance failed. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
+    private static partial void LogCertificateIssuanceFailed(ILogger logger, Exception exception, string certificateName, string dnsNames);
 }

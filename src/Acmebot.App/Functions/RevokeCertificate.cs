@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
@@ -45,10 +45,13 @@ public class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}", certificateName);
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, certificateName, instanceId);
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
         return Ok(metadata.SerializedOutput);
     }
+
+    [LoggerMessage(LogLevel.Information, "Certificate revocation orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string certificateName, string instanceId);
 }

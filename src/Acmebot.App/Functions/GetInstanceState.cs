@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class GetInstanceState(IHttpContextAccessor httpContextAccessor) : HttpFunctionBase(httpContextAccessor)
+public partial class GetInstanceState(IHttpContextAccessor httpContextAccessor, ILogger<GetInstanceState> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(GetInstanceState)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
@@ -24,6 +25,8 @@ public class GetInstanceState(IHttpContextAccessor httpContextAccessor) : HttpFu
 
         if (status is null)
         {
+            LogInstanceStateNotFound(logger, instanceId);
+
             return BadRequest();
         }
 
@@ -34,4 +37,7 @@ public class GetInstanceState(IHttpContextAccessor httpContextAccessor) : HttpFu
             _ => Ok()
         };
     }
+
+    [LoggerMessage(LogLevel.Information, "Instance state lookup returned no result. InstanceId: {InstanceId}")]
+    private static partial void LogInstanceStateNotFound(ILogger logger, string instanceId);
 }

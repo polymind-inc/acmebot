@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogger<GetDnsZones> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogger<GetDnsZones> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(GetDnsZones)}_{nameof(Orchestrator)}")]
     public Task<IReadOnlyList<DnsZoneGroup>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
@@ -32,10 +32,13 @@ public class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogger<GetDn
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(GetDnsZones)}_{nameof(Orchestrator)}");
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, instanceId);
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
         return Ok(metadata.SerializedOutput);
     }
+
+    [LoggerMessage(LogLevel.Information, "DNS zone retrieval orchestration started. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string instanceId);
 }

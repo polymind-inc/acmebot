@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class RenewCertificates(ILogger<RenewCertificates> logger)
+public partial class RenewCertificates(ILogger<RenewCertificates> logger)
 {
     [Function($"{nameof(RenewCertificates)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
@@ -16,7 +16,7 @@ public class RenewCertificates(ILogger<RenewCertificates> logger)
         // 更新対象となる証明書がない場合は終わる
         if (certificates.Count == 0)
         {
-            logger.LogInformation("Certificates are not found");
+            LogCertificatesNotFound(logger);
 
             return;
         }
@@ -24,14 +24,14 @@ public class RenewCertificates(ILogger<RenewCertificates> logger)
         // スロットリング対策として 600 秒以内でジッターを追加する
         var jitter = (uint)context.NewGuid().GetHashCode() % 600;
 
-        logger.LogInformation("Adding random delay = {Jitter}", jitter);
+        LogAddingRandomDelay(logger, jitter);
 
         await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(jitter), CancellationToken.None);
 
         // 証明書の更新を行う
         foreach (var certificate in certificates)
         {
-            logger.LogInformation("{CertificateId} - {CertificateExpiresOn}", certificate.Id, certificate.ExpiresOn);
+            LogRenewingCertificate(logger, certificate.Name, certificate.ExpiresOn);
 
             try
             {
@@ -43,7 +43,7 @@ public class RenewCertificates(ILogger<RenewCertificates> logger)
             catch (Exception ex)
             {
                 // 失敗した場合はログに詳細を書き出して続きを実行する
-                logger.LogError(ex, "Failed sub orchestration with DNS names = {Join}", string.Join((string?)",", certificate.DnsNames));
+                LogFailedSubOrchestration(logger, ex, certificate.Name, string.Join((string?)",", certificate.DnsNames));
             }
         }
     }
@@ -54,11 +54,26 @@ public class RenewCertificates(ILogger<RenewCertificates> logger)
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RenewCertificates)}_{nameof(Orchestrator)}");
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, instanceId);
     }
 
     private readonly RetryPolicy _retryOptions = new(2, TimeSpan.FromHours(3))
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableOrchestratorException>()
     };
+
+    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal skipped. Reason: No certificates are due for renewal.")]
+    private static partial void LogCertificatesNotFound(ILogger logger);
+
+    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal delayed. DelaySeconds: {Jitter}")]
+    private static partial void LogAddingRandomDelay(ILogger logger, uint jitter);
+
+    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal processing. CertificateName: {CertificateName}. ExpiresOn: {CertificateExpiresOn}")]
+    private static partial void LogRenewingCertificate(ILogger logger, string certificateName, DateTimeOffset certificateExpiresOn);
+
+    [LoggerMessage(LogLevel.Error, "Scheduled certificate renewal failed. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
+    private static partial void LogFailedSubOrchestration(ILogger logger, Exception exception, string certificateName, string dnsNames);
+
+    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal orchestration started. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string instanceId);
 }

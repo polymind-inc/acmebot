@@ -13,7 +13,7 @@ using FromBodyAttribute = Microsoft.Azure.Functions.Worker.Http.FromBodyAttribut
 
 namespace Acmebot.App.Functions;
 
-public class AddCertificate(IHttpContextAccessor httpContextAccessor, ILogger<AddCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, ILogger<AddCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(AddCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
@@ -44,8 +44,11 @@ public class AddCertificate(IHttpContextAccessor httpContextAccessor, ILogger<Ad
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(SharedOrchestrator.IssueCertificate), certificatePolicyItem);
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, certificatePolicyItem.CertificateName, instanceId);
 
         return AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(GetInstanceState.HttpStart)}", new { instanceId }, null);
     }
+
+    [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string certificateName, string instanceId);
 }

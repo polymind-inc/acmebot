@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Acmebot.App.Functions;
 
-public class SharedActivity(
+public partial class SharedActivity(
     LookupClient lookupClient,
     AcmeClientFactory acmeClientFactory,
     IEnumerable<IDnsProvider> dnsProviders,
@@ -373,7 +373,7 @@ public class SharedActivity(
                     continue;
                 }
 
-                logger.LogError("ACME domain validation error: {SerializeObject}", JsonConvert.SerializeObject(challenge.Error));
+                LogAcmeDomainValidationError(logger, JsonConvert.SerializeObject(challenge.Error));
 
                 problems.Add(challenge.Error);
             }
@@ -511,4 +511,7 @@ public class SharedActivity(
 
         return webhookInvoker.SendFailedEventAsync(certificateName, dnsNames);
     }
+
+    [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]
+    private static partial void LogAcmeDomainValidationError(ILogger logger, string problemDetailsJson);
 }

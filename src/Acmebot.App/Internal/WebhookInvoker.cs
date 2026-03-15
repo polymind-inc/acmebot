@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Internal;
 
-public class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpClientFactory httpClientFactory, IOptions<AcmebotOptions> options, ILogger<WebhookInvoker> logger)
+public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpClientFactory httpClientFactory, IOptions<AcmebotOptions> options, ILogger<WebhookInvoker> logger)
 {
     private readonly AcmebotOptions _options = options.Value;
 
@@ -36,7 +36,12 @@ public class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpC
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Failed invoke webhook. Status Code = {ResponseStatusCode}, Reason = {ReadAsStringAsync}", response.StatusCode, await response.Content.ReadAsStringAsync());
+            var reason = await response.Content.ReadAsStringAsync();
+
+            LogFailedInvokeWebhook(logger, response.StatusCode, reason);
         }
     }
+
+    [LoggerMessage(LogLevel.Warning, "Webhook delivery failed. StatusCode: {ResponseStatusCode}. ResponseBody: {Reason}")]
+    private static partial void LogFailedInvokeWebhook(ILogger logger, System.Net.HttpStatusCode responseStatusCode, string reason);
 }

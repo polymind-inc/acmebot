@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
@@ -48,8 +48,11 @@ public class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}", certificateName);
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, certificateName, instanceId);
 
         return AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(GetInstanceState.HttpStart)}", new { instanceId }, null);
     }
+
+    [LoggerMessage(LogLevel.Information, "Certificate renewal orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string certificateName, string instanceId);
 }

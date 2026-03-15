@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions;
 
-public class GetCertificates(IHttpContextAccessor httpContextAccessor, ILogger<GetCertificates> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class GetCertificates(IHttpContextAccessor httpContextAccessor, ILogger<GetCertificates> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(GetCertificates)}_{nameof(Orchestrator)}")]
     public Task<IReadOnlyList<CertificateItem>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
@@ -32,10 +32,13 @@ public class GetCertificates(IHttpContextAccessor httpContextAccessor, ILogger<G
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(GetCertificates)}_{nameof(Orchestrator)}");
 
-        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
+        LogOrchestrationStarted(logger, instanceId);
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
         return Ok(metadata.SerializedOutput);
     }
+
+    [LoggerMessage(LogLevel.Information, "Certificate list retrieval orchestration started. InstanceId: {InstanceId}")]
+    private static partial void LogOrchestrationStarted(ILogger logger, string instanceId);
 }
