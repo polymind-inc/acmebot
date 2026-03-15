@@ -2,5 +2,5 @@
 
 public class GoogleDnsOptions
 {
-    public string KeyFile64 { get; set; }
+    public string? KeyFile64 { get; set; }
 }

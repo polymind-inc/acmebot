@@ -166,39 +166,39 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     private class ListDomainsResult
     {
         [JsonPropertyName("data")]
-        public IReadOnlyList<Domain> Domains { get; set; }
+        public IReadOnlyList<Domain>? Domains { get; set; }
     }
 
     private class Domain
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     private class ListDnsEntriesResponse
     {
         [JsonPropertyName("data")]
-        public IReadOnlyList<DnsEntry> DnsEntries { get; set; }
+        public IReadOnlyList<DnsEntry>? DnsEntries { get; set; }
     }
 
     private class DnsEntry
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("ttl")]
         public int Expire { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         [JsonPropertyName("value")]
-        public string Content { get; set; }
+        public string? Content { get; set; }
     }
 }

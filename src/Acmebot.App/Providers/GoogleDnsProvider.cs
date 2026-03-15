@@ -12,6 +12,7 @@ namespace Acmebot.App.Providers;
 
 public class GoogleDnsProvider : IDnsProvider
 {
+    [Obsolete]
     public GoogleDnsProvider(GoogleDnsOptions options)
     {
         var jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64));

@@ -121,7 +121,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
         return actualContacts is not null && actualContacts.SequenceEqual(expectedContacts, StringComparer.Ordinal);
     }
 
-    private TState LoadState<TState>(string path)
+    private TState? LoadState<TState>(string path)
     {
         var fullPath = ResolveStateFullPath(path);
 

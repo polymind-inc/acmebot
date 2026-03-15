@@ -5,16 +5,16 @@ namespace Acmebot.App.Models;
 public class CertificateItem
 {
     [JsonProperty("id")]
-    public Uri Id { get; set; }
+    public Uri? Id { get; set; }
 
     [JsonProperty("name")]
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     [JsonProperty("dnsNames")]
-    public IReadOnlyList<string> DnsNames { get; set; }
+    public IReadOnlyList<string>? DnsNames { get; set; }
 
     [JsonProperty("dnsProviderName")]
-    public string DnsProviderName { get; set; }
+    public string? DnsProviderName { get; set; }
 
     [JsonProperty("createdOn")]
     public DateTimeOffset CreatedOn { get; set; }
@@ -23,10 +23,10 @@ public class CertificateItem
     public DateTimeOffset ExpiresOn { get; set; }
 
     [JsonProperty("x509Thumbprint")]
-    public string X509Thumbprint { get; set; }
+    public string? X509Thumbprint { get; set; }
 
     [JsonProperty("keyType")]
-    public string KeyType { get; set; }
+    public string? KeyType { get; set; }
 
     [JsonProperty("keySize")]
     public int? KeySize { get; set; }
@@ -47,7 +47,7 @@ public class CertificateItem
     public bool IsSameEndpoint { get; set; }
 
     [JsonProperty("acmeEndpoint")]
-    public string AcmeEndpoint { get; set; }
+    public string? AcmeEndpoint { get; set; }
 
     [JsonProperty("dnsAlias")]
     public string? DnsAlias { get; set; }

@@ -230,7 +230,7 @@ public class TransIpProvider : IDnsProvider
             File.WriteAllText(fullPath, json);
         }
 
-        private TransIpToken LoadToken()
+        private TransIpToken? LoadToken()
         {
             var fullPath = Environment.ExpandEnvironmentVariables("%HOME%/.acmebot/transip_token.json");
 
@@ -247,9 +247,9 @@ public class TransIpProvider : IDnsProvider
 
     private class TransIpToken
     {
-        public string CustomerName { get; init; }
+        public string? CustomerName { get; init; }
 
-        public string Token { get; init; }
+        public string? Token { get; init; }
 
         public DateTimeOffset Expires { get; init; }
 
@@ -262,7 +262,7 @@ public class TransIpProvider : IDnsProvider
     private class TokenResponse
     {
         [JsonPropertyName("token")]
-        public string Token { get; set; }
+        public string? Token { get; set; }
 
         public long GetTokenExpiration()
         {
@@ -280,10 +280,10 @@ public class TransIpProvider : IDnsProvider
     private class TokenRequest
     {
         [JsonPropertyName("login")]
-        public string Login { get; set; }
+        public string? Login { get; set; }
 
         [JsonPropertyName("nonce")]
-        public string Nonce { get; set; }
+        public string? Nonce { get; set; }
 
         [JsonPropertyName("read_only")]
         public bool ReadOnly { get; set; }
@@ -301,39 +301,39 @@ public class TransIpProvider : IDnsProvider
     private class ListDomainsResult
     {
         [JsonPropertyName("domains")]
-        public IReadOnlyList<Domain> Domains { get; set; }
+        public IReadOnlyList<Domain>? Domains { get; set; }
     }
 
     private class Domain
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     private class ListDnsEntriesResponse
     {
         [JsonPropertyName("dnsEntries")]
-        public IReadOnlyList<DnsEntry> DnsEntries { get; set; }
+        public IReadOnlyList<DnsEntry>? DnsEntries { get; set; }
     }
 
     private class DnsEntryRequest
     {
         [JsonPropertyName("dnsEntry")]
-        public DnsEntry DnsEntry { get; set; }
+        public DnsEntry? DnsEntry { get; set; }
     }
 
     private class DnsEntry
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("expire")]
         public int Expire { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         [JsonPropertyName("content")]
-        public string Content { get; set; }
+        public string? Content { get; set; }
     }
 }

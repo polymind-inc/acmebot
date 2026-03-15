@@ -2,5 +2,5 @@
 
 public class CloudflareOptions
 {
-    public string ApiToken { get; set; }
+    public string? ApiToken { get; set; }
 }

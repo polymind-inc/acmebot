@@ -2,5 +2,5 @@
 
 public class GandiOptions
 {
-    public string ApiKey { get; set; }
+    public string? ApiKey { get; set; }
 }

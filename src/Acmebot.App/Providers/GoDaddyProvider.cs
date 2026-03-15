@@ -101,28 +101,28 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
     private class ZoneDomain
     {
         [JsonPropertyName("domain")]
-        public string Domain { get; set; }
+        public string? Domain { get; set; }
 
         [JsonPropertyName("domainId")]
-        public string DomainId { get; set; }
+        public string? DomainId { get; set; }
 
         [JsonPropertyName("nameServers")]
-        public string[] NameServers { get; set; }
+        public string[]? NameServers { get; set; }
     }
 
     private class DnsEntry
     {
         [JsonPropertyName("data")]
-        public string Data { get; set; }
+        public string? Data { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         // ReSharper disable once InconsistentNaming
         [JsonPropertyName("ttl")]
         public int TTL { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
     }
 }

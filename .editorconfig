@@ -12,9 +12,6 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-[project.json]
-indent_size = 2
-
 # C# files
 [*.cs]
 charset = utf-8-bom
@@ -45,7 +42,7 @@ dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion
 dotnet_style_qualification_for_event = false:suggestion
 
-# Types: use keywords instead of BCL types, and permit var only when the type is clear
+# Types: use keywords instead of BCL types, and prefer var in most cases
 csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = true:suggestion
@@ -87,7 +84,7 @@ csharp_prefer_braces = true:error
 csharp_preserve_single_line_blocks = true:none
 csharp_preserve_single_line_statements = false:none
 csharp_prefer_static_local_function = true:suggestion
-csharp_prefer_simple_using_statement = false:none
+csharp_prefer_simple_using_statement = true:suggestion
 csharp_style_prefer_switch_expression = true:suggestion
 
 # Code quality
@@ -109,14 +106,14 @@ dotnet_style_prefer_conditional_expression_over_return = true:refactoring
 csharp_prefer_simple_default_expression = true:suggestion
 
 # Expression-bodied members
-csharp_style_expression_bodied_methods = true:refactoring
-csharp_style_expression_bodied_constructors = true:refactoring
-csharp_style_expression_bodied_operators = true:refactoring
-csharp_style_expression_bodied_properties = true:refactoring
-csharp_style_expression_bodied_indexers = true:refactoring
-csharp_style_expression_bodied_accessors = true:refactoring
-csharp_style_expression_bodied_lambdas = true:refactoring
-csharp_style_expression_bodied_local_functions = true:refactoring
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_constructors = when_on_single_line:suggestion
+csharp_style_expression_bodied_operators = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+csharp_style_expression_bodied_indexers = when_on_single_line:suggestion
+csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
+csharp_style_expression_bodied_lambdas = when_on_single_line:suggestion
+csharp_style_expression_bodied_local_functions = when_on_single_line:suggestion
 
 # Pattern matching
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
@@ -131,7 +128,7 @@ csharp_style_conditional_delegate_call = true:suggestion
 csharp_style_prefer_index_operator = false:none
 csharp_style_prefer_range_operator = false:none
 csharp_style_pattern_local_over_anonymous_function = false:none
-csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_namespace_declarations = file_scoped:error
 
 # Space preferences
 csharp_space_after_cast = false
@@ -160,17 +157,8 @@ csharp_space_between_square_brackets = false
 # Analyzers
 dotnet_code_quality.ca1802.api_surface = private, internal
 
-# C++ Files
-[*.{cpp,h,in}]
-curly_bracket_next_line = true
-indent_brace_style = Allman
-
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
-indent_size = 2
-
-# Xml build files
-[*.builds]
 indent_size = 2
 
 # Xml files
@@ -180,12 +168,6 @@ indent_size = 2
 # Xml config files
 [*.{props,targets,config,nuspec}]
 indent_size = 2
-
-# Shell scripts
-[*.sh]
-end_of_line = lf
-[*.{cmd, bat}]
-end_of_line = crlf
 
 # JavaScript files
 [*.{js,json}]

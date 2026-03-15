@@ -161,10 +161,10 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
     private class ZonesResponse
     {
         [JsonPropertyName("metadata")]
-        public Metadata Metadata { get; set; }
+        public Metadata? Metadata { get; set; }
 
         [JsonPropertyName("zones")]
-        public ZoneResult[] Zones { get; set; }
+        public ZoneResult[]? Zones { get; set; }
     }
 
     private class Metadata
@@ -182,30 +182,30 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
     private class ZoneResult
     {
         [JsonPropertyName("zone")]
-        public string Zone { get; set; }
+        public string? Zone { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         [JsonPropertyName("contractId")]
-        public string ContractId { get; set; }
+        public string? ContractId { get; set; }
 
         [JsonPropertyName("activationState")]
-        public string ActivationState { get; set; }
+        public string? ActivationState { get; set; }
     }
 
     private class RecordSet
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         [JsonPropertyName("ttl")]
         public int Ttl { get; set; }
 
         [JsonPropertyName("rdata")]
-        public string[] Rdata { get; set; }
+        public string[]? Rdata { get; set; }
     }
 }

@@ -83,43 +83,43 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
     public class Domain
     {
         [JsonPropertyName("fqdn")]
-        public string Fqdn { get; set; }
+        public string? Fqdn { get; set; }
 
         [JsonPropertyName("tld")]
-        public string Tld { get; set; }
+        public string? Tld { get; set; }
 
         [JsonPropertyName("status")]
-        public List<string> Status { get; set; }
+        public List<string>? Status { get; set; }
 
         [JsonPropertyName("dates")]
-        public Dates Dates { get; set; }
+        public Dates? Dates { get; set; }
 
         [JsonPropertyName("nameserver")]
-        public Nameserver Nameserver { get; set; }
+        public Nameserver? Nameserver { get; set; }
 
         [JsonPropertyName("autorenew")]
         public bool Autorenew { get; set; }
 
         [JsonPropertyName("domain_owner")]
-        public string DomainOwner { get; set; }
+        public string? DomainOwner { get; set; }
 
         [JsonPropertyName("orga_owner")]
-        public string OrgaOwner { get; set; }
+        public string? OrgaOwner { get; set; }
 
         [JsonPropertyName("owner")]
-        public string Owner { get; set; }
+        public string? Owner { get; set; }
 
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("tags")]
-        public List<string> Tags { get; set; }
+        public List<string>? Tags { get; set; }
 
         [JsonPropertyName("href")]
-        public string Href { get; set; }
+        public string? Href { get; set; }
 
         [JsonPropertyName("fqdn_unicode")]
-        public string FqdnUnicode { get; set; }
+        public string? FqdnUnicode { get; set; }
     }
 
     public class Dates
@@ -140,6 +140,6 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
     public class Nameserver
     {
         [JsonPropertyName("current")]
-        public string Current { get; set; }
+        public string? Current { get; set; }
     }
 }

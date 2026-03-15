@@ -117,19 +117,19 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
     private class ApiResult<T>
     {
         [JsonPropertyName("result")]
-        public T[] Result { get; set; }
+        public T[]? Result { get; set; }
 
         [JsonPropertyName("result_info")]
-        public ResultInfo ResultInfo { get; set; }
+        public ResultInfo? ResultInfo { get; set; }
 
         [JsonPropertyName("success")]
         public bool Success { get; set; }
 
         [JsonPropertyName("errors")]
-        public object[] Errors { get; set; }
+        public object[]? Errors { get; set; }
 
         [JsonPropertyName("messages")]
-        public object[] Messages { get; set; }
+        public object[]? Messages { get; set; }
     }
 
     private class ResultInfo
@@ -153,19 +153,19 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
     private class ZoneResult
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("status")]
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
         [JsonPropertyName("name_servers")]
-        public string[] NameServers { get; set; }
+        public string[]? NameServers { get; set; }
 
         [JsonPropertyName("vanity_name_servers")]
-        public string[] VanityNameServers { get; set; }
+        public string[]? VanityNameServers { get; set; }
 
         [JsonIgnore]
         public string[] ActualNameServers => VanityNameServers is { Length: > 0 } ? VanityNameServers : NameServers;
@@ -174,13 +174,13 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
     private class DnsRecordResult
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("content")]
-        public string Content { get; set; }
+        public string? Content { get; set; }
 
         // ReSharper disable once InconsistentNaming
         [JsonPropertyName("ttl")]

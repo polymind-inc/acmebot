@@ -86,22 +86,22 @@ public class GandiProvider(GandiOptions options) : IDnsProvider
     public class Zone
     {
         [JsonPropertyName("uuid")]
-        public string Uuid { get; set; }
+        public string? Uuid { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("primary_ns")]
-        public string PrimaryNameServer { get; set; }
+        public string? PrimaryNameServer { get; set; }
 
         [JsonPropertyName("email")]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [JsonPropertyName("serial")]
         public int Serial { get; set; }
 
         [JsonPropertyName("user_uuid")]
-        public string UserUuid { get; set; }
+        public string? UserUuid { get; set; }
 
         [JsonPropertyName("refresh")]
         public int Refresh { get; set; }
