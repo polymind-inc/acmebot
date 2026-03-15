@@ -44,23 +44,32 @@ var appInsightsName = 'appi-${appNamePrefix}-${substring(uniqueString(resourceGr
 var workspaceName = 'log-${appNamePrefix}-${substring(uniqueString(resourceGroup().id, deployment().name), 0, 4)}'
 var storageAccountName = 'st${uniqueString(resourceGroup().id, deployment().name)}func'
 var keyVaultName = 'kv-${appNamePrefix}-${substring(uniqueString(resourceGroup().id, deployment().name), 0, 4)}'
-var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')
+var userAssignedIdentityName = 'id-${appNamePrefix}-${substring(uniqueString(resourceGroup().id, deployment().name), 0, 4)}'
+var keyVaultRoleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')
+// Storage Blob Data Owner role - Required for host storage and deployment package
+var storageBlobDataOwnerRoleId = resourceId('Microsoft.Authorization/roleDefinitions/', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+// Storage Blob Data Contributor role - Required for Flex Consumption deployment storage
+var storageBlobDataContributorRoleId = resourceId('Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+// Storage Table Data Contributor role - Required for Durable Functions orchestration history
+var storageTableDataContributorRoleId = resourceId('Microsoft.Authorization/roleDefinitions/', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
+// Storage Queue Data Contributor role - Required for Durable Functions task coordination
+var storageQueueDataContributorRoleId = resourceId('Microsoft.Authorization/roleDefinitions/', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
 var acmebotAppSettings = [
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
     value: appInsights.properties.ConnectionString
   }
   {
-    name: 'AzureWebJobsStorage'
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    name: 'AzureWebJobsStorage__accountName'
+    value: storageAccountName
   }
   {
-    name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    name: 'AzureWebJobsStorage__credential'
+    value: 'managedidentity'
   }
   {
-    name: 'WEBSITE_CONTENTSHARE'
-    value: toLower(functionAppName)
+    name: 'AzureWebJobsStorage__clientId'
+    value: userAssignedIdentity.properties.clientId
   }
   {
     name: 'WEBSITE_RUN_FROM_PACKAGE'
@@ -72,28 +81,32 @@ var acmebotAppSettings = [
     value: '~4'
   }
   {
-    name: 'FUNCTIONS_INPROC_NET8_ENABLED'
-    value: '1'
-  }
-  {
     name: 'FUNCTIONS_WORKER_RUNTIME'
     value: 'dotnet'
   }
   {
-    name: 'Acmebot:Contacts'
+    name: 'FUNCTIONS_INPROC_NET8_ENABLED'
+    value: '1'
+  }
+  {
+    name: 'Acmebot__Contacts'
     value: mailAddress
   }
   {
-    name: 'Acmebot:Endpoint'
+    name: 'Acmebot__Endpoint'
     value: acmeEndpoint
   }
   {
-    name: 'Acmebot:VaultBaseUrl'
+    name: 'Acmebot__VaultBaseUrl'
     value: (createWithKeyVault ? 'https://${keyVaultName}${environment().suffixes.keyvaultDns}' : keyVaultBaseUrl)
   }
   {
-    name: 'Acmebot:Environment'
+    name: 'Acmebot__Environment'
     value: environment().name
+  }
+  {
+    name: 'Acmebot__ManagedIdentityClientId'
+    value: userAssignedIdentity.properties.clientId
   }
 ]
 
@@ -107,18 +120,74 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   properties: {
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
+    publicNetworkAccess: 'Enabled'
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+  }
+}
+
+// User-Assigned Managed Identity for Flex Consumption Function App
+resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: userAssignedIdentityName
+  location: location
+}
+
+// Storage role assignments for User-Assigned Managed Identity (must be created before Function App)
+resource storageBlobDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, userAssignedIdentityName, storageBlobDataOwnerRoleId)
+  properties: {
+    roleDefinitionId: storageBlobDataOwnerRoleId
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource storageBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, userAssignedIdentityName, storageBlobDataContributorRoleId)
+  properties: {
+    roleDefinitionId: storageBlobDataContributorRoleId
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource storageTableDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, userAssignedIdentityName, storageTableDataContributorRoleId)
+  properties: {
+    roleDefinitionId: storageTableDataContributorRoleId
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource storageQueueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, userAssignedIdentityName, storageQueueDataContributorRoleId)
+  properties: {
+    roleDefinitionId: storageQueueDataContributorRoleId
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: appServicePlanName
   location: location
+  kind: 'elastic'
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'EP1'
+    tier: 'ElasticPremium'
   }
-  properties: {}
+  properties: {
+    maximumElasticWorkerCount: 20
+  }
 }
 
 resource workspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
@@ -150,24 +219,33 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   location: location
   kind: 'functionapp'
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
   properties: {
     clientAffinityEnabled: false
     httpsOnly: true
     serverFarmId: appServicePlan.id
+    keyVaultReferenceIdentity: userAssignedIdentity.id
     siteConfig: {
       appSettings: concat(acmebotAppSettings, additionalAppSettings)
-      netFrameworkVersion: 'v8.0'
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
-      scmMinTlsVersion: '1.2'
+      netFrameworkVersion: 'v8.0'
       cors: {
         allowedOrigins: ['https://portal.azure.com']
         supportCredentials: false
       }
     }
   }
+  dependsOn: [
+    storageBlobDataOwnerRoleAssignment
+    storageBlobDataContributorRoleAssignment
+    storageTableDataContributorRoleAssignment
+    storageQueueDataContributorRoleAssignment
+  ]
 }
 
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' = if (createWithKeyVault) {
@@ -185,15 +263,15 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' = if (createWithKeyVaul
 
 resource keyVault_roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (createWithKeyVault) {
   scope: keyVault
-  name: guid(keyVault.id, functionAppName, roleDefinitionId)
+  name: guid(keyVault.id, userAssignedIdentityName, keyVaultRoleDefinitionId)
   properties: {
-    roleDefinitionId: roleDefinitionId
-    principalId: functionApp.identity.principalId
+    roleDefinitionId: keyVaultRoleDefinitionId
+    principalId: userAssignedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
 output functionAppName string = functionApp.name
-output principalId string = functionApp.identity.principalId
-output tenantId string = functionApp.identity.tenantId
+output principalId string = userAssignedIdentity.properties.principalId
+output tenantId string = userAssignedIdentity.properties.tenantId
 output keyVaultName string = createWithKeyVault ? keyVault.name : ''
