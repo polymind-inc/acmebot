@@ -17,8 +17,6 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        submodules: true
 
     - name: Use .NET ${{ env.DOTNET_VERSION }}
       uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
@@ -34,7 +32,7 @@ jobs:
       run: dotnet build -c Release ./src
 
     - name: Lint C# code
-      run: dotnet format --verify-no-changes --exclude ./src/ACMESharpCore --verbosity detailed --no-restore ./src
+      run: dotnet format --verify-no-changes --verbosity detailed --no-restore ./src
 
     - name: Lint Bicep template
       run: az bicep build -f ./deploy/azuredeploy.bicep && git diff --exit-code --quiet

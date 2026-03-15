@@ -15,19 +15,13 @@ Thanks for your interest in contributing to Acmebot.
 - .NET SDK 10
 - Azure CLI
 - Bicep CLI support through Azure CLI
-- Git with submodule support
+- Git
 
 ### Clone the repository
 
 ```bash
-git clone --recurse-submodules https://github.com/polymind-inc/acmebot.git
+git clone https://github.com/polymind-inc/acmebot.git
 cd acmebot
-```
-
-If you already cloned the repository without submodules, run:
-
-```bash
-git submodule update --init --recursive
 ```
 
 ## Build and Validation
@@ -37,7 +31,7 @@ Run these commands from the repository root.
 ```bash
 dotnet restore ./src
 dotnet build -c Release ./src
-dotnet format --verify-no-changes --exclude ./src/ACMESharpCore --verbosity detailed --no-restore ./src
+dotnet format --verify-no-changes --verbosity detailed --no-restore ./src
 az bicep build -f ./deploy/azuredeploy.bicep
 ```
 
@@ -50,13 +44,6 @@ These commands mirror the checks currently enforced in CI.
 - Add or update tests when the change affects behavior that can be validated automatically.
 - Avoid unrelated refactoring in the same pull request.
 - Do not commit secrets, certificates, or populated `local.settings.json` values.
-
-## Working With Submodules
-
-This repository includes [src/ACMESharpCore](src/ACMESharpCore) as a submodule.
-
-- Keep Acmebot changes and submodule updates intentionally scoped.
-- If your change depends on a newer ACMESharpCore revision, include the submodule update in the same pull request and explain why.
 
 ## Submission Checklist
 
