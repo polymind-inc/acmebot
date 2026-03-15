@@ -1,6 +1,9 @@
 ﻿using System.Text.Json;
 
-using Acmebot.App.Internal;
+using Acmebot.App.Acme;
+using Acmebot.App.Extensions;
+using Acmebot.App.Infrastructure;
+using Acmebot.App.Notifications;
 using Acmebot.App.Options;
 using Acmebot.App.Providers;
 

@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-using Acmebot.App.Internal;
+using Acmebot.App.Infrastructure;
 using Acmebot.App.Options;
 
 using Azure;

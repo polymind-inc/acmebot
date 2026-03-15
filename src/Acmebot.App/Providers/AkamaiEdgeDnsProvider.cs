@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Internal;
+using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 using Akamai.EdgeGrid.Auth;

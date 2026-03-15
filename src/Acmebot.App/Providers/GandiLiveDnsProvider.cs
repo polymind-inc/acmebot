@@ -2,7 +2,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Internal;
+using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;

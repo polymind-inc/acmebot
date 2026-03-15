@@ -12,11 +12,10 @@ namespace Acmebot.App.Providers;
 
 public class GoogleDnsProvider : IDnsProvider
 {
-    [Obsolete]
     public GoogleDnsProvider(GoogleDnsOptions options)
     {
         var jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64));
-        var credential = GoogleCredential.FromJson(jsonString).CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
+        var credential = CredentialFactory.FromJson<GoogleCredential>(jsonString).CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
 
         // Create the service.
         _dnsService = new DnsService(new BaseClientService.Initializer { HttpClientInitializer = credential });
