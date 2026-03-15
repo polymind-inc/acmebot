@@ -137,7 +137,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 
     if (dnsProviders.Count == 0)
     {
-        throw new NotSupportedException("DNS Provider is not configured. Please check the documentation and configure it.");
+        throw new NotSupportedException("No DNS provider is configured. Configure one before starting Acmebot.");
     }
 
     return dnsProviders;

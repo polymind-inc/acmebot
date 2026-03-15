@@ -116,12 +116,12 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
                 if (string.IsNullOrWhiteSpace(apiKey))
                 {
-                    throw new ArgumentException("API Key must be specified", nameof(apiKey));
+                    throw new ArgumentException("A DNS Made Easy API key must be provided.", nameof(apiKey));
                 }
 
                 if (string.IsNullOrWhiteSpace(secretKey))
                 {
-                    throw new ArgumentException("Secret Key must be specified", nameof(secretKey));
+                    throw new ArgumentException("A DNS Made Easy secret key must be provided.", nameof(secretKey));
                 }
 
                 ApiKey = apiKey;

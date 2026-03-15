@@ -58,7 +58,7 @@ public class DnsChallengeActivities(
 
         if (notFoundZoneDnsNames.Count > 0)
         {
-            throw new PreconditionException($"DNS zone(s) are not found. DnsNames = {string.Join(",", notFoundZoneDnsNames)}");
+            throw new PreconditionException($"No DNS zone was found for the following domain name(s): {string.Join(", ", notFoundZoneDnsNames)}.");
         }
 
         foreach (var zone in foundZones.Where(x => x.NameServers is { Count: > 0 }))
@@ -76,7 +76,7 @@ public class DnsChallengeActivities(
 
             if (!actualNameServers.Intersect(expectedNameServers, StringComparer.OrdinalIgnoreCase).Any())
             {
-                throw new PreconditionException($"The delegated name server is not correct. DNS zone = {zone.Name}, Expected = {string.Join(",", expectedNameServers)}, Actual = {string.Join(",", actualNameServers)}");
+                throw new PreconditionException($"The delegated name servers for DNS zone '{zone.Name}' do not match the expected configuration. Expected: {string.Join(", ", expectedNameServers)}. Actual: {string.Join(", ", actualNameServers)}.");
             }
         }
 
@@ -120,7 +120,7 @@ public class DnsChallengeActivities(
 
             if (challenge is null)
             {
-                throw new PreconditionException("DNS-01 cannot be used for domains for which a certificate has already been issued using HTTP-01.");
+                throw new PreconditionException("DNS-01 validation cannot be used for domains that have already been validated with HTTP-01.");
             }
 
             var challengeInstruction = AcmeChallengeInstructions.CreateDns01(acmeContext.Account, authorization, challenge);
@@ -145,7 +145,7 @@ public class DnsChallengeActivities(
 
             if (zone is null)
             {
-                throw new PreconditionException($"DNS zone is not found. DnsRecordName = {dnsRecordName}");
+                throw new PreconditionException($"No DNS zone was found for record '{dnsRecordName}'.");
             }
 
             var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
@@ -172,7 +172,7 @@ public class DnsChallengeActivities(
             }
             catch (DnsResponseException ex)
             {
-                throw new RetriableActivityException($"{challengeResult.DnsRecordName} bad response. Message: \"{ex.DnsError}\"", ex);
+                throw new RetriableActivityException($"DNS query for '{challengeResult.DnsRecordName}' returned an error response: {ex.DnsError}.", ex);
             }
 
             var txtRecords = queryResult.Answers
@@ -181,12 +181,12 @@ public class DnsChallengeActivities(
 
             if (txtRecords.Length == 0)
             {
-                throw new RetriableActivityException($"{challengeResult.DnsRecordName} did not resolve.");
+                throw new RetriableActivityException($"DNS query for '{challengeResult.DnsRecordName}' did not return any TXT records yet.");
             }
 
             if (!txtRecords.Any(x => x.Text.Contains(challengeResult.DnsRecordValue)))
             {
-                throw new RetriableActivityException($"{challengeResult.DnsRecordName} is not correct. Expected: \"{challengeResult.DnsRecordValue}\", Actual: \"{string.Join(",", txtRecords.SelectMany(x => x.Text))}\"");
+                throw new RetriableActivityException($"DNS TXT record '{challengeResult.DnsRecordName}' does not contain the expected value. Expected: '{challengeResult.DnsRecordValue}'. Actual: '{string.Join(", ", txtRecords.SelectMany(x => x.Text))}'.");
             }
         }
     }

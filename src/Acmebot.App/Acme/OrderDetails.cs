@@ -16,7 +16,7 @@ public sealed class OrderDetails
         return new OrderDetails
         {
             Payload = result.Resource,
-            OrderUrl = result.Location ?? existingOrderUrl ?? throw new InvalidOperationException("The ACME server did not return an order URL.")
+            OrderUrl = result.Location ?? existingOrderUrl ?? throw new InvalidOperationException("The ACME server did not return an order URL for this request.")
         };
     }
 }

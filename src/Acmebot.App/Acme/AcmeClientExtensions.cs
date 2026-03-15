@@ -15,7 +15,7 @@ internal static class AcmeClientExtensions
     {
         if (order.Payload.Certificate is null)
         {
-            throw new InvalidOperationException("The ACME order does not include a certificate URL.");
+            throw new InvalidOperationException("The ACME order did not include a certificate URL.");
         }
 
         var defaultCertificateChain = await acmeClient.DownloadCertificateAsync(account, order.Payload.Certificate, cancel);

@@ -55,7 +55,7 @@ internal class AccountKey
             return AcmeSigner.Create(rsa, ParseHashAlgorithm(), ownsKey: true);
         }
 
-        throw new Exception($"Unknown or unsupported KeyType [{KeyType}]");
+        throw new NotSupportedException($"The account key type '{KeyType}' is not supported.");
     }
 
     private bool IsLegacyEcExport()
@@ -65,7 +65,7 @@ internal class AccountKey
 
     private void ImportLegacyEcKey(ECDsa ecdsa)
     {
-        var details = JsonSerializer.Deserialize<LegacyEcExportDetails>(KeyExport) ?? throw new InvalidOperationException("Invalid EC account key format.");
+        var details = JsonSerializer.Deserialize<LegacyEcExportDetails>(KeyExport) ?? throw new InvalidOperationException("The EC account key is malformed or uses an unsupported format.");
 
         ecdsa.ImportParameters(new ECParameters
         {
@@ -86,7 +86,7 @@ internal class AccountKey
             256 => ECCurve.NamedCurves.nistP256,
             384 => ECCurve.NamedCurves.nistP384,
             512 => ECCurve.NamedCurves.nistP521,
-            _ => throw new NotSupportedException($"Unknown or unsupported EC hash size [{hashSize}]")
+            _ => throw new NotSupportedException($"The EC hash size '{hashSize}' is not supported.")
         };
     }
 
@@ -97,7 +97,7 @@ internal class AccountKey
             "RS256" => HashAlgorithmName.SHA256,
             "RS384" => HashAlgorithmName.SHA384,
             "RS512" => HashAlgorithmName.SHA512,
-            _ => throw new NotSupportedException($"Unknown or unsupported RSA key type [{KeyType}]")
+            _ => throw new NotSupportedException($"The RSA account key type '{KeyType}' is not supported.")
         };
     }
 

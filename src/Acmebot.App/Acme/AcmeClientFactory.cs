@@ -30,7 +30,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
         {
             if (account is not null)
             {
-                throw new PreconditionException("The ACME account key is missing.");
+                throw new PreconditionException("The ACME account exists, but its private key could not be found.");
             }
 
             accountKey = AccountKey.CreateDefault();
@@ -53,7 +53,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
 
             if (externalAccountBinding is null && (directory.Metadata?.ExternalAccountRequired ?? false))
             {
-                throw new PreconditionException("This ACME endpoint requires External Account Binding.");
+                throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
             }
 
             accountHandle = await client.CreateAccountAsync(

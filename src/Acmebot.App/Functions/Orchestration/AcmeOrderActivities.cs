@@ -83,15 +83,15 @@ public partial class AcmeOrderActivities(
 
             if (problems.Count > 0 && problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
             {
-                throw new RetriableOrchestratorException("ACME validation status is invalid, but retriable error. It will retry automatically.");
+                throw new RetriableOrchestratorException("ACME validation failed because of a DNS-related error. The operation will be retried automatically.");
             }
 
-            throw new InvalidOperationException($"ACME validation status is invalid. Required retry at first.\nLastError = {JsonConvert.SerializeObject(problems.Last())}");
+            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonConvert.SerializeObject(problems.Last())}");
         }
 
         if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
         {
-            throw new RetriableActivityException($"ACME validation status is {orderDetails.Payload.Status}. It will retry automatically.");
+            throw new RetriableActivityException($"ACME validation is still in progress. Current order status: {orderDetails.Payload.Status}. The operation will be retried automatically.");
         }
     }
 
@@ -123,7 +123,7 @@ public partial class AcmeOrderActivities(
         return OrderDetails.FromResult(
             await acmeContext.Client.FinalizeOrderAsync(
                 acmeContext.Account,
-                orderDetails.Payload.Finalize ?? throw new InvalidOperationException("The ACME order does not include a finalize URL."),
+                orderDetails.Payload.Finalize ?? throw new InvalidOperationException("The ACME order did not include a finalize URL."),
                 csr),
             orderDetails.OrderUrl);
     }
@@ -137,12 +137,12 @@ public partial class AcmeOrderActivities(
 
         if (orderDetails.Payload.Status == AcmeOrderStatuses.Invalid)
         {
-            throw new InvalidOperationException("Finalize request is invalid. Required retry at first.");
+            throw new InvalidOperationException("The ACME order became invalid during finalization. Review the reported problem and retry the operation.");
         }
 
         if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
         {
-            throw new RetriableActivityException($"Finalize request is {orderDetails.Payload.Status}. It will retry automatically.");
+            throw new RetriableActivityException($"ACME order finalization is still in progress. Current order status: {orderDetails.Payload.Status}. The operation will be retried automatically.");
         }
 
         return orderDetails;
