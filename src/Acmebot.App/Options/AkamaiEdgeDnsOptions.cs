@@ -2,11 +2,11 @@
 
 public class AkamaiEdgeDnsOptions
 {
-    public string? Host { get; set; }
+    public required string Host { get; set; }
 
-    public string? ClientToken { get; set; }
+    public required string ClientToken { get; set; }
 
-    public string? ClientSecret { get; set; }
+    public required string ClientSecret { get; set; }
 
-    public string? AccessToken { get; set; }
+    public required string AccessToken { get; set; }
 }

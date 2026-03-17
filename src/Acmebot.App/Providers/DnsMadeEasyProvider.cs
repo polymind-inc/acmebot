@@ -45,16 +45,16 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
         var recordsToDelete = records.Where(x => x.Name == relativeRecordName && x.Type == "TXT");
 
-        try
+        foreach (var record in recordsToDelete)
         {
-            foreach (var record in recordsToDelete)
+            try
             {
                 await _client.DeleteRecordAsync(zone.Id, record.Id, cancellationToken);
             }
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            // ignored
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // ignored
+            }
         }
     }
 

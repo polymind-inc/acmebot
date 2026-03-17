@@ -10,7 +10,7 @@ namespace Acmebot.App.Providers;
 
 public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 {
-    private readonly GoDaddyClient _client = new(options.ApiKey, options.ApiSecret);
+    private readonly GoDaddyClient _goDaddyClient = new(options.ApiKey, options.ApiSecret);
 
     public string Name => "GoDaddy";
 
@@ -20,7 +20,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
     {
         var zones = new List<DnsZone>();
 
-        await foreach (var domain in _client.ListDomainsAsync(cancellationToken))
+        await foreach (var domain in _goDaddyClient.ListDomainsAsync(cancellationToken))
         {
             zones.Add(new DnsZone(this) { Id = domain.DomainId, Name = domain.Domain, NameServers = domain.NameServers ?? [] });
         }
@@ -32,14 +32,14 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
     {
         var entries = values.Select(x => new DnsEntry { Name = relativeRecordName, Type = "TXT", Ttl = 600, Data = x }).ToArray();
 
-        return _client.AddRecordAsync(zone.Name, entries, cancellationToken);
+        return _goDaddyClient.AddRecordAsync(zone.Name, entries, cancellationToken);
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _client.DeleteRecordAsync(zone.Name, "TXT", relativeRecordName, cancellationToken);
+            await _goDaddyClient.DeleteRecordAsync(zone.Name, "TXT", relativeRecordName, cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -51,9 +51,6 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
     {
         public GoDaddyClient(string apiKey, string apiSecret)
         {
-            ArgumentNullException.ThrowIfNull(apiKey);
-            ArgumentNullException.ThrowIfNull(apiSecret);
-
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.godaddy.com/v1/")
@@ -91,10 +88,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
         {
             var response = await _httpClient.DeleteAsync($"domains/{domain}/records/{type}/{name}", cancellationToken);
 
-            if (response.StatusCode != HttpStatusCode.NotFound)
-            {
-                response.EnsureSuccessStatusCode();
-            }
+            response.EnsureSuccessStatusCode();
         }
 
         public async Task AddRecordAsync(string domain, IReadOnlyList<DnsEntry> entries, CancellationToken cancellationToken = default)

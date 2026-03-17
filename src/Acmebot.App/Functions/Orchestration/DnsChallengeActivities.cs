@@ -110,7 +110,7 @@ public class DnsChallengeActivities(
 
         foreach (var authorizationUrl in authorizationUrls)
         {
-            var authorization = (await acmeClient.GetAuthorizationAsync(acmeContext.Account, authorizationUrl)).Resource;
+            var authorization = (await acmeClient.GetAuthorizationAsync(acmeContext.Account, authorizationUrl, cancellationToken)).Resource;
 
             if (authorization.Status == AcmeAuthorizationStatuses.Valid)
             {

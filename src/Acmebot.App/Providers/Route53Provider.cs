@@ -7,16 +7,9 @@ using Amazon.Runtime;
 
 namespace Acmebot.App.Providers;
 
-public class Route53Provider : IDnsProvider
+public class Route53Provider(Route53Options options) : IDnsProvider
 {
-    public Route53Provider(Route53Options options)
-    {
-        var credentials = new BasicAWSCredentials(options.AccessKey, options.SecretKey);
-
-        _amazonRoute53Client = new AmazonRoute53Client(credentials, RegionEndpoint.GetBySystemName(options.Region));
-    }
-
-    private readonly AmazonRoute53Client _amazonRoute53Client;
+    private readonly AmazonRoute53Client _amazonRoute53Client = new(new BasicAWSCredentials(options.AccessKey, options.SecretKey), RegionEndpoint.GetBySystemName(options.Region));
 
     public string Name => "Amazon Route 53";
 

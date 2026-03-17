@@ -15,12 +15,6 @@ public class AkamaiEdgeDnsProvider : IDnsProvider
 
     public AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(options.Host);
-        ArgumentNullException.ThrowIfNull(options.ClientToken);
-        ArgumentNullException.ThrowIfNull(options.ClientSecret);
-        ArgumentNullException.ThrowIfNull(options.AccessToken);
-
         var credentials = new EdgeGridCredentials(
             host: options.Host,
             clientToken: options.ClientToken,

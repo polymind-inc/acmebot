@@ -20,7 +20,7 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
     {
         var zones = new List<DnsZone>();
 
-        await foreach (var zone in _cloudflareClient.ListAllZonesAsync(cancellationToken))
+        await foreach (var zone in _cloudflareClient.ListZonesAsync(cancellationToken))
         {
             zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Name, NameServers = zone.ActualNameServers });
         }
@@ -45,17 +45,17 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         var records = await _cloudflareClient.ListDnsRecordsAsync(zone.Id, recordName, cancellationToken);
 
-        try
+        // 該当する全てのレコードを削除する
+        foreach (var record in records)
         {
-            // 該当する全てのレコードを削除する
-            foreach (var record in records)
+            try
             {
                 await _cloudflareClient.DeleteDnsRecordAsync(zone.Id, record.Id, cancellationToken);
             }
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            // ignored
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // ignored
+            }
         }
     }
 
@@ -74,7 +74,7 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async IAsyncEnumerable<Zone> ListAllZonesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<Zone> ListZonesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var page = 1;
 
@@ -84,12 +84,12 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
             {
                 result = await _httpClient.GetFromJsonAsync<PagePaginationArray<Zone>>($"zones?page={page}&per_page=50&status=active", cancellationToken);
 
-                if (result is null)
+                if (result?.Result is null or { Length: 0 })
                 {
                     break;
                 }
 
-                foreach (var zone in result.Result ?? [])
+                foreach (var zone in result.Result)
                 {
                     yield return zone;
                 }

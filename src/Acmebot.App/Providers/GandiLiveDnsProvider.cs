@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 using Acmebot.App.Options;
@@ -9,7 +10,7 @@ namespace Acmebot.App.Providers;
 
 public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 {
-    private readonly GandiLiveDnsClient _client = new(options.ApiKey);
+    private readonly GandiLiveDnsClient _gandiLiveDnsClient = new(options.ApiKey);
 
     public string Name => "Gandi LiveDNS";
 
@@ -17,19 +18,24 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
     public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _client.ListZonesAsync(cancellationToken);
+        var zones = new List<DnsZone>();
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Fqdn, Name = x.FqdnUnicode }).ToArray();
+        await foreach (var domain in _gandiLiveDnsClient.ListDomainsAsync(cancellationToken))
+        {
+            zones.Add(new DnsZone(this) { Id = domain.Fqdn, Name = domain.Fqdn });
+        }
+
+        return zones;
     }
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
-        => _client.AddRecordAsync(zone.Name, relativeRecordName, values, cancellationToken);
+        => _gandiLiveDnsClient.AddRecordAsync(zone.Name, relativeRecordName, values, cancellationToken);
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _client.DeleteRecordAsync(zone.Name, relativeRecordName, cancellationToken);
+            await _gandiLiveDnsClient.DeleteRecordAsync(zone.Name, relativeRecordName, cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -41,24 +47,37 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
     {
         public GandiLiveDnsClient(string apiKey)
         {
-            ArgumentNullException.ThrowIfNull(apiKey);
-
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.gandi.net/v5/")
             };
 
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + apiKey);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         }
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<Domain>> ListZonesAsync(CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<Domain> ListDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var domains = await _httpClient.GetFromJsonAsync<Domain[]>("domain/domains", cancellationToken) ?? [];
+            var page = 1;
 
-            return domains.Where(x => x.Nameserver?.Current == "livedns").ToArray();
+            while (true)
+            {
+                var domains = await _httpClient.GetFromJsonAsync<Domain[]>($"livedns/domains?page={page}", cancellationToken);
+
+                if (domains is null or { Length: 0 })
+                {
+                    break;
+                }
+
+                foreach (var domain in domains)
+                {
+                    yield return domain;
+                }
+
+                page++;
+            }
         }
 
         public async Task DeleteRecordAsync(string zoneName, string relativeRecordName, CancellationToken cancellationToken = default)
@@ -70,76 +89,32 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
         public async Task AddRecordAsync(string zoneName, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsJsonAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT", new
+            var response = await _httpClient.PostAsJsonAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}", new Record
             {
-                rrset_values = values.ToArray(),
-                rrset_ttl = 300 //300 is the minimal value
+                RrsetType = "TXT",
+                RrsetValues = values.ToArray(),
+                RrsetTtl = 300
             }, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
     }
 
-    public class Domain
+    internal class Domain
     {
         [JsonPropertyName("fqdn")]
         public required string Fqdn { get; set; }
-
-        [JsonPropertyName("tld")]
-        public string? Tld { get; set; }
-
-        [JsonPropertyName("status")]
-        public List<string>? Status { get; set; }
-
-        [JsonPropertyName("dates")]
-        public Dates? Dates { get; set; }
-
-        [JsonPropertyName("nameserver")]
-        public Nameserver? Nameserver { get; set; }
-
-        [JsonPropertyName("autorenew")]
-        public bool Autorenew { get; set; }
-
-        [JsonPropertyName("domain_owner")]
-        public string? DomainOwner { get; set; }
-
-        [JsonPropertyName("orga_owner")]
-        public string? OrgaOwner { get; set; }
-
-        [JsonPropertyName("owner")]
-        public string? Owner { get; set; }
-
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
-        [JsonPropertyName("tags")]
-        public List<string>? Tags { get; set; }
-
-        [JsonPropertyName("href")]
-        public string? Href { get; set; }
-
-        [JsonPropertyName("fqdn_unicode")]
-        public required string FqdnUnicode { get; set; }
     }
 
-    public class Dates
+    internal class Record
     {
-        [JsonPropertyName("created_at")]
-        public DateTime CreatedAt { get; set; }
+        [JsonPropertyName("rrset_type")]
+        public required string RrsetType { get; set; }
 
-        [JsonPropertyName("registry_created_at")]
-        public DateTime RegistryCreatedAt { get; set; }
+        [JsonPropertyName("rrset_values")]
+        public required string[] RrsetValues { get; set; }
 
-        [JsonPropertyName("registry_ends_at")]
-        public DateTime RegistryEndsAt { get; set; }
-
-        [JsonPropertyName("updated_at")]
-        public DateTime UpdatedAt { get; set; }
-    }
-
-    public class Nameserver
-    {
-        [JsonPropertyName("current")]
-        public string? Current { get; set; }
+        [JsonPropertyName("rrset_ttl")]
+        public int? RrsetTtl { get; set; } //300 is the minimal value
     }
 }

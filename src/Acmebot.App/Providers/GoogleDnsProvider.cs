@@ -10,20 +10,16 @@ using Google.Apis.Services;
 
 namespace Acmebot.App.Providers;
 
-public class GoogleDnsProvider : IDnsProvider
+public class GoogleDnsProvider(GoogleDnsOptions options) : IDnsProvider
 {
-    public GoogleDnsProvider(GoogleDnsOptions options)
+    private readonly DnsService _dnsService = new(new BaseClientService.Initializer
     {
-        var jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64));
-        var credential = CredentialFactory.FromJson<GoogleCredential>(jsonString).CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
+        HttpClientInitializer = CredentialFactory.FromJson<GoogleCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)))
+                                                 .CreateScoped(DnsService.Scope.NdevClouddnsReadwrite)
+    });
 
-        // Create the service.
-        _dnsService = new DnsService(new BaseClientService.Initializer { HttpClientInitializer = credential });
-        _credsParameters = NewtonsoftJsonSerializer.Instance.Deserialize<JsonCredentialParameters>(jsonString);
-    }
-
-    private readonly DnsService _dnsService;
-    private readonly JsonCredentialParameters _credsParameters;
+    private readonly JsonCredentialParameters _credsParameters =
+        NewtonsoftJsonSerializer.Instance.Deserialize<JsonCredentialParameters>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
 
     public string Name => "Google Cloud DNS";
 
@@ -43,11 +39,11 @@ public class GoogleDnsProvider : IDnsProvider
 
             response = await request.ExecuteAsync(cancellationToken);
 
-            zones.AddRange(response.ManagedZones);
+            zones.AddRange(response.ManagedZones ?? []);
 
         } while (!string.IsNullOrEmpty(response.NextPageToken));
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers.ToArray() })
+        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers?.ToArray() ?? [] })
                     .ToArray();
     }
 
@@ -83,7 +79,7 @@ public class GoogleDnsProvider : IDnsProvider
 
         var txtRecords = await request.ExecuteAsync(cancellationToken);
 
-        if (txtRecords.Rrsets.Count == 0)
+        if (txtRecords.Rrsets is null or { Count: 0 })
         {
             return;
         }

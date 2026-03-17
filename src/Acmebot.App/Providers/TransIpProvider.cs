@@ -40,7 +40,6 @@ public class TransIpProvider : IDnsProvider
     {
         foreach (var value in values)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             await _transIpClient.AddRecordAsync(zone.Name, new DnsEntry
             {
                 Name = relativeRecordName,
@@ -59,7 +58,6 @@ public class TransIpProvider : IDnsProvider
 
         foreach (var record in recordsToDelete)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             await _transIpClient.DeleteRecordAsync(zone.Name, record, cancellationToken);
         }
     }
