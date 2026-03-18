@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels:
+  - enhancement
+assignees:
+  - shibayan
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing your idea.
+
+        Please explain the problem and the desired solution as concretely as possible.
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Is your feature request related to a problem?
+      description: Describe the current problem or limitation.
+      placeholder: I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution-description
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen.
+      placeholder: Describe the behavior or API you want.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: Explain any workarounds or alternative approaches.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the feature request here.
+      placeholder: Mockups, screenshots, related links, or extra notes.

@@ -1,0 +1,81 @@
+name: DNS Provider request
+description: Request support for a new DNS provider
+title: "[DNS Provider]: "
+labels:
+  - enhancement
+assignees:
+  - shibayan
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to request support for a new DNS provider.
+
+        Please include enough detail to evaluate whether the provider can be integrated for DNS-01 challenge automation.
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: DNS provider name
+      description: The commercial or product name of the DNS provider.
+      placeholder: e.g. Sakura Cloud, Hetzner DNS, ClouDNS
+    validations:
+      required: true
+
+  - type: input
+    id: provider-website
+    attributes:
+      label: Provider website
+      description: Official website of the DNS provider.
+      placeholder: https://example.com
+    validations:
+      required: true
+
+  - type: input
+    id: api-docs
+    attributes:
+      label: API documentation
+      description: Link to the official API documentation for DNS record management.
+      placeholder: https://example.com/docs/api
+    validations:
+      required: true
+
+  - type: textarea
+    id: authentication
+    attributes:
+      label: Authentication method
+      description: Explain how the API is authenticated.
+      placeholder: |
+        Example:
+        - API token
+        - API key and secret
+        - OAuth 2.0
+        - Managed identity or service principal
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Why is this provider needed?
+      description: Describe your use case and why existing providers are not sufficient.
+      placeholder: Explain the deployment scenario, tenant constraints, or operational reason.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any extra details that may help evaluate implementation.
+      placeholder: SDK links, sample requests, rate limits, sandbox availability, screenshots, or notes.
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I confirmed that this DNS provider is not already supported.
+          required: true
+        - label: I confirmed that the provider offers an API that can manage TXT records programmatically.
+          required: true

@@ -1,0 +1,95 @@
+name: Bug report
+description: Create a report to help us improve
+title: "[Bug]: "
+labels:
+  - bug
+assignees:
+  - shibayan
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        Please fill out the details below so the issue can be reproduced and investigated efficiently.
+
+  - type: input
+    id: acmebot-version
+    attributes:
+      label: Acmebot version
+      description: The version of Acmebot you are using.
+      placeholder: e.g. v4.x.x
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dns-provider
+    attributes:
+      label: DNS Provider
+      description: Select the DNS provider you are using.
+      options:
+        - Akamai Edge DNS
+        - Amazon Route 53
+        - Azure DNS
+        - Azure Private DNS
+        - Cloudflare
+        - Custom DNS
+        - DNS Made Easy
+        - Gandi LiveDNS
+        - GoDaddy
+        - Google Cloud DNS
+        - TransIP DNS
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the unexpected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Describe what you expected to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Configure certificate for '...'
+        2. Run the orchestrator or wait for the timer trigger
+        3. Check the logs in Application Insights
+        4. See error '...'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: certificate-type
+    attributes:
+      label: Certificate Type
+      description: Select the certificate type related to this issue.
+      options:
+        - Zone Apex
+        - Sub-domain
+        - Wildcard
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
+      placeholder: Logs, screenshots, related configuration, or anything else that may help.
