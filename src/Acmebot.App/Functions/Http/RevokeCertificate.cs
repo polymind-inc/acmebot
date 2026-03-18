@@ -14,10 +14,8 @@ namespace Acmebot.App.Functions.Http;
 public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}")]
-    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
+    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
     {
-        var certificateName = context.GetInput<string>();
-
         if (string.IsNullOrEmpty(certificateName))
         {
             return;

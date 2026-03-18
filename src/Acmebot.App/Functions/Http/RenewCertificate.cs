@@ -15,10 +15,8 @@ namespace Acmebot.App.Functions.Http;
 public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}")]
-    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
+    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
     {
-        var certificateName = context.GetInput<string>();
-
         if (string.IsNullOrEmpty(certificateName))
         {
             return;

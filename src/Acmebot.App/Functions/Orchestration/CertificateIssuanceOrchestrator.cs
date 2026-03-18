@@ -10,12 +10,11 @@ namespace Acmebot.App.Functions.Orchestration;
 public partial class CertificateIssuanceOrchestrator
 {
     [Function(nameof(IssueCertificate))]
-    public async Task IssueCertificate([OrchestrationTrigger] TaskOrchestrationContext context)
+    public async Task IssueCertificate([OrchestrationTrigger] TaskOrchestrationContext context, CertificatePolicyItem certificatePolicyItem)
     {
         var logger = context.CreateReplaySafeLogger<CertificateIssuanceOrchestrator>();
-        var certificatePolicyItem = context.GetInput<CertificatePolicyItem>();
 
-        if (certificatePolicyItem is null || string.IsNullOrEmpty(certificatePolicyItem.CertificateName))
+        if (string.IsNullOrEmpty(certificatePolicyItem.CertificateName))
         {
             return;
         }

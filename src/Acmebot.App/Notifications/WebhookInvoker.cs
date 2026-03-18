@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
 
 using Acmebot.App.Extensions;
 using Acmebot.App.Options;
@@ -35,7 +36,7 @@ public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder
 
         var httpClient = httpClientFactory.CreateClient();
 
-        var response = await httpClient.PostAsync(_options.Webhook, payload);
+        var response = await httpClient.PostAsJsonAsync(_options.Webhook, payload);
 
         if (!response.IsSuccessStatusCode)
         {

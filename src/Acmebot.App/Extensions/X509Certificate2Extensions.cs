@@ -19,15 +19,4 @@ internal static class X509Certificate2Extensions
 
         return $"{keyIdentifier}.{serialNumber}";
     }
-
-    public static async Task<X509Certificate2Collection> ReadAsCertificatesAsync(this HttpContent httpContent)
-    {
-        var certificateData = await httpContent.ReadAsStringAsync();
-
-        var x509Certificates = new X509Certificate2Collection();
-
-        x509Certificates.ImportFromPem(certificateData);
-
-        return x509Certificates;
-    }
 }
