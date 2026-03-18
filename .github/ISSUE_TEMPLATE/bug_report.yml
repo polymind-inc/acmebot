@@ -83,6 +83,7 @@ body:
         - Zone Apex
         - Sub-domain
         - Wildcard
+        - SANs (multiple domains)
         - Other
     validations:
       required: true
