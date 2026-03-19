@@ -132,6 +132,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.GandiLiveDns, o => new GandiLiveDnsProvider(o));
     dnsProviders.TryAdd(options.GoDaddy, o => new GoDaddyProvider(o));
     dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(o));
+    dnsProviders.TryAdd(options.IonosCloud, o => new IonosCloudProvider(o));
     dnsProviders.TryAdd(options.Route53, o => new Route53Provider(o));
     dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, credential));
 
