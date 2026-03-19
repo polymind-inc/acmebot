@@ -50,7 +50,7 @@ public class AcmebotOptions
 
     public GoogleDnsOptions? GoogleDns { get; set; }
 
-    public IonosCloudOptions? IonosCloud { get; set; }
+    public IonosDnsOptions? IonosDns { get; set; }
 
     public Route53Options? Route53 { get; set; }
 
