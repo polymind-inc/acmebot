@@ -10,13 +10,13 @@ using Acmebot.App.Providers;
 using Azure.Core;
 using Azure.Functions.Worker.Extensions.HttpApi.Config;
 using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Azure.Security.KeyVault.Certificates;
 
 using DnsClient;
 
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -24,11 +24,11 @@ using Microsoft.Extensions.Options;
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication()
-    .AddHttpApi();
+       .AddHttpApi();
 
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
+builder.Services.AddOpenTelemetry()
+       .UseFunctionsWorkerDefaults()
+       .UseAzureMonitorExporter();
 
 builder.Services.Configure<JsonSerializerOptions>(options =>
 {
@@ -43,8 +43,6 @@ builder.Services.AddOptions<AcmebotOptions>()
 
 // Add Services
 builder.Services.AddHttpClient();
-
-builder.Services.AddSingleton<ITelemetryInitializer, ApplicationVersionInitializer>();
 
 builder.Services.AddSingleton(provider =>
 {

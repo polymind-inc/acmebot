@@ -1,14 +1,9 @@
 {
   "version": "2.0",
+  "telemetryMode": "OpenTelemetry",
   "logging": {
-    "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": true,
-        "excludedTypes": "Request;Exception"
-      }
-    },
     "logLevel": {
-      "Acmebot.App": "Warning"
+      "default": "Warning"
     }
   },
   "extensions": {
