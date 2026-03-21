@@ -29,7 +29,7 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
         return zones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
@@ -38,10 +38,10 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
             Name = recordName,
             Type = "TXT",
             Ttl = 60,
-            Rdata = values.ToArray()
+            Rdata = values
         };
 
-        await _akamaiEdgeDnsClient.CreateOrUpdateRecordAsync(zone.Name, recordName, "TXT", recordSet, cancellationToken);
+        await _akamaiEdgeDnsClient.CreateRecordAsync(zone.Name, recordSet, cancellationToken);
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
@@ -72,18 +72,17 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
         public async IAsyncEnumerable<ZoneResult> ListZonesInternalAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var page = 1;
-            const int pageSize = 100;
 
             while (true)
             {
-                var result = await _httpClient.GetFromJsonAsync<ZonesResponse>($"zones?page={page}&pageSize={pageSize}", cancellationToken);
+                var result = await _httpClient.GetFromJsonAsync<ZonesResponse>($"zones?page={page}&pageSize=100&types=PRIMARY", cancellationToken);
 
                 if (result?.Zones is null or { Length: 0 })
                 {
                     break;
                 }
 
-                foreach (var zone in result.Zones)
+                foreach (var zone in result.Zones.Where(x => x.ActivationState == "ACTIVE"))
                 {
                     yield return zone;
                 }
@@ -92,9 +91,9 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
             }
         }
 
-        public async Task CreateOrUpdateRecordAsync(string zone, string name, string type, RecordSet recordSet, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(string zone, RecordSet recordSet, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsJsonAsync($"zones/{zone}/names/{name}/types/{type}", recordSet, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync($"zones/{zone}/names/{recordSet.Name}/types/{recordSet.Type}", recordSet, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
@@ -109,23 +108,8 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
 
     internal class ZonesResponse
     {
-        [JsonPropertyName("metadata")]
-        public Metadata? Metadata { get; set; }
-
         [JsonPropertyName("zones")]
         public ZoneResult[]? Zones { get; set; }
-    }
-
-    internal class Metadata
-    {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("pageSize")]
-        public int PageSize { get; set; }
-
-        [JsonPropertyName("totalElements")]
-        public int TotalElements { get; set; }
     }
 
     internal class ZoneResult
@@ -136,9 +120,6 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
         [JsonPropertyName("type")]
         public string? Type { get; set; }
 
-        [JsonPropertyName("contractId")]
-        public string? ContractId { get; set; }
-
         [JsonPropertyName("activationState")]
         public string? ActivationState { get; set; }
     }
@@ -146,10 +127,10 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
     internal class RecordSet
     {
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("type")]
-        public string? Type { get; set; }
+        public required string Type { get; set; }
 
         [JsonPropertyName("ttl")]
         public int Ttl { get; set; }

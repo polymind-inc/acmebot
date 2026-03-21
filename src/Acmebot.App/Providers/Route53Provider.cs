@@ -32,7 +32,7 @@ public class Route53Provider(Route53Options options) : IDnsProvider
         return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name.TrimEnd('.') }).ToArray();
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 

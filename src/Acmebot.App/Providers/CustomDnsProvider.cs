@@ -1,63 +1,102 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
 
-public class CustomDnsProvider : IDnsProvider
+public class CustomDnsProvider(CustomDnsOptions options) : IDnsProvider
 {
-    public CustomDnsProvider(CustomDnsOptions options)
-    {
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(options.Endpoint)
-        };
-
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(options.ApiKeyHeaderName, options.ApiKey);
-
-        PropagationDelay = TimeSpan.FromSeconds(options.PropagationSeconds);
-    }
-
-    private readonly HttpClient _httpClient;
+    private readonly CustomDnsClient _customDnsClient = new(options.Endpoint, options.ApiKey, options.ApiKeyHeaderName);
 
     public string Name => "Custom DNS";
 
-    public TimeSpan PropagationDelay { get; }
+    public TimeSpan PropagationDelay { get; } = TimeSpan.FromSeconds(options.PropagationSeconds);
 
     public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _httpClient.GetFromJsonAsync<Zone[]>("zones", cancellationToken) ?? [];
+        var zones = new List<DnsZone>();
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name, NameServers = x.NameServers ?? [] }).ToArray();
+        await foreach (var zone in _customDnsClient.ListZonesAsync(cancellationToken))
+        {
+            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Name, NameServers = zone.NameServers ?? [] });
+        }
+
+        return zones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
-        var txtRecordParam = new TxtRecordParam
+        var record = new RecordParam
         {
+            Type = "TXT",
             Ttl = 60,
-            Values = values.ToArray()
+            Values = values
         };
 
-        var response = await _httpClient.PutAsJsonAsync($"zones/{zone.Id}/records/{recordName}", txtRecordParam, cancellationToken);
-
-        response.EnsureSuccessStatusCode();
+        await _customDnsClient.CreateRecordAsync(zone.Id, recordName, record, cancellationToken);
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
-        var response = await _httpClient.DeleteAsync($"zones/{zone.Id}/records/{recordName}", cancellationToken);
-
-        if (response.StatusCode != HttpStatusCode.NotFound)
+        try
         {
+            await _customDnsClient.DeleteRecordAsync(zone.Id, recordName, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // ignored
+        }
+    }
+
+    private class CustomDnsClient
+    {
+        public CustomDnsClient(string endpoint, string apiKey, string apiKeyHeaderName)
+        {
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(endpoint)
+            };
+
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(apiKeyHeaderName, apiKey);
+        }
+
+        private readonly HttpClient _httpClient;
+
+        public async IAsyncEnumerable<Zone> ListZonesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var zones = await _httpClient.GetFromJsonAsync<Zone[]>("zones", cancellationToken);
+
+            if (zones is null or { Length: 0 })
+            {
+                yield break;
+            }
+
+            foreach (var zone in zones)
+            {
+                yield return zone;
+            }
+        }
+
+        public async Task CreateRecordAsync(string zoneId, string recordName, RecordParam record, CancellationToken cancellationToken = default)
+        {
+            var response = await _httpClient.PutAsJsonAsync($"zones/{zoneId}/records/{recordName}", record, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task DeleteRecordAsync(string zoneId, string recordName, CancellationToken cancellationToken = default)
+        {
+            var response = await _httpClient.DeleteAsync($"zones/{zoneId}/records/{recordName}", cancellationToken);
+
             response.EnsureSuccessStatusCode();
         }
     }
@@ -71,18 +110,18 @@ public class CustomDnsProvider : IDnsProvider
         public required string Name { get; set; }
 
         [JsonPropertyName("nameServers")]
-        public IReadOnlyList<string>? NameServers { get; set; }
+        public string[]? NameServers { get; set; }
     }
 
-    internal class TxtRecordParam
+    internal class RecordParam
     {
         [JsonPropertyName("type")]
-        public string Type => "TXT";
+        public required string Type { get; set; }
 
         [JsonPropertyName("ttl")]
         public int Ttl { get; set; }
 
         [JsonPropertyName("values")]
-        public IReadOnlyList<string>? Values { get; set; }
+        public string[]? Values { get; set; }
     }
 }

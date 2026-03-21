@@ -28,11 +28,11 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
         return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var entries = values.Select(x => new DnsEntry { Name = relativeRecordName, Type = "TXT", Ttl = 600, Data = x }).ToArray();
 
-        return _goDaddyClient.AddRecordAsync(zone.Name, entries, cancellationToken);
+        return _goDaddyClient.CreateRecordAsync(zone.Name, entries, cancellationToken);
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
@@ -68,9 +68,9 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 
             while (true)
             {
-                var domains = await _httpClient.GetFromJsonAsync<ZoneDomain[]>($"domains?statuses=ACTIVE&includes=nameServers&limit=1000&marker={marker}", cancellationToken) ?? [];
+                var domains = await _httpClient.GetFromJsonAsync<ZoneDomain[]>($"domains?statuses=ACTIVE&includes=nameServers&limit=1000&marker={marker}", cancellationToken);
 
-                if (domains.Length == 0)
+                if (domains is null or { Length: 0 })
                 {
                     break;
                 }
@@ -84,14 +84,14 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
             }
         }
 
-        public async Task DeleteRecordAsync(string domain, string type, string name, CancellationToken cancellationToken = default)
+        public async Task DeleteRecordAsync(string domain, string type, string recordName, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"domains/{domain}/records/{type}/{name}", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"domains/{domain}/records/{type}/{recordName}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task AddRecordAsync(string domain, IReadOnlyList<DnsEntry> entries, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(string domain, IReadOnlyList<DnsEntry> entries, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PatchAsJsonAsync($"domains/{domain}/records", entries, cancellationToken);
 

@@ -37,7 +37,7 @@ public class TransIpProvider : IDnsProvider
         return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.Name, NameServers = x.NameServers?.Select(xs => xs.Hostname).ToArray() ?? [] }).ToArray();
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         foreach (var value in values)
         {
@@ -49,7 +49,7 @@ public class TransIpProvider : IDnsProvider
                 Content = value
             };
 
-            await _transIpClient.AddRecordAsync(zone.Name, entry, cancellationToken);
+            await _transIpClient.CreateRecordAsync(zone.Name, entry, cancellationToken);
         }
     }
 
@@ -112,7 +112,7 @@ public class TransIpProvider : IDnsProvider
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task AddRecordAsync(string zoneName, DnsEntry entry, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(string zoneName, DnsEntry entry, CancellationToken cancellationToken = default)
         {
             var request = new DnsEntryRequest
             {

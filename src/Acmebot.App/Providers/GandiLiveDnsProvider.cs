@@ -28,14 +28,23 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
         return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
-        => _gandiLiveDnsClient.AddRecordAsync(zone.Name, relativeRecordName, values, cancellationToken);
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
+    {
+        var record = new Record
+        {
+            RrsetType = "TXT",
+            RrsetValues = values,
+            RrsetTtl = 300
+        };
+
+        return _gandiLiveDnsClient.CreateRecordAsync(zone.Name, relativeRecordName, record, cancellationToken);
+    }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _gandiLiveDnsClient.DeleteRecordAsync(zone.Name, relativeRecordName, cancellationToken);
+            await _gandiLiveDnsClient.DeleteRecordAsync(zone.Name, relativeRecordName, "TXT", cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -80,21 +89,16 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
             }
         }
 
-        public async Task DeleteRecordAsync(string zoneName, string relativeRecordName, CancellationToken cancellationToken = default)
+        public async Task DeleteRecordAsync(string zoneName, string relativeRecordName, string rrsetType, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/TXT", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}/{rrsetType}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task AddRecordAsync(string zoneName, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(string zoneName, string relativeRecordName, Record record, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsJsonAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}", new Record
-            {
-                RrsetType = "TXT",
-                RrsetValues = values.ToArray(),
-                RrsetTtl = 300
-            }, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync($"livedns/domains/{zoneName}/records/{relativeRecordName}", record, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }

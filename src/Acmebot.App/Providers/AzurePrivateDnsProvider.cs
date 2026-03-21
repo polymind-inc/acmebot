@@ -33,7 +33,7 @@ public class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnviro
         return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         // TXT レコードに値をセットする
         var txtRecordData = new PrivateDnsTxtRecordData

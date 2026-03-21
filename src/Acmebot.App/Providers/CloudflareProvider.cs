@@ -28,14 +28,21 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
         return zones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}";
 
-        // 必要な検証用の値の数だけ新しく追加する
         foreach (var value in values)
         {
-            await _cloudflareClient.CreateDnsRecordAsync(zone.Id, recordName, value, cancellationToken);
+            var record = new RecordParam
+            {
+                Name = recordName,
+                Type = "TXT",
+                Ttl = 60,
+                Content = value
+            };
+
+            await _cloudflareClient.CreateDnsRecordAsync(zone.Id, record, cancellationToken);
         }
     }
 
@@ -45,7 +52,6 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         var records = await _cloudflareClient.ListDnsRecordsAsync(zone.Id, recordName, cancellationToken);
 
-        // 該当する全てのレコードを削除する
         foreach (var record in records)
         {
             try
@@ -97,30 +103,23 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
             } while (page++ < (result.ResultInfo?.TotalPages ?? 1));
         }
 
-        public async Task<IReadOnlyList<TxtRecord>> ListDnsRecordsAsync(string zone, string name, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Record>> ListDnsRecordsAsync(string zoneId, string recordName, CancellationToken cancellationToken = default)
         {
-            var result = await _httpClient.GetFromJsonAsync<PagePaginationArray<TxtRecord>>($"zones/{zone}/dns_records?type=TXT&name={name}&per_page=100", cancellationToken);
+            var result = await _httpClient.GetFromJsonAsync<PagePaginationArray<Record>>($"zones/{zoneId}/dns_records?type=TXT&name={recordName}&per_page=100", cancellationToken);
 
             return result?.Result ?? [];
         }
 
-        public async Task CreateDnsRecordAsync(string zone, string name, string content, CancellationToken cancellationToken = default)
+        public async Task CreateDnsRecordAsync(string zoneId, RecordParam record, CancellationToken cancellationToken = default)
         {
-            var recordParam = new TxtRecordParam
-            {
-                Name = name,
-                Content = content,
-                Ttl = 60
-            };
-
-            var response = await _httpClient.PostAsJsonAsync($"zones/{zone}/dns_records", recordParam, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync($"zones/{zoneId}/dns_records", record, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task DeleteDnsRecordAsync(string zone, string id, CancellationToken cancellationToken = default)
+        public async Task DeleteDnsRecordAsync(string zoneId, string recordId, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"zones/{zone}/dns_records/{id}", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"zones/{zoneId}/dns_records/{recordId}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
@@ -162,22 +161,22 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
         public string[] ActualNameServers => VanityNameServers is { Length: > 0 } ? VanityNameServers : NameServers;
     }
 
-    internal class TxtRecordParam
+    internal class RecordParam
     {
         [JsonPropertyName("name")]
         public required string Name { get; set; }
 
         [JsonPropertyName("ttl")]
-        public int Ttl { get; set; } = 1;
+        public int Ttl { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type => "TXT";
+        public required string Type { get; set; }
 
         [JsonPropertyName("content")]
         public string? Content { get; set; }
     }
 
-    internal class TxtRecord : TxtRecordParam
+    internal class Record : RecordParam
     {
         [JsonPropertyName("id")]
         public required string Id { get; set; }

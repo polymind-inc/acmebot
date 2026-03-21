@@ -152,7 +152,7 @@ public class DnsChallengeActivities(
             var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
 
             await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
-            await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue), cancellationToken);
+            await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
 
             propagationSeconds = Math.Max(propagationSeconds, (int)zone.DnsProvider.PropagationDelay.TotalSeconds);
         }

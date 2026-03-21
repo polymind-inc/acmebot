@@ -28,11 +28,19 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
         return zones;
     }
 
-    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         foreach (var value in values)
         {
-            await _ionosDnsClient.CreateRecordAsync(zone.Id, relativeRecordName, value, cancellationToken);
+            var record = new RecordParam
+            {
+                Name = relativeRecordName,
+                Type = "TXT",
+                Content = value,
+                Ttl = 60
+            };
+
+            await _ionosDnsClient.CreateRecordAsync(zone.Id, record, cancellationToken);
         }
     }
 
@@ -90,17 +98,9 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
             return result?.Records ?? [];
         }
 
-        public async Task CreateRecordAsync(string zoneId, string recordName, string content, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(string zoneId, RecordParam record, CancellationToken cancellationToken = default)
         {
-            var recordParam = new RecordParam
-            {
-                Name = recordName,
-                Type = "TXT",
-                Content = content,
-                Ttl = 60
-            };
-
-            var response = await _httpClient.PostAsJsonAsync($"zones/{zoneId}/records", recordParam, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync($"zones/{zoneId}/records", record, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }

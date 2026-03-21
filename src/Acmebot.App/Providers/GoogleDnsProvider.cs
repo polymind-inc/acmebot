@@ -47,7 +47,7 @@ public class GoogleDnsProvider(GoogleDnsOptions options) : IDnsProvider
                     .ToArray();
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values, CancellationToken cancellationToken = default)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
@@ -60,7 +60,7 @@ public class GoogleDnsProvider(GoogleDnsOptions options) : IDnsProvider
                     Name = recordName,
                     Type = "TXT",
                     Ttl = 60,
-                    Rrdatas = values.ToArray()
+                    Rrdatas = values
                 }
             ]
         };
