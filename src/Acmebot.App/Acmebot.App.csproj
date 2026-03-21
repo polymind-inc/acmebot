@@ -23,7 +23,7 @@
     <PackageReference Include="Functions.Worker.Extensions.HttpApi" Version="3.0.5" />
     <PackageReference Include="Google.Apis.Dns.v1" Version="1.73.0.4067" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.16.2" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.16.3" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.1.0" />
