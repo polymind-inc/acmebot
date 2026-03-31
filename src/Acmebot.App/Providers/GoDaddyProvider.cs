@@ -68,7 +68,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 
             while (true)
             {
-                var domains = await _httpClient.GetFromJsonAsync<ZoneDomain[]>($"domains?statuses=ACTIVE&includes=nameServers&limit=1000&marker={marker}", cancellationToken);
+                var domains = await _httpClient.GetFromJsonAsync<ZoneDomain[]>($"domains?statuses=ACTIVE,PENDING_DNS_ACTIVE&includes=nameServers&limit=1000&marker={marker}", cancellationToken);
 
                 if (domains is null or { Length: 0 })
                 {
