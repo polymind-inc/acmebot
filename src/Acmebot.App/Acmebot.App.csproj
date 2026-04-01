@@ -13,8 +13,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Akamai.EdgeGrid.Auth" Version="1.0.0-preview" />
     <PackageReference Include="AWSSDK.Route53" Version="4.0.8.15" />
-    <PackageReference Include="Azure.Identity" Version="1.19.0" />
-    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.6.0" />
+    <PackageReference Include="Azure.Identity" Version="1.20.0" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.7.0" />
     <PackageReference Include="Azure.ResourceManager.Dns" Version="1.1.1" />
     <PackageReference Include="Azure.ResourceManager.PrivateDns" Version="1.2.1" />
     <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.8.0" />
