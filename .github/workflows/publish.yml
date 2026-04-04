@@ -32,7 +32,7 @@ jobs:
         echo "MAJOR_VERSION=${FULL_VERSION%%.*}" >> $GITHUB_OUTPUT
 
     - name: Publish Function app
-      run: dotnet publish -c Release -r linux-x64 --no-self-contained -o ./dist -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot
+      run: dotnet publish -c Release --no-self-contained -o ./dist -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot.App
 
     - name: Zip Function app
       run: 7z a -mx=9 latest.zip ./dist/* ./dist/.[^.]*
