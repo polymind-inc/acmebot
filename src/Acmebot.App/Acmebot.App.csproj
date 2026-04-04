@@ -12,7 +12,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Akamai.EdgeGrid.Auth" Version="1.0.0-preview" />
-    <PackageReference Include="AWSSDK.Route53" Version="4.0.8.16" />
+    <PackageReference Include="AWSSDK.Route53" Version="4.0.8.18" />
     <PackageReference Include="Azure.Identity" Version="1.20.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.7.0" />
     <PackageReference Include="Azure.ResourceManager.Dns" Version="1.1.1" />
