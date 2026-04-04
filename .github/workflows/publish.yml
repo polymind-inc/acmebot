@@ -6,7 +6,7 @@ on:
 
 env:
   DOTNET_VERSION: 10.0.x
-  BICEP_VERSION: 0.40.2
+  BICEP_VERSION: 0.42.1
 
 jobs:
   publish:
@@ -43,7 +43,7 @@ jobs:
         name: dist
         path: |
           latest.zip
-          azuredeploy.bicep
+          deploy/azuredeploy.bicep
 
   deploy:
     runs-on: ubuntu-latest
@@ -72,10 +72,10 @@ jobs:
 
     - name: Upload to Blob
       run: |
-        az storage blob upload --auth-mode login -f latest.zip --account-name stacmebotprod -c keyvault-acmebot -n v${{ needs.publish.outputs.major_version }}/latest.zip --overwrite
-        az storage blob upload --auth-mode login -f latest.zip --account-name stacmebotprod -c keyvault-acmebot -n v${{ needs.publish.outputs.major_version }}/${{ needs.publish.outputs.version }}.zip --overwrite
+        az storage blob upload --auth-mode login -f latest.zip --account-name stacmebotprod -c acmebot -n v${{ needs.publish.outputs.major_version }}/latest.zip --overwrite
+        az storage blob upload --auth-mode login -f latest.zip --account-name stacmebotprod -c acmebot -n v${{ needs.publish.outputs.major_version }}/${{ needs.publish.outputs.version }}.zip --overwrite
 
     - name: Publish to Private Registry
       run: |
-        az bicep publish --file azuredeploy.bicep --target br:cracmebotprod.azurecr.io/bicep/modules/keyvault-acmebot:v${{ needs.publish.outputs.major_version }} --force
-        az bicep publish --file azuredeploy.bicep --target br:cracmebotprod.azurecr.io/bicep/modules/keyvault-acmebot:v${{ needs.publish.outputs.version }} --force
+        az bicep publish --file deploy/azuredeploy.bicep --target br:cracmebotprod.azurecr.io/bicep/modules/acmebot:v${{ needs.publish.outputs.major_version }} --force
+        az bicep publish --file deploy/azuredeploy.bicep --target br:cracmebotprod.azurecr.io/bicep/modules/acmebot:v${{ needs.publish.outputs.version }} --force

@@ -191,7 +191,7 @@ resource functionAppDeploy 'Microsoft.Web/sites/extensions@2025-03-01' = {
   parent: functionApp
   name: 'onedeploy'
   properties: {
-    packageUri: 'https://stacmebotprod.blob.core.windows.net/keyvault-acmebot/v5/latest.zip'
+    packageUri: 'https://stacmebotprod.blob.core.windows.net/acmebot/v5/latest.zip'
     remoteBuild: false
   }
 }
