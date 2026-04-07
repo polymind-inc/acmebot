@@ -50,6 +50,8 @@ public class AcmebotOptions
 
     public GoogleDnsOptions? GoogleDns { get; set; }
 
+    public InfomaniakOptions? Infomaniak { get; set; }
+
     public IonosDnsOptions? IonosDns { get; set; }
 
     public Route53Options? Route53 { get; set; }
