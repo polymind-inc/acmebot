@@ -1,57 +1,57 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Acmebot.App.Models;
 
 public class CertificateItem
 {
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public required Uri Id { get; set; }
 
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public required string Name { get; set; }
 
-    [JsonProperty("dnsNames")]
+    [JsonPropertyName("dnsNames")]
     public required IReadOnlyList<string> DnsNames { get; set; }
 
-    [JsonProperty("dnsProviderName")]
+    [JsonPropertyName("dnsProviderName")]
     public string? DnsProviderName { get; set; }
 
-    [JsonProperty("createdOn")]
+    [JsonPropertyName("createdOn")]
     public DateTimeOffset CreatedOn { get; set; }
 
-    [JsonProperty("expiresOn")]
+    [JsonPropertyName("expiresOn")]
     public DateTimeOffset ExpiresOn { get; set; }
 
-    [JsonProperty("x509Thumbprint")]
+    [JsonPropertyName("x509Thumbprint")]
     public string? X509Thumbprint { get; set; }
 
-    [JsonProperty("keyType")]
+    [JsonPropertyName("keyType")]
     public string? KeyType { get; set; }
 
-    [JsonProperty("keySize")]
+    [JsonPropertyName("keySize")]
     public int? KeySize { get; set; }
 
-    [JsonProperty("keyCurveName")]
+    [JsonPropertyName("keyCurveName")]
     public string? KeyCurveName { get; set; }
 
-    [JsonProperty("reuseKey")]
+    [JsonPropertyName("reuseKey")]
     public bool? ReuseKey { get; set; }
 
-    [JsonProperty("isExpired")]
+    [JsonPropertyName("isExpired")]
     public bool IsExpired { get; set; }
 
-    [JsonProperty("isIssuedByAcmebot")]
+    [JsonPropertyName("isIssuedByAcmebot")]
     public bool IsIssuedByAcmebot { get; set; }
 
-    [JsonProperty("isSameEndpoint")]
+    [JsonPropertyName("isSameEndpoint")]
     public bool IsSameEndpoint { get; set; }
 
-    [JsonProperty("acmeEndpoint")]
+    [JsonPropertyName("acmeEndpoint")]
     public string? AcmeEndpoint { get; set; }
 
-    [JsonProperty("dnsAlias")]
+    [JsonPropertyName("dnsAlias")]
     public string? DnsAlias { get; set; }
 
-    [JsonProperty("tags")]
+    [JsonPropertyName("tags")]
     public IReadOnlyDictionary<string, string>? Tags { get; set; }
 }

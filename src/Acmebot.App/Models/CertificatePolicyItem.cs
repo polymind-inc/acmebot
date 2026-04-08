@@ -1,42 +1,41 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Acmebot.App.Models;
 
 public class CertificatePolicyItem : IValidatableObject
 {
-    [JsonProperty("certificateName")]
+    [JsonPropertyName("certificateName")]
     [RegularExpression("^[0-9a-zA-Z-]+$")]
     public string? CertificateName { get; set; }
 
-    [JsonProperty("dnsNames")]
+    [JsonPropertyName("dnsNames")]
     public required string[] DnsNames { get; set; }
 
-    [JsonProperty("dnsProviderName")]
+    [JsonPropertyName("dnsProviderName")]
     public string? DnsProviderName { get; set; }
 
-    [JsonProperty("keyType")]
+    [JsonPropertyName("keyType")]
     [RegularExpression("^(RSA|EC)$")]
     public required string KeyType { get; set; }
 
-    [JsonProperty("keySize")]
+    [JsonPropertyName("keySize")]
     public int? KeySize { get; set; }
 
-    [JsonProperty("keyCurveName")]
+    [JsonPropertyName("keyCurveName")]
     [RegularExpression(@"^P\-(256|384|521|256K)$")]
     public string? KeyCurveName { get; set; }
 
-    [JsonProperty("reuseKey")]
+    [JsonPropertyName("reuseKey")]
     public bool? ReuseKey { get; set; }
 
-    [JsonProperty("dnsAlias")]
+    [JsonPropertyName("dnsAlias")]
     public string? DnsAlias { get; set; }
 
-    [JsonProperty("tags")]
+    [JsonPropertyName("tags")]
     public IDictionary<string, string>? Tags { get; set; }
 
-    [JsonProperty("certificateId")]
+    [JsonPropertyName("certificateId")]
     public string? CertificateId { get; set; }
 
     public IEnumerable<string> AliasedDnsNames => string.IsNullOrEmpty(DnsAlias) ? DnsNames : [DnsAlias];

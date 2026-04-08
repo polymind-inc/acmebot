@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 using Acmebot.Acme.Models;
 using Acmebot.App.Acme;
@@ -12,8 +13,6 @@ using Azure.Security.KeyVault.Certificates;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using Newtonsoft.Json;
 
 namespace Acmebot.App.Functions.Orchestration;
 
@@ -79,7 +78,7 @@ public partial class AcmeOrderActivities(
                     continue;
                 }
 
-                LogAcmeDomainValidationError(logger, JsonConvert.SerializeObject(challenge.Error));
+                LogAcmeDomainValidationError(logger, JsonSerializer.Serialize(challenge.Error));
 
                 problems.Add(challenge.Error);
             }
@@ -89,7 +88,7 @@ public partial class AcmeOrderActivities(
                 throw new RetriableOrchestratorException("ACME validation failed because of a DNS-related error. The operation will be retried automatically.");
             }
 
-            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonConvert.SerializeObject(problems.Last())}");
+            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonSerializer.Serialize(problems.Last())}");
         }
 
         if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)

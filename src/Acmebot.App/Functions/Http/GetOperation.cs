@@ -8,11 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class GetInstanceState(IHttpContextAccessor httpContextAccessor, ILogger<GetInstanceState> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class GetOperation(IHttpContextAccessor httpContextAccessor, ILogger<GetOperation> logger) : HttpFunctionBase(httpContextAccessor)
 {
-    [Function($"{nameof(GetInstanceState)}_{nameof(HttpStart)}")]
+    [Function($"{nameof(GetOperation)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/state/{instanceId}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/operations/{instanceId}")] HttpRequest req,
         string instanceId,
         [DurableClient] DurableTaskClient starter)
     {
@@ -33,7 +33,7 @@ public partial class GetInstanceState(IHttpContextAccessor httpContextAccessor, 
         return metadata.RuntimeStatus switch
         {
             OrchestrationRuntimeStatus.Failed => Problem(metadata.FailureDetails?.ErrorMessage, type: metadata.FailureDetails?.ErrorType),
-            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(HttpStart)}", new { instanceId }, null),
+            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(HttpStart)}", new { instanceId }, null),
             _ => Ok()
         };
     }

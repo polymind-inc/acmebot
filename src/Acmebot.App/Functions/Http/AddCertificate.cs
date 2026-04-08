@@ -18,7 +18,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, IL
 {
     [Function($"{nameof(AddCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificate")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates")] HttpRequest req,
         [FromBody] CertificatePolicyItem certificatePolicyItem,
         [DurableClient] DurableTaskClient starter)
     {
@@ -47,7 +47,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, IL
 
         LogOrchestrationStarted(logger, certificatePolicyItem.CertificateName, instanceId);
 
-        return AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(GetInstanceState.HttpStart)}", new { instanceId }, null);
+        return AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }, null);
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
