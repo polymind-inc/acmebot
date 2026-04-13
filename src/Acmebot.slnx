@@ -2,4 +2,5 @@
   <Project Path="Acmebot.Acme.Tests/Acmebot.Acme.Tests.csproj" />
   <Project Path="Acmebot.Acme/Acmebot.Acme.csproj" Id="c532397c-d225-4b1d-8b80-4b63ce03eef5" />
   <Project Path="Acmebot.App/Acmebot.App.csproj" />
+  <Project Path="Acmebot.App.Tests/Acmebot.App.Tests.csproj" />
 </Solution>

@@ -37,6 +37,7 @@ body:
         - DNS Made Easy
         - Gandi LiveDNS
         - GoDaddy
+        - Infomaniak DNS
         - Google Cloud DNS
         - TransIP DNS
         - Other
