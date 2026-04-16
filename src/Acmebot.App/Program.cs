@@ -131,6 +131,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.GoDaddy, o => new GoDaddyProvider(o));
     dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(o));
     dnsProviders.TryAdd(options.IonosDns, o => new IonosDnsProvider(o));
+    dnsProviders.TryAdd(options.Regfish, o => new RegfishProvider(o));
     dnsProviders.TryAdd(options.Route53, o => new Route53Provider(o));
     dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, credential));
 

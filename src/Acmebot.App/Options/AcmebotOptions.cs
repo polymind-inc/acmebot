@@ -52,6 +52,8 @@ public class AcmebotOptions
 
     public IonosDnsOptions? IonosDns { get; set; }
 
+    public RegfishOptions? Regfish { get; set; }
+
     public Route53Options? Route53 { get; set; }
 
     public TransIpOptions? TransIp { get; set; }
