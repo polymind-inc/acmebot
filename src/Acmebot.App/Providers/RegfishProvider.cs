@@ -116,11 +116,13 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
         public async Task<IReadOnlyList<DnsRecord>> ListRecordsAsync(string domain, CancellationToken cancellationToken = default)
         {
             using var response = await _httpClient.GetAsync($"dns/{Uri.EscapeDataString(domain)}/rr", cancellationToken);
+            // Regfish can return HTTP 500 here for otherwise usable zones. Treat that as an empty
+            // cleanup result so challenge creation can still proceed.
             var result = await ReadApiResponseAsync<DnsRecord[]>(
                 response,
                 $"list Regfish records for '{domain}'",
                 HttpStatusCode.InternalServerError,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             return result ?? [];
         }
