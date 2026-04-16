@@ -1,4 +1,4 @@
-namespace Acmebot.App.Options;
+﻿namespace Acmebot.App.Options;
 
 public class RegfishOptions
 {
