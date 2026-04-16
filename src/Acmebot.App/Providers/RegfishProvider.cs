@@ -59,14 +59,7 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
                 continue;
             }
 
-            try
-            {
-                await _regfishClient.DeleteRecordAsync(record.Id, cancellationToken);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                // ignored
-            }
+            await _regfishClient.DeleteRecordAsync(record.Id, cancellationToken);
         }
     }
 
