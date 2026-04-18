@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Acmebot.Acme/Acmebot.Acme.csproj" />
+    <Project Path="src/Acmebot.App/Acmebot.App.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Acmebot.Acme.Sample/Acmebot.Acme.Sample.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Acmebot.Acme.Tests/Acmebot.Acme.Tests.csproj" />
+  </Folder>
+</Solution>

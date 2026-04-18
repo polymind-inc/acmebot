@@ -29,9 +29,9 @@ cd acmebot
 Run these commands from the repository root.
 
 ```bash
-dotnet restore ./src
-dotnet build -c Release ./src
-dotnet format --verify-no-changes --verbosity detailed --no-restore ./src
+dotnet restore ./Acmebot.slnx
+dotnet build -c Release ./Acmebot.slnx
+dotnet format --verify-no-changes --verbosity detailed --no-restore ./Acmebot.slnx
 az bicep build -f ./deploy/azuredeploy.bicep
 ```
 
