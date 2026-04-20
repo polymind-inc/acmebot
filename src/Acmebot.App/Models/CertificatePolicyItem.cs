@@ -33,6 +33,9 @@ public class CertificatePolicyItem : IValidatableObject
     [JsonProperty("dnsAlias")]
     public string? DnsAlias { get; set; }
 
+    [JsonProperty("certificateId")]
+    public string? CertificateId { get; set; }
+
     public IEnumerable<string> AliasedDnsNames => string.IsNullOrEmpty(DnsAlias) ? DnsNames : [DnsAlias];
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

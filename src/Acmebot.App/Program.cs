@@ -21,12 +21,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication()
        .AddHttpApi();
 
 builder.Services.AddOpenTelemetry()
+       .WithMetrics(metrics => metrics.AddHttpClientInstrumentation())
+       .WithTracing(tracing => tracing.AddHttpClientInstrumentation())
        .UseFunctionsWorkerDefaults()
        .UseAzureMonitorExporter();
 
