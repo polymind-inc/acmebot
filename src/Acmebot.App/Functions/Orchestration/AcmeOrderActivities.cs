@@ -26,8 +26,10 @@ public partial class AcmeOrderActivities(
     private readonly AcmebotOptions _options = options.Value;
 
     [Function(nameof(Order))]
-    public async Task<OrderDetails> Order([ActivityTrigger] IReadOnlyList<string> dnsNames)
+    public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?) input)
     {
+        var (dnsNames, replaces) = input;
+
         using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         var result = await acmeContext.Client.CreateOrderAsync(
@@ -37,7 +39,8 @@ public partial class AcmeOrderActivities(
                 Type = AcmeIdentifierTypes.Dns,
                 Value = x
             }).ToArray(),
-            profile: _options.PreferredProfile);
+            profile: _options.PreferredProfile,
+            replaces: replaces);
 
         return OrderDetails.FromResult(result);
     }
@@ -162,7 +165,16 @@ public partial class AcmeOrderActivities(
             [x509Certificates.Export(X509ContentType.Pfx)]
         );
 
-        return (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value.ToCertificateItem();
+        var mergedCertificate = (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value;
+
+        // ARI による更新判定に使う ACME Certificate Identifier (AKI + Serial) をタグに保存する
+        var certificateIdentifier = Acmebot.Acme.AcmeClient.CreateCertificateIdentifier(x509Certificates[0]);
+
+        mergedCertificate.Properties.Tags.SetCertificateId(certificateIdentifier);
+
+        await certificateClient.UpdateCertificatePropertiesAsync(mergedCertificate.Properties);
+
+        return mergedCertificate.ToCertificateItem();
     }
 
     [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]
