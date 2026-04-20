@@ -84,8 +84,18 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
 
     private static string NormalizeName(string value) => value.Trim().TrimEnd('.');
 
-    private static string GetAbsoluteRecordName(string zoneName, string relativeRecordName) => $"{relativeRecordName}.{zoneName}.";
+    private static string GetAbsoluteRecordName(string zoneName, string relativeRecordName)
+    {
+        var normalizedZoneName = NormalizeName(zoneName);
 
+        if (string.IsNullOrWhiteSpace(relativeRecordName) || string.Equals(relativeRecordName.Trim(), "@", StringComparison.Ordinal))
+        {
+            return $"{normalizedZoneName}.";
+        }
+
+        var normalizedRelativeRecordName = NormalizeName(relativeRecordName);
+        return $"{normalizedRelativeRecordName}.{normalizedZoneName}.";
+    }
     private class RegfishClient
     {
         public RegfishClient(string apiKey)
