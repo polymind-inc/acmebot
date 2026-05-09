@@ -89,13 +89,13 @@
               "label": "App prefix name",
               "placeholder": "acmebot",
               "defaultValue": "",
-              "toolTip": "Short prefix used to generate resource names. Use lowercase letters and numbers; maximum 18 characters.",
+              "toolTip": "Short prefix used to generate resource names. Use lowercase letters, numbers, or hyphens; maximum 18 characters.",
               "constraints": {
                 "required": true,
                 "validations": [
                   {
-                    "regex": "^[a-z0-9]{1,18}$",
-                    "message": "Use 1 to 18 lowercase letters or numbers."
+                    "regex": "^(?!.*--)[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?$",
+                    "message": "Use 1 to 18 lowercase letters, numbers, or hyphens. Start and end with a letter or number, and avoid consecutive hyphens."
                   }
                 ]
               },
@@ -1128,7 +1128,7 @@
         "resourceNames": {
           "functionAppName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').functionAppName, concat('func-', steps('basics').appPrefix))]",
           "appServicePlanName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appServicePlanName, concat('plan-', steps('basics').appPrefix))]",
-          "storageAccountName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').storageAccountName, concat('st', steps('basics').appPrefix, 'func'))]",
+          "storageAccountName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').storageAccountName, concat('st', replace(steps('basics').appPrefix, '-', ''), 'func'))]",
           "keyVaultName": "[if(equals(steps('keyvaultStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('keyvaultStep').keyVaultName, concat('kv-', steps('basics').appPrefix)), '')]",
           "appInsightsName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appInsightsName, concat('appi-', steps('basics').appPrefix))]",
           "logAnalyticsWorkspaceName": "[if(equals(steps('loggingStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('loggingStep').logAnalyticsWorkspaceName, concat('log-', steps('basics').appPrefix)), '')]"
