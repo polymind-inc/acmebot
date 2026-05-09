@@ -125,7 +125,7 @@ public class TransIpProvider : IDnsProvider
         }
     }
 
-    private class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler
+    private class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler(new HttpClientHandler())
     {
         private readonly HttpClient _httpClient = new() { BaseAddress = new Uri("https://api.transip.nl/v6/") };
 
