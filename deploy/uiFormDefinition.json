@@ -87,30 +87,19 @@
               "name": "appPrefix",
               "type": "Microsoft.Common.TextBox",
               "label": "App prefix name",
-              "placeholder": "App prefix name",
+              "placeholder": "acmebot",
               "defaultValue": "",
-              "toolTip": "Short prefix used to generate resource names. Use letters, numbers, or hyphens; maximum 14 characters.",
+              "toolTip": "Short prefix used to generate resource names. Use lowercase letters and numbers; maximum 18 characters.",
               "constraints": {
                 "required": true,
                 "validations": [
                   {
-                    "regex": "^(?!.*--)[A-Za-z0-9]([A-Za-z0-9-]{0,12}[A-Za-z0-9])?$",
-                    "message": "Use 1 to 14 letters, numbers, or hyphens. Start and end with a letter or number, and avoid consecutive hyphens."
+                    "regex": "^[a-z0-9]{1,18}$",
+                    "message": "Use 1 to 18 lowercase letters or numbers."
                   }
                 ]
               },
               "visible": "[if(equals(steps('basics').namingRule, 'prefixed'), true, false)]"
-            },
-            {
-              "name": "nameSuffix",
-              "type": "Microsoft.Common.TextBox",
-              "label": "Name suffix",
-              "defaultValue": "[substring(replace(toLower(guid()), '-', ''), 0, 13)]",
-              "toolTip": "Generated suffix used to compose default resource names.",
-              "constraints": {
-                "required": true
-              },
-              "visible": false
             },
             {
               "name": "functionAppName",
@@ -1137,12 +1126,12 @@
       "parameters": {
         "location": "[steps('basics').resourceScope.location.name]",
         "resourceNames": {
-          "functionAppName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').functionAppName, concat('func-', if(empty(steps('basics').appPrefix), 'acmebot', steps('basics').appPrefix), '-', substring(steps('basics').nameSuffix, 0, 4)))]",
-          "appServicePlanName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appServicePlanName, concat('plan-', if(empty(steps('basics').appPrefix), 'acmebot', steps('basics').appPrefix), '-', substring(steps('basics').nameSuffix, 0, 4)))]",
-          "storageAccountName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').storageAccountName, concat('st', steps('basics').nameSuffix, 'func'))]",
-          "keyVaultName": "[if(equals(steps('keyvaultStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('keyvaultStep').keyVaultName, concat('kv-', if(empty(steps('basics').appPrefix), 'acmebot', steps('basics').appPrefix), '-', substring(steps('basics').nameSuffix, 0, 4))), '')]",
-          "appInsightsName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appInsightsName, concat('appi-', if(empty(steps('basics').appPrefix), 'acmebot', steps('basics').appPrefix), '-', substring(steps('basics').nameSuffix, 0, 4)))]",
-          "logAnalyticsWorkspaceName": "[if(equals(steps('loggingStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('loggingStep').logAnalyticsWorkspaceName, concat('log-', if(empty(steps('basics').appPrefix), 'acmebot', steps('basics').appPrefix), '-', substring(steps('basics').nameSuffix, 0, 4))), '')]"
+          "functionAppName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').functionAppName, concat('func-', steps('basics').appPrefix))]",
+          "appServicePlanName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appServicePlanName, concat('plan-', steps('basics').appPrefix))]",
+          "storageAccountName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').storageAccountName, concat('st', steps('basics').appPrefix, 'func'))]",
+          "keyVaultName": "[if(equals(steps('keyvaultStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('keyvaultStep').keyVaultName, concat('kv-', steps('basics').appPrefix)), '')]",
+          "appInsightsName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appInsightsName, concat('appi-', steps('basics').appPrefix))]",
+          "logAnalyticsWorkspaceName": "[if(equals(steps('loggingStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('loggingStep').logAnalyticsWorkspaceName, concat('log-', steps('basics').appPrefix)), '')]"
         },
         "acme": {
           "endpoint": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'known'), steps('acmeStep').endpointSection.knownEndpoint, steps('acmeStep').endpointSection.customEndpoint)]",
