@@ -170,6 +170,11 @@ internal static class CertificateExtensions
 
     private static Dictionary<string, string> GetCustomCertificateTags(this IDictionary<string, string> tags)
     {
+        if (tags is null)
+        {
+            return [];
+        }
+
         string[] internalTagKeys = tags.Keys.Contains(AcmebotTagKey, StringComparer.OrdinalIgnoreCase)
             ? [AcmebotTagKey]
             : [AcmebotTagKey, LegacyIssuerKey, LegacyEndpointKey, LegacyDnsProviderKey, LegacyDnsAliasKey];
