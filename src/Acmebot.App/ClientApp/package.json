@@ -1,0 +1,25 @@
+{
+  "name": "acmebot-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@tanstack/vue-table": "8.21.3",
+    "lucide-vue-next": "1.0.0",
+    "punycode": "2.3.1",
+    "reka-ui": "2.9.7",
+    "vue": "3.5.34"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "@vitejs/plugin-vue": "6.0.6",
+    "typescript": "6.0.3",
+    "vite": "8.0.11",
+    "vue-tsc": "3.2.8"
+  }
+}

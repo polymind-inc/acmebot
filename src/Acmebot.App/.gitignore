@@ -267,3 +267,6 @@ __pycache__/
 Properties/serviceDependencies.json
 Properties/serviceDependencies.*.json
 Properties/ServiceDependencies/
+
+# Dashboard vnext
+wwwroot/dashboard-vnext/
