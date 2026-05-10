@@ -7,8 +7,6 @@
     "dev": "vite --host 127.0.0.1",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
-    "format": "eslint . --fix --fix-type layout",
-    "format:check": "eslint . --max-warnings=0",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1"
   },

@@ -9,10 +9,9 @@ npm install
 npm run dev
 npm run build
 npm run lint
-npm run format
 ```
 
-Linting and formatting are handled by ESLint flat config with ESLint Stylistic. `npm run lint` checks Vue and TypeScript files, while `npm run format` applies layout fixes with `eslint --fix --fix-type layout`.
+Linting is handled by ESLint flat config with ESLint Stylistic. `npm run lint` checks Vue and TypeScript files.
 
 `npm run build` writes the static dashboard assets to `../wwwroot/dashboard-vnext` so they can be served by the existing Azure Functions static page endpoint while the current `/dashboard` UI remains available.
 
