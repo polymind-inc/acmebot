@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { CirclePlus, KeyRound, Plus, ShieldPlus, Trash2, X } from 'lucide-vue-next';
+import { CirclePlus, KeyRound, Plus, ShieldPlus, Tag, Trash2, X } from 'lucide-vue-next';
 import { toASCII } from 'punycode/';
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
@@ -26,10 +26,22 @@ interface ValidationOutcome {
   message: string;
 }
 
+interface CertificateTagInput {
+  id: number;
+  key: string;
+  value: string;
+}
+
+interface TagValidationOutcome {
+  tags: Record<string, string>;
+  message: string;
+}
+
 const selectedZone = ref<SelectableDnsZone | null>(null);
 const validationErrors = reactive({
   dnsName: ''
 });
+let certificateTagId = 0;
 
 const validKeySizes = [2048, 3072, 4096];
 const validKeyCurves: KeyCurveName[] = ['P-256', 'P-384', 'P-521', 'P-256K'];
@@ -44,19 +56,22 @@ const form = reactive({
   keySize: 2048,
   keyCurveName: 'P-256' as KeyCurveName,
   reuseKey: false,
-  dnsAlias: ''
+  dnsAlias: '',
+  tags: [] as CertificateTagInput[]
 });
 
 const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
 const dnsAliasValidation = computed(() => (form.useAdvancedOptions ? validateOptionalDnsAlias(form.dnsAlias) : { value: '', message: '' }));
 const dnsAliasError = computed(() => dnsAliasValidation.value.message);
 const keyOptionError = computed(() => validateKeyOptions());
+const tagValidation = computed(() => (form.useAdvancedOptions ? validateTags(form.tags) : { tags: {}, message: '' }));
+const tagError = computed(() => tagValidation.value.message);
 const submitValidationMessage = computed(() => {
   if (form.dnsNames.length === 0) {
     return 'Add at least one DNS name.';
   }
 
-  return certificateNameError.value || dnsAliasError.value || keyOptionError.value;
+  return certificateNameError.value || dnsAliasError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
 const fullDnsName = computed(() => (selectedZone.value ? validateRecordDnsName(form.recordName, selectedZone.value).value || null : null));
@@ -86,6 +101,8 @@ const dnsNamesSummary = computed(() => {
   return `${firstDnsName} +${form.dnsNames.length - 1}`;
 });
 const dnsNameCountLabel = computed(() => `${form.dnsNames.length} ${form.dnsNames.length === 1 ? 'DNS name' : 'DNS names'}`);
+const tagCount = computed(() => Object.keys(tagValidation.value.tags).length);
+const tagCountLabel = computed(() => (tagCount.value === 0 ? 'No tags' : `${tagCount.value} ${tagCount.value === 1 ? 'tag' : 'tags'}`));
 
 watch(
   () => props.open,
@@ -107,6 +124,7 @@ watch(
       form.keyCurveName = 'P-256';
       form.reuseKey = false;
       form.dnsAlias = '';
+      form.tags = [];
     }
   }
 );
@@ -124,6 +142,11 @@ function resetForm(): void {
   form.keyCurveName = 'P-256';
   form.reuseKey = false;
   form.dnsAlias = '';
+  form.tags = [];
+}
+
+function createTagInput(): CertificateTagInput {
+  return { id: ++certificateTagId, key: '', value: '' };
 }
 
 function normalizeRecordName(recordName: string): string {
@@ -259,6 +282,51 @@ function validateKeyOptions(): string {
   return '';
 }
 
+function validateTags(items: CertificateTagInput[]): TagValidationOutcome {
+  const tags: Record<string, string> = {};
+  const seenKeys = new Set<string>();
+
+  for (const item of items) {
+    const key = item.key.trim();
+    const value = item.value.trim();
+
+    if (!key && !value) {
+      continue;
+    }
+
+    if (!key) {
+      return { tags: {}, message: 'Tag name is required.' };
+    }
+
+    if (key.toLowerCase() === 'acmebot') {
+      return { tags: {}, message: 'The Acmebot tag is managed by Acmebot.' };
+    }
+
+    const normalizedKey = key.toLowerCase();
+
+    if (seenKeys.has(normalizedKey)) {
+      return { tags: {}, message: 'Tag names must be unique.' };
+    }
+
+    seenKeys.add(normalizedKey);
+    tags[key] = value;
+  }
+
+  return { tags, message: '' };
+}
+
+function addTag(): void {
+  if (form.tags.some((tag) => !tag.key.trim() && !tag.value.trim())) {
+    return;
+  }
+
+  form.tags.push(createTagInput());
+}
+
+function removeTag(id: number): void {
+  form.tags = form.tags.filter((tag) => tag.id !== id);
+}
+
 function clearDnsNameError(): void {
   validationErrors.dnsName = '';
 }
@@ -330,6 +398,10 @@ function submit(): void {
     policy.keyCurveName = form.keyCurveName;
   }
 
+  if (form.useAdvancedOptions && tagCount.value > 0) {
+    policy.tags = tagValidation.value.tags;
+  }
+
   emit('submit', policy);
 }
 </script>
@@ -377,6 +449,14 @@ function submit(): void {
                 <span>Key</span>
                 <strong>{{ keySummary }}</strong>
                 <small>{{ form.useAdvancedOptions ? 'Custom settings' : 'Default settings' }}</small>
+              </div>
+            </div>
+            <div class="setup-step" :class="{ 'is-complete': tagCount > 0 }">
+              <Tag :size="17" aria-hidden="true" />
+              <div class="setup-step__body">
+                <span>Tags</span>
+                <strong>{{ tagCountLabel }}</strong>
+                <small>Key Vault</small>
               </div>
             </div>
           </aside>
@@ -473,6 +553,29 @@ function submit(): void {
                 <input v-model="form.reuseKey" type="checkbox" />
                 <span>Reuse key on renewal</span>
               </label>
+
+              <div class="tag-editor advanced-grid__wide">
+                <div class="tag-editor__header">
+                  <span class="form-label">Key Vault Tags</span>
+                  <button class="secondary-button" type="button" @click="addTag">
+                    <Plus :size="16" aria-hidden="true" />
+                    <span>Add tag</span>
+                  </button>
+                </div>
+                <div v-if="form.tags.length === 0" class="tag-editor__empty">No tags</div>
+                <div v-else class="tag-editor__rows">
+                  <div v-for="tagItem in form.tags" :key="tagItem.id" class="tag-row">
+                    <label class="visually-hidden" :for="`tag-key-${tagItem.id}`">Tag name</label>
+                    <input :id="`tag-key-${tagItem.id}`" v-model="tagItem.key" type="text" placeholder="Name" :aria-invalid="tagError ? 'true' : 'false'" />
+                    <label class="visually-hidden" :for="`tag-value-${tagItem.id}`">Tag value</label>
+                    <input :id="`tag-value-${tagItem.id}`" v-model="tagItem.value" type="text" placeholder="Value" :aria-invalid="tagError ? 'true' : 'false'" />
+                    <button class="icon-only-button" type="button" title="Remove tag" @click="removeTag(tagItem.id)">
+                      <Trash2 :size="15" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <span v-if="tagError" class="form-error">{{ tagError }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -481,6 +584,7 @@ function submit(): void {
           <div class="modal-panel__footer-meta">
             <span>{{ dnsNameCountLabel }}</span>
             <span>{{ keySummary }}</span>
+            <span>{{ tagCountLabel }}</span>
           </div>
           <div class="modal-panel__footer-actions">
             <button class="secondary-button" type="button" :disabled="sending" @click="emit('close')">Cancel</button>

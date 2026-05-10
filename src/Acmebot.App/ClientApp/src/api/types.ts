@@ -20,6 +20,7 @@ export interface CertificateItem {
   isSameEndpoint: boolean;
   acmeEndpoint?: string | null;
   dnsAlias?: string | null;
+  tags?: Record<string, string> | null;
 }
 
 export interface DnsZoneItem {
@@ -44,6 +45,7 @@ export interface CertificatePolicyItem {
   keyCurveName?: KeyCurveName;
   reuseKey?: boolean;
   dnsAlias?: string;
+  tags?: Record<string, string>;
 }
 
 export interface ProblemDetails {

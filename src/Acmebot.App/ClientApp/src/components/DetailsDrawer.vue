@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { AlertTriangle, CalendarDays, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
 
 import type { CertificateItem } from '@/api/types';
@@ -18,6 +19,9 @@ const emit = defineEmits<{
   revoke: [certificate: CertificateItem];
   copy: [label: string, value: string];
 }>();
+
+const customTags = computed(() => Object.entries(props.certificate?.tags ?? {}).toSorted(([left], [right]) => left.localeCompare(right)));
+const customTagsCopyText = computed(() => customTags.value.map(([key, value]) => `${key}: ${value}`).join('\n'));
 </script>
 
 <template>
@@ -127,6 +131,23 @@ const emit = defineEmits<{
               <dt>ACME endpoint</dt>
               <dd class="metadata-value-line">
                 <span class="metadata-value metadata-value--mono">{{ certificate.acmeEndpoint }}</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section v-if="customTags.length > 0" class="detail-section">
+          <div class="detail-section__heading">
+            <h3>Tags</h3>
+            <button class="copy-button" type="button" title="Copy tags" @click="emit('copy', 'Tags', customTagsCopyText)">
+              <Copy :size="15" aria-hidden="true" />
+            </button>
+          </div>
+          <dl class="metadata-list">
+            <div v-for="[key, value] in customTags" :key="key" class="metadata-row metadata-row--stacked">
+              <dt>{{ key }}</dt>
+              <dd class="metadata-value-line">
+                <span class="metadata-value">{{ value || '-' }}</span>
               </dd>
             </div>
           </dl>

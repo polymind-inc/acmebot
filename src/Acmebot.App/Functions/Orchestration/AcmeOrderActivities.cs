@@ -108,9 +108,9 @@ public partial class AcmeOrderActivities(
         try
         {
             var certificatePolicy = certificatePolicyItem.ToCertificatePolicy();
-            var metadata = certificatePolicyItem.ToCertificateMetadata(_options.Endpoint);
+            var tags = certificatePolicyItem.ToCertificateTags(_options.Endpoint);
 
-            var certificateOperation = await certificateClient.StartCreateCertificateAsync(certificatePolicyItem.CertificateName, certificatePolicy, tags: metadata);
+            var certificateOperation = await certificateClient.StartCreateCertificateAsync(certificatePolicyItem.CertificateName, certificatePolicy, tags: tags);
 
             csr = certificateOperation.Properties.Csr;
         }

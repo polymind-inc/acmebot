@@ -354,6 +354,7 @@ button:disabled {
 .select-field select,
 .form-field input,
 .form-field select,
+.tag-row input,
 .compound-input input,
 .combobox__input {
   width: 100%;
@@ -1028,6 +1029,7 @@ button:disabled {
 .compound-input input,
 .form-field input,
 .form-field select,
+.tag-row input,
 .combobox__control {
   min-height: 38px;
   border: 1px solid var(--color-border);
@@ -1110,7 +1112,8 @@ button:disabled {
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.tag-row input {
   padding: 0 10px;
 }
 
@@ -1130,6 +1133,55 @@ button:disabled {
 .advanced-grid__toggle {
   align-self: end;
   min-height: 38px;
+}
+
+.advanced-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.tag-editor {
+  min-width: 0;
+}
+
+.tag-editor__header {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tag-editor__header .form-label {
+  margin-bottom: 0;
+}
+
+.tag-editor__rows {
+  display: grid;
+  gap: 8px;
+}
+
+.tag-editor__empty {
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  color: var(--color-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.tag-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+}
+
+.tag-row input {
+  min-width: 0;
 }
 
 .modal-panel__footer {
@@ -1421,7 +1473,7 @@ button:disabled {
   }
 
   .setup-rail {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);

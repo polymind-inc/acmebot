@@ -47,7 +47,8 @@ internal static class CertificateExtensions
             ReuseKey = certificate.Policy.ReuseKey,
             IsExpired = DateTimeOffset.UtcNow > certificate.Properties.ExpiresOn.GetValueOrDefault(DateTimeOffset.MaxValue),
             AcmeEndpoint = !string.IsNullOrEmpty(metadata?.Endpoint) ? NormalizeEndpoint(metadata.Endpoint) : "",
-            DnsAlias = metadata?.DnsAlias ?? ""
+            DnsAlias = metadata?.DnsAlias ?? "",
+            Tags = certificate.Properties.Tags.GetCustomCertificateTags()
         };
     }
 
@@ -66,12 +67,28 @@ internal static class CertificateExtensions
             KeyCurveName = certificate.Policy.KeyCurveName?.ToString(),
             ReuseKey = certificate.Policy.ReuseKey,
             DnsAlias = metadata?.DnsAlias ?? "",
-            CertificateId = metadata?.CertificateId
+            CertificateId = metadata?.CertificateId,
+            Tags = certificate.Properties.Tags.GetCustomCertificateTags()
         };
     }
 
-    public static IDictionary<string, string> ToCertificateMetadata(this CertificatePolicyItem certificatePolicyItem, Uri endpoint)
+    public static IDictionary<string, string> ToCertificateTags(this CertificatePolicyItem certificatePolicyItem, Uri endpoint)
     {
+        var tags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (certificatePolicyItem.Tags is not null)
+        {
+            foreach (var tag in certificatePolicyItem.Tags)
+            {
+                if (string.IsNullOrWhiteSpace(tag.Key) || string.Equals(tag.Key.Trim(), AcmebotTagKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                tags[tag.Key.Trim()] = tag.Value?.Trim() ?? "";
+            }
+        }
+
         var metadata = new AcmebotCertificateMetadata
         {
             Endpoint = endpoint.Host,
@@ -79,10 +96,9 @@ internal static class CertificateExtensions
             DnsAlias = string.IsNullOrEmpty(certificatePolicyItem.DnsAlias) ? null : certificatePolicyItem.DnsAlias
         };
 
-        return new Dictionary<string, string>
-        {
-            { AcmebotTagKey, JsonSerializer.Serialize(metadata, s_jsonOptions) }
-        };
+        tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
+
+        return tags;
     }
 
     public static void SetCertificateId(this IDictionary<string, string> tags, string certificateId)
@@ -150,6 +166,17 @@ internal static class CertificateExtensions
         }
 
         return null;
+    }
+
+    private static Dictionary<string, string> GetCustomCertificateTags(this IDictionary<string, string> tags)
+    {
+        string[] internalTagKeys = tags.Keys.Contains(AcmebotTagKey, StringComparer.OrdinalIgnoreCase)
+            ? [AcmebotTagKey]
+            : [AcmebotTagKey, LegacyIssuerKey, LegacyEndpointKey, LegacyDnsProviderKey, LegacyDnsAliasKey];
+
+        return tags
+            .Where(tag => !internalTagKeys.Contains(tag.Key, StringComparer.OrdinalIgnoreCase))
+            .ToDictionary(tag => tag.Key, tag => tag.Value);
     }
 
     private static string NormalizeEndpoint(string endpoint) => Uri.TryCreate(endpoint, UriKind.Absolute, out var legacyEndpoint) ? legacyEndpoint.Host : endpoint;
