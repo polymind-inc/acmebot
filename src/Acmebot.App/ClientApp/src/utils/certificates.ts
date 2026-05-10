@@ -1,6 +1,6 @@
-import { toUnicode } from 'punycode/';
+import { toASCII, toUnicode } from 'punycode/';
 
-import type { CertificateCategory, CertificateItem, CertificateStatusKind } from '@/api/types';
+import type { CertificateCategory, CertificateItem, CertificateStatusKind, DnsZoneGroup } from '@/api/types';
 
 export interface CertificateStatus {
   kind: CertificateStatusKind;
@@ -106,14 +106,66 @@ export function formatDateTime(value?: string | null): string {
   }).format(new Date(value));
 }
 
-export function getPrimaryZone(certificate: CertificateItem): string {
+function normalizeDnsName(value: string): string {
+  const withoutWildcard = value.startsWith('*.') ? value.slice(2) : value;
+
+  try {
+    return toASCII(withoutWildcard.trim().replace(/\.+$/, '')).toLowerCase();
+  } catch {
+    return withoutWildcard.trim().replace(/\.+$/, '').toLowerCase();
+  }
+}
+
+function findMatchingDnsZone(certificate: CertificateItem, dnsZoneGroups: DnsZoneGroup[]): string | null {
+  const providerZoneNames = new Set<string>();
+  const allZoneNames = new Set<string>();
+
+  for (const group of dnsZoneGroups) {
+    for (const zone of group.dnsZones ?? []) {
+      const zoneName = normalizeDnsName(zone.name);
+
+      if (!zoneName) {
+        continue;
+      }
+
+      allZoneNames.add(zoneName);
+
+      if (certificate.dnsProviderName && group.dnsProviderName === certificate.dnsProviderName) {
+        providerZoneNames.add(zoneName);
+      }
+    }
+  }
+
+  const candidateZoneNames = (providerZoneNames.size > 0 ? Array.from(providerZoneNames) : Array.from(allZoneNames)).toSorted(
+    (left, right) => left.length - right.length || left.localeCompare(right)
+  );
+
+  for (const dnsName of certificate.dnsNames) {
+    const normalizedDnsName = normalizeDnsName(dnsName);
+    const matchingZoneName = candidateZoneNames.find((zoneName) => normalizedDnsName === zoneName || normalizedDnsName.endsWith(`.${zoneName}`));
+
+    if (matchingZoneName) {
+      return matchingZoneName;
+    }
+  }
+
+  return null;
+}
+
+export function getPrimaryZone(certificate: CertificateItem, dnsZoneGroups: DnsZoneGroup[] = []): string {
+  const matchingDnsZone = findMatchingDnsZone(certificate, dnsZoneGroups);
+
+  if (matchingDnsZone) {
+    return displayDnsName(matchingDnsZone);
+  }
+
   const firstDnsName = certificate.dnsNames[0];
 
   if (!firstDnsName) {
     return '(unknown)';
   }
 
-  const normalizedName = firstDnsName.startsWith('*.') ? firstDnsName.slice(2) : firstDnsName;
+  const normalizedName = normalizeDnsName(firstDnsName);
   const parts = normalizedName.split('.');
 
   if (parts.length <= 2) {

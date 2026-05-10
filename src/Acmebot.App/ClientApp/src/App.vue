@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Activity, AlertTriangle, BadgeCheck, CircleSlash, LayoutDashboard, Shield, ShieldAlert, ShieldCheck } from 'lucide-vue-next';
+import { Activity, AlertTriangle, BadgeCheck, CircleSlash, Shield, ShieldAlert, ShieldCheck } from 'lucide-vue-next';
 
 import { formatApiError, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup } from '@/api/types';
@@ -70,6 +70,7 @@ const dashboardCommitLabel = computed(() => (dashboardCommitHash.length > 7 ? da
 
 onMounted(async () => {
   await loadCertificates();
+  await loadDnsZones(false);
 });
 
 function pushToast(type: ToastMessage['type'], title: string, message: string): void {
@@ -96,7 +97,7 @@ async function loadCertificates(): Promise<void> {
   }
 }
 
-async function loadDnsZones(): Promise<void> {
+async function loadDnsZones(showErrorToast = true): Promise<void> {
   if (dnsZoneState.loaded || dnsZoneState.loading) {
     return;
   }
@@ -107,7 +108,9 @@ async function loadDnsZones(): Promise<void> {
     dnsZoneGroups.value = await getDnsZones();
     dnsZoneState.loaded = true;
   } catch (error) {
-    pushToast('error', 'Failed to load DNS zones', formatApiError(error));
+    if (showErrorToast) {
+      pushToast('error', 'Failed to load DNS zones', formatApiError(error));
+    }
   } finally {
     dnsZoneState.loading = false;
   }
@@ -197,16 +200,7 @@ async function confirmRevokeCertificate(): Promise<void> {
     </header>
 
     <main class="app-main">
-      <section class="page-title-row" aria-labelledby="page-heading">
-        <div>
-          <div class="eyebrow">Azure Key Vault certificate automation</div>
-          <h1 id="page-heading">Certificate Operations</h1>
-        </div>
-        <div class="dashboard-pill">
-          <LayoutDashboard :size="15" aria-hidden="true" />
-          Operations dashboard
-        </div>
-      </section>
+      <h1 id="page-heading" class="visually-hidden">Certificate Operations</h1>
 
       <section class="summary-grid" aria-label="Certificate summary">
         <div v-for="item in summaryItems" :key="item.label" class="summary-item" :class="`summary-item--${item.tone}`">
@@ -225,6 +219,7 @@ async function confirmRevokeCertificate(): Promise<void> {
 
       <CertificateTable
         :certificates="certificates"
+        :dns-zone-groups="dnsZoneGroups"
         :loading="certificateState.loading"
         :selected-certificate="selectedCertificate"
         @select="selectedCertificate = $event"

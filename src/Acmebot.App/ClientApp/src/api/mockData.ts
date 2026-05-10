@@ -29,6 +29,40 @@ let mockCertificates: CertificateItem[] = [
     dnsAlias: null
   },
   {
+    id: 'https://mock.vault/certificates/apex-example-co-jp',
+    name: 'apex-example-co-jp',
+    dnsNames: ['example.co.jp'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(20),
+    expiresOn: dateFromNow(68),
+    x509Thumbprint: '62B4E2103E9B4E46B9E09172B0A321AD108D2D54',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null
+  },
+  {
+    id: 'https://mock.vault/certificates/app-www-example-co-jp',
+    name: 'app-www-example-co-jp',
+    dnsNames: ['app.www.example.co.jp'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(19),
+    expiresOn: dateFromNow(69),
+    x509Thumbprint: '78E62B4E2103E9B4E46B9E09172B0A321AD108D',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null
+  },
+  {
     id: 'https://mock.vault/certificates/api-contoso-com',
     name: 'api-contoso-com',
     dnsNames: ['api.contoso.com'],
@@ -118,7 +152,7 @@ let mockCertificates: CertificateItem[] = [
 const mockDnsZoneGroups: DnsZoneGroup[] = [
   {
     dnsProviderName: 'Azure DNS',
-    dnsZones: [{ name: 'example.com' }, { name: 'example.org' }, { name: 'fabrikam.net' }]
+    dnsZones: [{ name: 'example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }]
   },
   {
     dnsProviderName: 'Cloudflare',

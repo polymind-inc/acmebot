@@ -21,8 +21,18 @@ const emit = defineEmits<{
   'load-zones': [];
 }>();
 
+interface ValidationOutcome {
+  value: string;
+  message: string;
+}
+
 const selectedZone = ref<SelectableDnsZone | null>(null);
-const formMessage = ref('');
+const validationErrors = reactive({
+  dnsName: ''
+});
+
+const validKeySizes = [2048, 3072, 4096];
+const validKeyCurves: KeyCurveName[] = ['P-256', 'P-384', 'P-521', 'P-256K'];
 
 const form = reactive({
   recordName: '',
@@ -37,8 +47,19 @@ const form = reactive({
   dnsAlias: ''
 });
 
-const canSubmit = computed(() => form.dnsNames.length > 0 && !props.sending);
-const fullDnsName = computed(() => buildDnsName());
+const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
+const dnsAliasValidation = computed(() => (form.useAdvancedOptions ? validateOptionalDnsAlias(form.dnsAlias) : { value: '', message: '' }));
+const dnsAliasError = computed(() => dnsAliasValidation.value.message);
+const keyOptionError = computed(() => validateKeyOptions());
+const submitValidationMessage = computed(() => {
+  if (form.dnsNames.length === 0) {
+    return 'Add at least one DNS name.';
+  }
+
+  return certificateNameError.value || dnsAliasError.value || keyOptionError.value;
+});
+const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
+const fullDnsName = computed(() => (selectedZone.value ? validateRecordDnsName(form.recordName, selectedZone.value).value || null : null));
 const keySummary = computed(() => (form.keyType === 'RSA' ? `${form.keySize} bit RSA` : `${form.keyCurveName} EC`));
 const issueStatusLabel = computed(() => {
   if (form.dnsNames.length > 0) {
@@ -76,9 +97,23 @@ watch(
   }
 );
 
+watch(
+  () => form.useAdvancedOptions,
+  (useAdvancedOptions) => {
+    if (!useAdvancedOptions) {
+      form.certificateName = '';
+      form.keyType = 'RSA';
+      form.keySize = 2048;
+      form.keyCurveName = 'P-256';
+      form.reuseKey = false;
+      form.dnsAlias = '';
+    }
+  }
+);
+
 function resetForm(): void {
   selectedZone.value = null;
-  formMessage.value = '';
+  validationErrors.dnsName = '';
   form.recordName = '';
   form.dnsNames = [];
   form.dnsProviderName = '';
@@ -92,52 +127,168 @@ function resetForm(): void {
 }
 
 function normalizeRecordName(recordName: string): string {
-  return recordName.trim().replace(/\.$/, '');
+  return recordName.trim().replace(/\.+$/, '');
 }
 
-function buildDnsName(): string | null {
-  if (!selectedZone.value) {
+function toAsciiDnsName(value: string): string | null {
+  try {
+    return toASCII(value).toLowerCase();
+  } catch {
     return null;
   }
+}
 
-  const normalizedRecordName = normalizeRecordName(form.recordName);
+function validateCertificateName(certificateName: string): string {
+  const normalizedCertificateName = certificateName.trim();
+
+  if (!normalizedCertificateName) {
+    return '';
+  }
+
+  if (normalizedCertificateName.length > 127) {
+    return 'Certificate Name must be 127 characters or fewer.';
+  }
+
+  if (!/^[0-9a-zA-Z-]+$/.test(normalizedCertificateName)) {
+    return 'Certificate Name can contain only letters, numbers, and hyphens.';
+  }
+
+  return '';
+}
+
+function validateDnsName(value: string, fieldLabel: string, allowWildcard: boolean): ValidationOutcome {
+  const normalizedInput = normalizeRecordName(value);
+
+  if (!normalizedInput) {
+    return { value: '', message: `${fieldLabel} is required.` };
+  }
+
+  const asciiName = toAsciiDnsName(normalizedInput);
+
+  if (!asciiName) {
+    return { value: '', message: `${fieldLabel} contains characters that cannot be converted to a DNS name.` };
+  }
+
+  if (asciiName.length > 253) {
+    return { value: '', message: `${fieldLabel} must be 253 characters or fewer.` };
+  }
+
+  const labels = asciiName.split('.');
+
+  if (labels.length < 2) {
+    return { value: '', message: `${fieldLabel} must include a domain suffix.` };
+  }
+
+  for (const [labelIndex, label] of labels.entries()) {
+    if (!label) {
+      return { value: '', message: `${fieldLabel} cannot contain empty DNS labels.` };
+    }
+
+    if (label.length > 63) {
+      return { value: '', message: 'Each DNS label must be 63 characters or fewer.' };
+    }
+
+    if (label === '*') {
+      if (!allowWildcard) {
+        return { value: '', message: `${fieldLabel} cannot be a wildcard.` };
+      }
+
+      if (labelIndex !== 0) {
+        return { value: '', message: 'A wildcard can only be the leftmost DNS label.' };
+      }
+
+      continue;
+    }
+
+    if (label.includes('*') || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) {
+      return { value: '', message: `${fieldLabel} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.` };
+    }
+  }
+
+  return { value: asciiName, message: '' };
+}
+
+function validateOptionalDnsAlias(dnsAlias: string): ValidationOutcome {
+  if (!dnsAlias.trim()) {
+    return { value: '', message: '' };
+  }
+
+  return validateDnsName(dnsAlias, 'DNS Alias', false);
+}
+
+function validateRecordDnsName(recordName: string, zone: SelectableDnsZone): ValidationOutcome {
+  const zoneValidation = validateDnsName(zone.name, 'DNS zone', false);
+
+  if (zoneValidation.message) {
+    return zoneValidation;
+  }
+
+  const normalizedRecordName = normalizeRecordName(recordName);
+  let candidateDnsName: string;
 
   if (!normalizedRecordName || normalizedRecordName === '@') {
-    return selectedZone.value.name;
+    candidateDnsName = zoneValidation.value;
+  } else {
+    const asciiRecordName = toAsciiDnsName(normalizedRecordName);
+
+    if (!asciiRecordName) {
+      return { value: '', message: 'DNS Name contains characters that cannot be converted to a DNS name.' };
+    }
+
+    if (asciiRecordName === zoneValidation.value) {
+      candidateDnsName = zoneValidation.value;
+    } else if (asciiRecordName.endsWith(`.${zoneValidation.value}`)) {
+      candidateDnsName = asciiRecordName;
+    } else {
+      candidateDnsName = `${asciiRecordName}.${zoneValidation.value}`;
+    }
   }
 
-  if (normalizedRecordName.endsWith(`.${selectedZone.value.name}`)) {
-    return toASCII(normalizedRecordName);
+  return validateDnsName(candidateDnsName, 'DNS Name', true);
+}
+
+function validateKeyOptions(): string {
+  if (form.keyType === 'RSA' && !validKeySizes.includes(form.keySize)) {
+    return 'Key Size must be 2048, 3072, or 4096 when Key Type is RSA.';
   }
 
-  return `${toASCII(normalizedRecordName)}.${selectedZone.value.name}`;
+  if (form.keyType === 'EC' && !validKeyCurves.includes(form.keyCurveName)) {
+    return 'Curve must be P-256, P-384, P-521, or P-256K when Key Type is EC.';
+  }
+
+  return '';
+}
+
+function clearDnsNameError(): void {
+  validationErrors.dnsName = '';
 }
 
 function addDnsName(): void {
-  formMessage.value = '';
+  validationErrors.dnsName = '';
 
   if (!selectedZone.value) {
+    validationErrors.dnsName = 'Select a DNS zone before adding a DNS name.';
     return;
   }
 
   if (form.dnsProviderName && form.dnsProviderName !== selectedZone.value.dnsProviderName) {
-    formMessage.value = 'DNS names in one certificate must use the same DNS provider.';
+    validationErrors.dnsName = 'DNS names in one certificate must use the same DNS provider.';
     return;
   }
 
-  const dnsName = buildDnsName();
+  const dnsNameValidation = validateRecordDnsName(form.recordName, selectedZone.value);
 
-  if (!dnsName) {
+  if (dnsNameValidation.message) {
+    validationErrors.dnsName = dnsNameValidation.message;
     return;
   }
 
-  if (!form.dnsNames.includes(dnsName)) {
-    form.dnsNames.push(dnsName);
-  } else {
-    formMessage.value = 'This DNS name is already in the certificate.';
+  if (form.dnsNames.some((dnsName) => dnsName.toLowerCase() === dnsNameValidation.value)) {
+    validationErrors.dnsName = 'This DNS name is already in the certificate.';
     return;
   }
 
+  form.dnsNames.push(dnsNameValidation.value);
   form.dnsProviderName = selectedZone.value.dnsProviderName;
   form.recordName = '';
 }
@@ -147,22 +298,30 @@ function removeDnsName(dnsName: string): void {
 
   if (form.dnsNames.length === 0) {
     form.dnsProviderName = '';
-    formMessage.value = '';
+    validationErrors.dnsName = '';
   }
 }
 
 function submit(): void {
+  if (form.dnsNames.length === 0) {
+    validationErrors.dnsName = 'Add at least one DNS name before issuing the certificate.';
+    return;
+  }
+
   if (!canSubmit.value) {
     return;
   }
 
+  const normalizedCertificateName = form.useAdvancedOptions ? form.certificateName.trim() : '';
+  const normalizedDnsAlias = form.useAdvancedOptions ? dnsAliasValidation.value.value : '';
+
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
     dnsProviderName: form.dnsProviderName || undefined,
-    certificateName: form.certificateName.trim() || undefined,
+    certificateName: normalizedCertificateName || undefined,
     keyType: form.keyType,
-    reuseKey: form.reuseKey,
-    dnsAlias: form.dnsAlias.trim() || undefined
+    reuseKey: form.useAdvancedOptions ? form.reuseKey : false,
+    dnsAlias: normalizedDnsAlias || undefined
   };
 
   if (form.keyType === 'RSA') {
@@ -237,7 +396,9 @@ function submit(): void {
                   type="text"
                   placeholder="@, www, api, *"
                   :disabled="!selectedZone"
+                  :aria-invalid="validationErrors.dnsName ? 'true' : 'false'"
                   @keydown.enter.prevent="addDnsName"
+                  @input="clearDnsNameError"
                 />
                 <span class="compound-input__suffix">.{{ selectedZone ? displayDnsName(selectedZone.name) : 'zone' }}</span>
                 <button class="icon-button" type="button" :disabled="!selectedZone" @click="addDnsName">
@@ -249,7 +410,7 @@ function submit(): void {
                 <span>Full DNS name</span>
                 <strong>{{ displayDnsName(fullDnsName) }}</strong>
               </div>
-              <p v-if="formMessage" class="form-error">{{ formMessage }}</p>
+              <p v-if="validationErrors.dnsName" class="form-error">{{ validationErrors.dnsName }}</p>
               <div class="dns-list dns-list--editable">
                 <span v-for="dnsName in form.dnsNames" :key="dnsName" class="dns-chip dns-chip--removable">
                   {{ displayDnsName(dnsName) }}
@@ -268,17 +429,19 @@ function submit(): void {
             </div>
 
             <div v-if="form.useAdvancedOptions" class="advanced-grid">
-              <label class="form-field">
+              <label class="form-field" :class="{ 'is-invalid': certificateNameError }">
                 <span class="form-label">Certificate Name</span>
-                <input v-model="form.certificateName" type="text" placeholder="Optional certificate name" />
+                <input v-model="form.certificateName" type="text" placeholder="Optional certificate name" :aria-invalid="certificateNameError ? 'true' : 'false'" />
+                <span v-if="certificateNameError" class="form-error">{{ certificateNameError }}</span>
               </label>
 
-              <label class="form-field">
+              <label class="form-field" :class="{ 'is-invalid': keyOptionError }">
                 <span class="form-label">Key Type</span>
                 <select v-model="form.keyType">
                   <option value="RSA">RSA</option>
                   <option value="EC">EC</option>
                 </select>
+                <span v-if="keyOptionError" class="form-error">{{ keyOptionError }}</span>
               </label>
 
               <label v-if="form.keyType === 'RSA'" class="form-field">
@@ -300,9 +463,10 @@ function submit(): void {
                 </select>
               </label>
 
-              <label class="form-field">
+              <label class="form-field" :class="{ 'is-invalid': dnsAliasError }">
                 <span class="form-label">DNS Alias</span>
-                <input v-model="form.dnsAlias" type="text" placeholder="alias.example.com" />
+                <input v-model="form.dnsAlias" type="text" placeholder="alias.example.com" :aria-invalid="dnsAliasError ? 'true' : 'false'" />
+                <span v-if="dnsAliasError" class="form-error">{{ dnsAliasError }}</span>
               </label>
 
               <label class="toggle-row advanced-grid__toggle">
