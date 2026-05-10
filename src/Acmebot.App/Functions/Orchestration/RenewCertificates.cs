@@ -10,28 +10,30 @@ public partial class RenewCertificates(ILogger<RenewCertificates> logger)
     [Function($"{nameof(RenewCertificates)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
     {
+        var replaySafeLogger = context.CreateReplaySafeLogger<RenewCertificates>();
+
         // 更新が必要な証明書の一覧を取得する
         var certificates = await context.CallGetRenewalCertificatesAsync(null!);
 
         // 更新対象となる証明書がない場合は終わる
         if (certificates.Count == 0)
         {
-            LogCertificatesNotFound(logger);
+            LogCertificatesNotFound(replaySafeLogger);
 
             return;
         }
 
         // スロットリング対策として 600 秒以内でジッターを追加する
-        var jitter = (uint)context.NewGuid().GetHashCode() % 600;
+        var jitter = BitConverter.ToUInt32(context.NewGuid().ToByteArray(), 0) % 600;
 
-        LogAddingRandomDelay(logger, jitter);
+        LogAddingRandomDelay(replaySafeLogger, jitter);
 
         await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(jitter), CancellationToken.None);
 
         // 証明書の更新を行う
         foreach (var certificate in certificates)
         {
-            LogRenewingCertificate(logger, certificate.Name, certificate.ExpiresOn);
+            LogRenewingCertificate(replaySafeLogger, certificate.Name, certificate.ExpiresOn);
 
             try
             {
@@ -43,7 +45,7 @@ public partial class RenewCertificates(ILogger<RenewCertificates> logger)
             catch (Exception ex)
             {
                 // 失敗した場合はログに詳細を書き出して続きを実行する
-                LogFailedSubOrchestration(logger, ex, certificate.Name, string.Join(",", certificate.DnsNames));
+                LogFailedSubOrchestration(replaySafeLogger, ex, certificate.Name, string.Join(",", certificate.DnsNames));
             }
         }
     }
