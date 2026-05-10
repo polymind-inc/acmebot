@@ -31,17 +31,17 @@ export default defineConfig({
   plugins: [vue()],
   define: {
     __ACMEBOT_DASHBOARD_VERSION__: JSON.stringify(dashboardVersion),
-    __ACMEBOT_DASHBOARD_COMMIT_HASH__: JSON.stringify(dashboardCommitHash)
+    __ACMEBOT_DASHBOARD_COMMIT_HASH__: JSON.stringify(dashboardCommitHash),
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
   build: {
     outDir: '../wwwroot/dashboard-vnext',
     emptyOutDir: true,
-    sourcemap: buildSourceMap
+    sourcemap: buildSourceMap,
   },
   server: {
     port: 5173,
@@ -49,9 +49,9 @@ export default defineConfig({
       ? {
           '/api': {
             target: apiOrigin,
-            changeOrigin: true
-          }
+            changeOrigin: true,
+          },
         }
-      : undefined
-  }
+      : undefined,
+  },
 });

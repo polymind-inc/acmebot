@@ -11,7 +11,7 @@ import {
   ComboboxLabel,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
 } from 'reka-ui';
 import { computed, ref, watch } from 'vue';
 
@@ -48,9 +48,9 @@ const allOptions = computed<ZoneOption[]>(() =>
       ...zone,
       dnsProviderName: group.dnsProviderName,
       displayName: displayDnsName(zone.name),
-      key: `${group.dnsProviderName}:${zone.name}`
-    }))
-  )
+      key: `${group.dnsProviderName}:${zone.name}`,
+    })),
+  ),
 );
 
 const groupedOptions = computed<GroupedOptions[]>(() => {
@@ -70,7 +70,7 @@ watch(
   (selected) => {
     selectedKey.value = selected ? `${selected.dnsProviderName}:${selected.name}` : '';
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(selectedKey, (key) => {
@@ -83,7 +83,7 @@ watch(selectedKey, (key) => {
 
   emit('update:selected', {
     name: option.name,
-    dnsProviderName: option.dnsProviderName
+    dnsProviderName: option.dnsProviderName,
   });
 });
 
@@ -99,42 +99,84 @@ function clearSelection(): void {
 </script>
 
 <template>
-  <ComboboxRoot v-model="selectedKey" class="combobox" open-on-focus open-on-click reset-search-term-on-select>
+  <ComboboxRoot
+    v-model="selectedKey"
+    class="combobox"
+    open-on-focus
+    open-on-click
+    reset-search-term-on-select
+  >
     <ComboboxAnchor class="combobox__control">
-      <Search class="combobox__search-icon" :size="16" aria-hidden="true" />
+      <Search
+        class="combobox__search-icon"
+        :size="16"
+        aria-hidden="true"
+      />
       <ComboboxInput
         class="combobox__input"
         :display-value="displaySelectedValue"
         placeholder="Search DNS zone"
       />
-      <button v-if="selected" class="combobox__clear" type="button" title="Clear selected zone" @click="clearSelection">
+      <button
+        v-if="selected"
+        class="combobox__clear"
+        type="button"
+        title="Clear selected zone"
+        @click="clearSelection"
+      >
         Clear
       </button>
-      <ComboboxTrigger class="combobox__toggle" title="Open DNS zone list">
-        <ChevronDown :size="16" aria-hidden="true" />
+      <ComboboxTrigger
+        class="combobox__toggle"
+        title="Open DNS zone list"
+      >
+        <ChevronDown
+          :size="16"
+          aria-hidden="true"
+        />
       </ComboboxTrigger>
     </ComboboxAnchor>
 
-    <ComboboxContent class="combobox__popover" position="popper" :side-offset="8">
-      <div v-if="loading" class="combobox__state">Loading DNS zones...</div>
+    <ComboboxContent
+      class="combobox__popover"
+      position="popper"
+      :side-offset="8"
+    >
+      <div
+        v-if="loading"
+        class="combobox__state"
+      >
+        Loading DNS zones...
+      </div>
       <template v-else>
         <ComboboxViewport>
-          <ComboboxEmpty class="combobox__state">No DNS zones found</ComboboxEmpty>
-          <ComboboxGroup v-for="group in groupedOptions" :key="group.providerName" class="combobox__group">
-            <ComboboxLabel class="combobox__group-label">{{ group.providerName }}</ComboboxLabel>
-            <ComboboxItem
-            v-for="option in group.options"
-            :key="option.key"
-            class="combobox__option"
-            :value="option.key"
-            :text-value="`${option.displayName} ${option.name} ${option.dnsProviderName}`"
+          <ComboboxEmpty class="combobox__state">
+            No DNS zones found
+          </ComboboxEmpty>
+          <ComboboxGroup
+            v-for="group in groupedOptions"
+            :key="group.providerName"
+            class="combobox__group"
           >
+            <ComboboxLabel class="combobox__group-label">
+              {{ group.providerName }}
+            </ComboboxLabel>
+            <ComboboxItem
+              v-for="option in group.options"
+              :key="option.key"
+              class="combobox__option"
+              :value="option.key"
+              :text-value="`${option.displayName} ${option.name} ${option.dnsProviderName}`"
+            >
               <span>
                 <span class="combobox__option-name">{{ option.displayName }}</span>
                 <span class="combobox__option-meta">{{ option.name }}</span>
               </span>
               <ComboboxItemIndicator class="combobox__indicator">
-                <Check :size="15" aria-hidden="true" />
+                <Check
+                  :size="15"
+                  aria-hidden="true"
+                />
               </ComboboxItemIndicator>
             </ComboboxItem>
           </ComboboxGroup>

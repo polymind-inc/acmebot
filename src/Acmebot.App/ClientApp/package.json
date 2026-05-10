@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "eslint . --fix --fix-type layout",
+    "format:check": "eslint . --max-warnings=0",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1"
   },
@@ -16,10 +20,17 @@
     "vue": "3.5.34"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "25.6.2",
     "@vitejs/plugin-vue": "6.0.6",
+    "eslint": "10.3.0",
+    "eslint-plugin-vue": "10.9.1",
+    "globals": "17.6.0",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.59.2",
     "vite": "8.0.11",
+    "vue-eslint-parser": "10.4.0",
     "vue-tsc": "3.2.8"
   }
 }

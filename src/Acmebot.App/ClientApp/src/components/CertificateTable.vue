@@ -17,7 +17,7 @@ import {
   SearchX,
   ServerCog,
   SlidersHorizontal,
-  X
+  X,
 } from 'lucide-vue-next';
 
 import type { CertificateCategory, CertificateItem, CertificateStatusKind, DnsZoneGroup } from '@/api/types';
@@ -28,7 +28,7 @@ import {
   getCertificateCategory,
   getCertificateStatus,
   getPrimaryZone,
-  isShortLived
+  isShortLived,
 } from '@/utils/certificates';
 
 import StatusBadge from './StatusBadge.vue';
@@ -61,7 +61,7 @@ const filters = reactive({
   query: '',
   category: 'managed' as CategoryFilter,
   status: 'all' as StatusFilter,
-  provider: 'all'
+  provider: 'all',
 });
 const sorting = ref<SortingState>([{ id: 'expiresOn', desc: false }]);
 const collapsedZones = ref<Set<string>>(new Set());
@@ -73,14 +73,14 @@ const columns = [
   columnHelper.accessor((certificate) => getCategoryLabel(getCertificateCategory(certificate)), { id: 'category', header: 'Category' }),
   columnHelper.accessor('expiresOn', { header: 'Expires' }),
   columnHelper.accessor((certificate) => `${certificate.keyType ?? ''} ${certificate.keySize ?? certificate.keyCurveName ?? ''}`, { id: 'key', header: 'Key' }),
-  columnHelper.display({ id: 'actions', header: '', enableSorting: false })
+  columnHelper.display({ id: 'actions', header: '', enableSorting: false }),
 ];
 
 const categoryOptions: { label: string; value: CategoryFilter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Managed', value: 'managed' },
   { label: 'Other CA', value: 'other-ca' },
-  { label: 'Unmanaged', value: 'unmanaged' }
+  { label: 'Unmanaged', value: 'unmanaged' },
 ];
 
 const providerOptions = computed(() => {
@@ -107,7 +107,7 @@ const providerOptions = computed(() => {
 });
 
 const hasActiveFilters = computed(
-  () => filters.query.trim() !== '' || filters.category !== 'managed' || filters.status !== 'all' || filters.provider !== 'all'
+  () => filters.query.trim() !== '' || filters.category !== 'managed' || filters.status !== 'all' || filters.provider !== 'all',
 );
 
 const filteredCertificates = computed(() => {
@@ -145,13 +145,13 @@ const table = useVueTable({
   state: {
     get sorting() {
       return sorting.value;
-    }
+    },
   },
   onSortingChange: (updaterOrValue) => {
     sorting.value = typeof updaterOrValue === 'function' ? updaterOrValue(sorting.value) : updaterOrValue;
   },
   getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel()
+  getSortedRowModel: getSortedRowModel(),
 });
 
 const zoneGroups = computed<ZoneGroup[]>(() => {
@@ -171,8 +171,8 @@ const zoneGroups = computed<ZoneGroup[]>(() => {
         statusCounts: {
           valid: statusKind === 'valid' ? 1 : 0,
           warning: statusKind === 'warning' ? 1 : 0,
-          expired: statusKind === 'expired' ? 1 : 0
-        }
+          expired: statusKind === 'expired' ? 1 : 0,
+        },
       });
     } else {
       const group = groups[groupIndex];
@@ -231,19 +231,46 @@ function toggleAllZoneGroups(): void {
 </script>
 
 <template>
-  <section class="table-surface" aria-labelledby="certificate-table-heading">
+  <section
+    class="table-surface"
+    aria-labelledby="certificate-table-heading"
+  >
     <div class="table-toolbar">
       <div>
-        <h2 id="certificate-table-heading" class="section-heading">{{ tableTitle }}</h2>
-        <div class="section-meta">{{ filteredCertificates.length }} of {{ certificates.length }}</div>
+        <h2
+          id="certificate-table-heading"
+          class="section-heading"
+        >
+          {{ tableTitle }}
+        </h2>
+        <div class="section-meta">
+          {{ filteredCertificates.length }} of {{ certificates.length }}
+        </div>
       </div>
       <div class="table-toolbar__actions">
-        <button class="icon-button" type="button" title="Refresh certificates" :disabled="loading" @click="emit('refresh')">
-          <RefreshCw :class="{ 'spin': loading }" :size="17" aria-hidden="true" />
+        <button
+          class="icon-button"
+          type="button"
+          title="Refresh certificates"
+          :disabled="loading"
+          @click="emit('refresh')"
+        >
+          <RefreshCw
+            :class="{ 'spin': loading }"
+            :size="17"
+            aria-hidden="true"
+          />
           <span>Refresh</span>
         </button>
-        <button class="primary-button" type="button" @click="emit('add')">
-          <CirclePlus :size="17" aria-hidden="true" />
+        <button
+          class="primary-button"
+          type="button"
+          @click="emit('add')"
+        >
+          <CirclePlus
+            :size="17"
+            aria-hidden="true"
+          />
           <span>Issue Certificate</span>
         </button>
       </div>
@@ -251,10 +278,20 @@ function toggleAllZoneGroups(): void {
 
     <div class="table-controls">
       <label class="search-field">
-        <Search :size="16" aria-hidden="true" />
-        <input v-model="filters.query" type="search" placeholder="Search certificates or domains" />
+        <Search
+          :size="16"
+          aria-hidden="true"
+        />
+        <input
+          v-model="filters.query"
+          type="search"
+          placeholder="Search certificates or domains"
+        >
       </label>
-      <div class="segmented-control" aria-label="Certificate category">
+      <div
+        class="segmented-control"
+        aria-label="Certificate category"
+      >
         <button
           v-for="option in categoryOptions"
           :key="option.value"
@@ -266,7 +303,10 @@ function toggleAllZoneGroups(): void {
         </button>
       </div>
       <label class="select-field">
-        <Filter :size="15" aria-hidden="true" />
+        <Filter
+          :size="15"
+          aria-hidden="true"
+        />
         <select v-model="filters.status">
           <option value="all">Any status</option>
           <option value="valid">Valid</option>
@@ -275,18 +315,45 @@ function toggleAllZoneGroups(): void {
         </select>
       </label>
       <label class="select-field">
-        <ServerCog :size="15" aria-hidden="true" />
-        <select v-model="filters.provider" :disabled="providerOptions.length === 0">
+        <ServerCog
+          :size="15"
+          aria-hidden="true"
+        />
+        <select
+          v-model="filters.provider"
+          :disabled="providerOptions.length === 0"
+        >
           <option value="all">Any provider</option>
-          <option v-for="option in providerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+          <option
+            v-for="option in providerOptions"
+            :key="option.value"
+            :value="option.value"
+          >{{ option.label }}</option>
         </select>
       </label>
-      <button v-if="zoneGroups.length > 0" class="icon-button" type="button" @click="toggleAllZoneGroups">
-        <component :is="allZoneGroupsCollapsed ? ChevronsUpDown : ChevronsDownUp" :size="16" aria-hidden="true" />
+      <button
+        v-if="zoneGroups.length > 0"
+        class="icon-button"
+        type="button"
+        @click="toggleAllZoneGroups"
+      >
+        <component
+          :is="allZoneGroupsCollapsed ? ChevronsUpDown : ChevronsDownUp"
+          :size="16"
+          aria-hidden="true"
+        />
         <span>{{ allZoneGroupsCollapsed ? 'Expand all' : 'Collapse all' }}</span>
       </button>
-      <button v-if="hasActiveFilters" class="icon-button" type="button" @click="clearFilters">
-        <X :size="16" aria-hidden="true" />
+      <button
+        v-if="hasActiveFilters"
+        class="icon-button"
+        type="button"
+        @click="clearFilters"
+      >
+        <X
+          :size="16"
+          aria-hidden="true"
+        />
         <span>Clear</span>
       </button>
     </div>
@@ -294,18 +361,35 @@ function toggleAllZoneGroups(): void {
     <div class="table-wrap">
       <table class="certificate-table">
         <thead>
-          <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-            <th v-for="header in headerGroup.headers" :key="header.id">
+          <tr
+            v-for="headerGroup in table.getHeaderGroups()"
+            :key="headerGroup.id"
+          >
+            <th
+              v-for="header in headerGroup.headers"
+              :key="header.id"
+            >
               <button
                 v-if="!header.isPlaceholder && header.column.getCanSort()"
                 class="table-sort-button"
                 type="button"
                 @click="header.column.getToggleSortingHandler()?.($event)"
               >
-                <FlexRender :render="header.column.columnDef.header" :props="header.getContext()" />
-                <component :is="getSortIcon(header.column.getIsSorted())" :size="14" aria-hidden="true" />
+                <FlexRender
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
+                />
+                <component
+                  :is="getSortIcon(header.column.getIsSorted())"
+                  :size="14"
+                  aria-hidden="true"
+                />
               </button>
-              <FlexRender v-else-if="!header.isPlaceholder" :render="header.column.columnDef.header" :props="header.getContext()" />
+              <FlexRender
+                v-else-if="!header.isPlaceholder"
+                :render="header.column.columnDef.header"
+                :props="header.getContext()"
+              />
             </th>
           </tr>
         </thead>
@@ -313,7 +397,11 @@ function toggleAllZoneGroups(): void {
           <tr v-if="loading">
             <td colspan="6">
               <div class="table-empty table-empty--compact">
-                <LoaderCircle class="spin" :size="24" aria-hidden="true" />
+                <LoaderCircle
+                  class="spin"
+                  :size="24"
+                  aria-hidden="true"
+                />
                 <strong>Loading certificates</strong>
               </div>
             </td>
@@ -321,31 +409,70 @@ function toggleAllZoneGroups(): void {
           <tr v-else-if="filteredCertificates.length === 0">
             <td colspan="6">
               <div class="table-empty">
-                <SearchX :size="28" aria-hidden="true" />
+                <SearchX
+                  :size="28"
+                  aria-hidden="true"
+                />
                 <strong>No certificates found</strong>
                 <span>{{ hasActiveFilters ? 'No rows match the current filters.' : 'No certificates are available yet.' }}</span>
-                <button v-if="hasActiveFilters" class="secondary-button" type="button" @click="clearFilters">Clear filters</button>
-                <button v-else class="primary-button" type="button" @click="emit('add')">
-                  <CirclePlus :size="17" aria-hidden="true" />
+                <button
+                  v-if="hasActiveFilters"
+                  class="secondary-button"
+                  type="button"
+                  @click="clearFilters"
+                >
+                  Clear filters
+                </button>
+                <button
+                  v-else
+                  class="primary-button"
+                  type="button"
+                  @click="emit('add')"
+                >
+                  <CirclePlus
+                    :size="17"
+                    aria-hidden="true"
+                  />
                   <span>Issue Certificate</span>
                 </button>
               </div>
             </td>
           </tr>
           <template v-else>
-            <template v-for="group in zoneGroups" :key="group.zoneName">
+            <template
+              v-for="group in zoneGroups"
+              :key="group.zoneName"
+            >
               <tr class="zone-group-row">
                 <td colspan="6">
                   <div class="zone-group">
-                    <button class="zone-group__toggle" type="button" :aria-expanded="!isZoneCollapsed(group.zoneName)" @click="toggleZoneGroup(group.zoneName)">
-                      <component :is="isZoneCollapsed(group.zoneName) ? ChevronRight : ChevronDown" :size="16" aria-hidden="true" />
+                    <button
+                      class="zone-group__toggle"
+                      type="button"
+                      :aria-expanded="!isZoneCollapsed(group.zoneName)"
+                      @click="toggleZoneGroup(group.zoneName)"
+                    >
+                      <component
+                        :is="isZoneCollapsed(group.zoneName) ? ChevronRight : ChevronDown"
+                        :size="16"
+                        aria-hidden="true"
+                      />
                       <span class="zone-group__name">{{ group.zoneName }}</span>
                     </button>
                     <div class="zone-group__summary">
                       <span class="zone-group__meta">{{ formatCertificateCount(group.rows.length) }}</span>
-                      <span v-if="group.statusCounts.valid > 0" class="zone-stat zone-stat--valid">{{ group.statusCounts.valid }} valid</span>
-                      <span v-if="group.statusCounts.warning > 0" class="zone-stat zone-stat--warning">{{ group.statusCounts.warning }} expiring</span>
-                      <span v-if="group.statusCounts.expired > 0" class="zone-stat zone-stat--expired">{{ group.statusCounts.expired }} expired</span>
+                      <span
+                        v-if="group.statusCounts.valid > 0"
+                        class="zone-stat zone-stat--valid"
+                      >{{ group.statusCounts.valid }} valid</span>
+                      <span
+                        v-if="group.statusCounts.warning > 0"
+                        class="zone-stat zone-stat--warning"
+                      >{{ group.statusCounts.warning }} expiring</span>
+                      <span
+                        v-if="group.statusCounts.expired > 0"
+                        class="zone-stat zone-stat--expired"
+                      >{{ group.statusCounts.expired }} expired</span>
                     </div>
                   </div>
                 </td>
@@ -358,28 +485,60 @@ function toggleAllZoneGroups(): void {
                   :class="{ 'is-selected': selectedCertificate?.id === row.original.id }"
                 >
                   <td data-label="Name">
-                    <div class="certificate-name">{{ row.original.name }}</div>
-                    <div v-if="isShortLived(row.original)" class="inline-note">Short-lived</div>
+                    <div class="certificate-name">
+                      {{ row.original.name }}
+                    </div>
+                    <div
+                      v-if="isShortLived(row.original)"
+                      class="inline-note"
+                    >
+                      Short-lived
+                    </div>
                   </td>
                   <td data-label="DNS Names">
                     <div class="dns-list">
-                      <span v-for="dnsName in row.original.dnsNames.slice(0, 3)" :key="dnsName" class="dns-chip">{{ displayDnsName(dnsName) }}</span>
-                      <span v-if="row.original.dnsNames.length > 3" class="dns-chip dns-chip--muted">+{{ row.original.dnsNames.length - 3 }}</span>
+                      <span
+                        v-for="dnsName in row.original.dnsNames.slice(0, 3)"
+                        :key="dnsName"
+                        class="dns-chip"
+                      >{{ displayDnsName(dnsName) }}</span>
+                      <span
+                        v-if="row.original.dnsNames.length > 3"
+                        class="dns-chip dns-chip--muted"
+                      >+{{ row.original.dnsNames.length - 3 }}</span>
                     </div>
                   </td>
-                  <td data-label="Category">{{ getCategoryLabel(getCertificateCategory(row.original)) }}</td>
+                  <td data-label="Category">
+                    {{ getCategoryLabel(getCertificateCategory(row.original)) }}
+                  </td>
                   <td data-label="Expires">
                     <StatusBadge :certificate="row.original" />
-                    <div class="cell-subtext">{{ formatDate(row.original.expiresOn) }}</div>
+                    <div class="cell-subtext">
+                      {{ formatDate(row.original.expiresOn) }}
+                    </div>
                   </td>
                   <td data-label="Key">
                     <span>{{ row.original.keyType ?? '-' }}</span>
-                    <span v-if="row.original.keySize" class="cell-subtext">{{ row.original.keySize }} bit</span>
-                    <span v-else-if="row.original.keyCurveName" class="cell-subtext">{{ row.original.keyCurveName }}</span>
+                    <span
+                      v-if="row.original.keySize"
+                      class="cell-subtext"
+                    >{{ row.original.keySize }} bit</span>
+                    <span
+                      v-else-if="row.original.keyCurveName"
+                      class="cell-subtext"
+                    >{{ row.original.keyCurveName }}</span>
                   </td>
                   <td class="row-actions-cell">
-                    <button class="row-action" type="button" title="Open certificate details" @click="emit('select', row.original)">
-                      <SlidersHorizontal :size="16" aria-hidden="true" />
+                    <button
+                      class="row-action"
+                      type="button"
+                      title="Open certificate details"
+                      @click="emit('select', row.original)"
+                    >
+                      <SlidersHorizontal
+                        :size="16"
+                        aria-hidden="true"
+                      />
                     </button>
                   </td>
                 </tr>

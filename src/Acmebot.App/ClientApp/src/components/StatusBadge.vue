@@ -12,8 +12,14 @@ const status = computed(() => getCertificateStatus(props.certificate));
 </script>
 
 <template>
-  <span class="status-badge" :class="`status-badge--${status.kind}`">
-    <span class="status-badge__dot" aria-hidden="true"></span>
+  <span
+    class="status-badge"
+    :class="`status-badge--${status.kind}`"
+  >
+    <span
+      class="status-badge__dot"
+      aria-hidden="true"
+    />
     {{ status.label }}
   </span>
 </template>

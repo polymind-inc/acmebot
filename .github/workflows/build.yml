@@ -43,6 +43,7 @@ jobs:
       working-directory: ./src/Acmebot.App/ClientApp
       run: |
         npm ci
+        npm run lint
         npm run build
 
     - name: Lint C# code

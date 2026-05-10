@@ -6,7 +6,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly problem?: ProblemDetails
+    public readonly problem?: ProblemDetails,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -45,9 +45,9 @@ async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   const response = await fetch(input, {
     headers: {
       Accept: 'application/json',
-      ...init?.headers
+      ...init?.headers,
     },
-    ...init
+    ...init,
   });
   const body = await parseResponseBody(response);
 
@@ -62,9 +62,9 @@ async function startOperation(input: RequestInfo | URL, init?: RequestInit): Pro
   const response = await fetch(input, {
     headers: {
       Accept: 'application/json',
-      ...init?.headers
+      ...init?.headers,
     },
-    ...init
+    ...init,
   });
   const body = await parseResponseBody(response);
 
@@ -128,7 +128,7 @@ export async function issueCertificate(policy: CertificatePolicyItem): Promise<v
   const location = await startOperation('/api/certificate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(policy)
+    body: JSON.stringify(policy),
   });
 
   await pollOperation(location);
@@ -142,7 +142,7 @@ export async function renewCertificate(certificateName: string): Promise<void> {
   }
 
   const location = await startOperation(`/api/certificate/${encodeURIComponent(certificateName)}/renew`, {
-    method: 'POST'
+    method: 'POST',
   });
 
   await pollOperation(location);
@@ -155,8 +155,8 @@ export async function revokeCertificate(certificateName: string): Promise<void> 
     return;
   }
 
-  await requestJson<void>(`/api/certificate/${encodeURIComponent(certificateName)}/revoke`, {
-    method: 'POST'
+  await requestJson(`/api/certificate/${encodeURIComponent(certificateName)}/revoke`, {
+    method: 'POST',
   });
 }
 

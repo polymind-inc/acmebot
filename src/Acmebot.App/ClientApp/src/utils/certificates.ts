@@ -28,7 +28,7 @@ export function getCategoryLabel(category: CertificateCategory): string {
   const labels: Record<CertificateCategory, string> = {
     managed: 'Managed',
     'other-ca': 'Other CA',
-    unmanaged: 'Unmanaged'
+    unmanaged: 'Unmanaged',
   };
 
   return labels[category];
@@ -88,7 +88,7 @@ export function formatDate(value?: string | null): string {
   return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'short',
-    day: '2-digit'
+    day: '2-digit',
   }).format(new Date(value));
 }
 
@@ -102,7 +102,7 @@ export function formatDateTime(value?: string | null): string {
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   }).format(new Date(value));
 }
 
@@ -137,7 +137,7 @@ function findMatchingDnsZone(certificate: CertificateItem, dnsZoneGroups: DnsZon
   }
 
   const candidateZoneNames = (providerZoneNames.size > 0 ? Array.from(providerZoneNames) : Array.from(allZoneNames)).toSorted(
-    (left, right) => left.length - right.length || left.localeCompare(right)
+    (left, right) => left.length - right.length || left.localeCompare(right),
   );
 
   for (const dnsName of certificate.dnsNames) {

@@ -25,18 +25,18 @@ const dashboardCommitHash = __ACMEBOT_DASHBOARD_COMMIT_HASH__;
 
 const certificateState = reactive({
   loading: false,
-  error: ''
+  error: '',
 });
 
 const dnsZoneState = reactive({
   loading: false,
-  loaded: false
+  loaded: false,
 });
 
 const operation = reactive({
   active: false,
   title: '',
-  message: ''
+  message: '',
 });
 
 const summary = computed(() => {
@@ -46,7 +46,7 @@ const summary = computed(() => {
       counts[status.kind] += 1;
       return counts;
     },
-    { valid: 0, warning: 0, expired: 0 }
+    { valid: 0, warning: 0, expired: 0 },
   );
 
   return {
@@ -54,7 +54,7 @@ const summary = computed(() => {
     managed: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'managed').length,
     otherCa: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'other-ca').length,
     unmanaged: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'unmanaged').length,
-    ...statusCounts
+    ...statusCounts,
   };
 });
 
@@ -63,7 +63,7 @@ const summaryItems = computed(() => [
   { label: 'Expiring soon', value: summary.value.warning, tone: 'warning', icon: ShieldAlert },
   { label: 'Expired', value: summary.value.expired, tone: 'danger', icon: AlertTriangle },
   { label: 'Other CA', value: summary.value.otherCa, tone: 'neutral', icon: BadgeCheck },
-  { label: 'Unmanaged', value: summary.value.unmanaged, tone: 'neutral', icon: CircleSlash }
+  { label: 'Unmanaged', value: summary.value.unmanaged, tone: 'neutral', icon: CircleSlash },
 ]);
 
 const dashboardCommitLabel = computed(() => (dashboardCommitHash.length > 7 ? dashboardCommitHash.slice(0, 7) : dashboardCommitHash));
@@ -184,36 +184,74 @@ async function confirmRevokeCertificate(): Promise<void> {
     <header class="app-header">
       <div class="app-header__inner">
         <div class="brand-lockup">
-          <div class="brand-mark" aria-hidden="true">
+          <div
+            class="brand-mark"
+            aria-hidden="true"
+          >
             <Shield :size="21" />
           </div>
           <div>
-            <div class="brand-title">Acmebot</div>
-            <div class="brand-subtitle">Certificate automation</div>
+            <div class="brand-title">
+              Acmebot
+            </div>
+            <div class="brand-subtitle">
+              Certificate automation
+            </div>
           </div>
         </div>
         <div class="header-status">
-          <Activity :size="16" aria-hidden="true" />
+          <Activity
+            :size="16"
+            aria-hidden="true"
+          />
           <span>{{ summary.total }} certificates</span>
         </div>
       </div>
     </header>
 
     <main class="app-main">
-      <h1 id="page-heading" class="visually-hidden">Certificate Operations</h1>
+      <h1
+        id="page-heading"
+        class="visually-hidden"
+      >
+        Certificate Operations
+      </h1>
 
-      <section class="summary-grid" aria-label="Certificate summary">
-        <div v-for="item in summaryItems" :key="item.label" class="summary-item" :class="`summary-item--${item.tone}`">
-          <component :is="item.icon" :size="18" aria-hidden="true" />
+      <section
+        class="summary-grid"
+        aria-label="Certificate summary"
+      >
+        <div
+          v-for="item in summaryItems"
+          :key="item.label"
+          class="summary-item"
+          :class="`summary-item--${item.tone}`"
+        >
+          <component
+            :is="item.icon"
+            :size="18"
+            aria-hidden="true"
+          />
           <div>
-            <div class="summary-item__value">{{ item.value }}</div>
-            <div class="summary-item__label">{{ item.label }}</div>
+            <div class="summary-item__value">
+              {{ item.value }}
+            </div>
+            <div class="summary-item__label">
+              {{ item.label }}
+            </div>
           </div>
         </div>
       </section>
 
-      <div v-if="certificateState.error" class="banner banner--error" role="alert">
-        <AlertTriangle :size="17" aria-hidden="true" />
+      <div
+        v-if="certificateState.error"
+        class="banner banner--error"
+        role="alert"
+      >
+        <AlertTriangle
+          :size="17"
+          aria-hidden="true"
+        />
         <span>{{ certificateState.error }}</span>
       </div>
 
@@ -228,7 +266,10 @@ async function confirmRevokeCertificate(): Promise<void> {
       />
     </main>
 
-    <footer class="app-footer" aria-label="Dashboard build metadata">
+    <footer
+      class="app-footer"
+      aria-label="Dashboard build metadata"
+    >
       <div class="app-footer__inner">
         <span>Acmebot Dashboard</span>
         <dl class="build-metadata">
@@ -238,7 +279,9 @@ async function confirmRevokeCertificate(): Promise<void> {
           </div>
           <div class="build-metadata__item">
             <dt>Commit</dt>
-            <dd :title="dashboardCommitHash">{{ dashboardCommitLabel }}</dd>
+            <dd :title="dashboardCommitHash">
+              {{ dashboardCommitLabel }}
+            </dd>
           </div>
         </dl>
       </div>
@@ -272,7 +315,14 @@ async function confirmRevokeCertificate(): Promise<void> {
       @confirm="confirmRevokeCertificate"
     />
 
-    <OperationOverlay :active="operation.active" :title="operation.title" :message="operation.message" />
-    <ToastStack :messages="toasts" @dismiss="dismissToast" />
+    <OperationOverlay
+      :active="operation.active"
+      :title="operation.title"
+      :message="operation.message"
+    />
+    <ToastStack
+      :messages="toasts"
+      @dismiss="dismissToast"
+    />
   </div>
 </template>

@@ -26,7 +26,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/apex-example-co-jp',
@@ -43,7 +43,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/app-www-example-co-jp',
@@ -60,7 +60,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/api-contoso-com',
@@ -77,7 +77,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/edge-adatum-io',
@@ -94,7 +94,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/wildcard-fabrikam-net',
@@ -111,7 +111,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-    dnsAlias: 'dns-alias.fabrikam.net'
+    dnsAlias: 'dns-alias.fabrikam.net',
   },
   {
     id: 'https://mock.vault/certificates/portal-example-org',
@@ -128,7 +128,7 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: true,
     isSameEndpoint: false,
     acmeEndpoint: 'https://acme.zerossl.com/v2/DV90',
-    dnsAlias: null
+    dnsAlias: null,
   },
   {
     id: 'https://mock.vault/certificates/imported-legacy-net',
@@ -145,23 +145,23 @@ let mockCertificates: CertificateItem[] = [
     isIssuedByAcmebot: false,
     isSameEndpoint: false,
     acmeEndpoint: null,
-    dnsAlias: null
-  }
+    dnsAlias: null,
+  },
 ];
 
 const mockDnsZoneGroups: DnsZoneGroup[] = [
   {
     dnsProviderName: 'Azure DNS',
-    dnsZones: [{ name: 'example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }]
+    dnsZones: [{ name: 'example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }],
   },
   {
     dnsProviderName: 'Cloudflare',
-    dnsZones: [{ name: 'contoso.com' }, { name: 'adatum.io' }]
+    dnsZones: [{ name: 'contoso.com' }, { name: 'adatum.io' }],
   },
   {
     dnsProviderName: 'Route 53',
-    dnsZones: [{ name: 'wingtiptoys.com' }]
-  }
+    dnsZones: [{ name: 'wingtiptoys.com' }],
+  },
 ];
 
 export async function getMockCertificates(): Promise<CertificateItem[]> {
@@ -196,8 +196,8 @@ export async function mockIssueCertificate(policy: CertificatePolicyItem): Promi
       isIssuedByAcmebot: true,
       isSameEndpoint: true,
       acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
-      dnsAlias: policy.dnsAlias
-    }
+      dnsAlias: policy.dnsAlias,
+    },
   ];
 }
 
@@ -209,9 +209,9 @@ export async function mockRenewCertificate(certificateName: string): Promise<voi
           ...certificate,
           createdOn: new Date().toISOString(),
           expiresOn: dateFromNow(90),
-          isExpired: false
+          isExpired: false,
         }
-      : certificate
+      : certificate,
   );
 }
 

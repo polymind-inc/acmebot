@@ -28,7 +28,7 @@ interface ValidationOutcome {
 
 const selectedZone = ref<SelectableDnsZone | null>(null);
 const validationErrors = reactive({
-  dnsName: ''
+  dnsName: '',
 });
 
 const validKeySizes = [2048, 3072, 4096];
@@ -44,7 +44,7 @@ const form = reactive({
   keySize: 2048,
   keyCurveName: 'P-256' as KeyCurveName,
   reuseKey: false,
-  dnsAlias: ''
+  dnsAlias: '',
 });
 
 const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
@@ -94,7 +94,7 @@ watch(
       resetForm();
       emit('load-zones');
     }
-  }
+  },
 );
 
 watch(
@@ -108,7 +108,7 @@ watch(
       form.reuseKey = false;
       form.dnsAlias = '';
     }
-  }
+  },
 );
 
 function resetForm(): void {
@@ -321,7 +321,7 @@ function submit(): void {
     certificateName: normalizedCertificateName || undefined,
     keyType: form.keyType,
     reuseKey: form.useAdvancedOptions ? form.reuseKey : false,
-    dnsAlias: normalizedDnsAlias || undefined
+    dnsAlias: normalizedDnsAlias || undefined,
   };
 
   if (form.keyType === 'RSA') {
@@ -336,43 +336,89 @@ function submit(): void {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="modal-shell" role="dialog" aria-modal="true" aria-labelledby="add-certificate-heading">
-      <button class="modal-scrim" type="button" title="Close issue certificate" :disabled="sending" @click="emit('close')"></button>
+    <div
+      v-if="open"
+      class="modal-shell"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-certificate-heading"
+    >
+      <button
+        class="modal-scrim"
+        type="button"
+        title="Close issue certificate"
+        :disabled="sending"
+        @click="emit('close')"
+      />
       <section class="modal-panel modal-panel--wide">
         <header class="modal-panel__header">
           <div>
-            <div class="eyebrow">Certificate issuance</div>
-            <h2 id="add-certificate-heading">Issue Certificate</h2>
+            <div class="eyebrow">
+              Certificate issuance
+            </div>
+            <h2 id="add-certificate-heading">
+              Issue Certificate
+            </h2>
           </div>
-          <button class="icon-only-button" type="button" title="Close issue certificate" :disabled="sending" @click="emit('close')">
-            <X :size="18" aria-hidden="true" />
+          <button
+            class="icon-only-button"
+            type="button"
+            title="Close issue certificate"
+            :disabled="sending"
+            @click="emit('close')"
+          >
+            <X
+              :size="18"
+              aria-hidden="true"
+            />
           </button>
         </header>
 
         <div class="wizard-layout">
-          <aside class="setup-rail" aria-label="Certificate issue setup">
+          <aside
+            class="setup-rail"
+            aria-label="Certificate issue setup"
+          >
             <div class="setup-rail__header">
               <span>Issue setup</span>
               <strong>{{ issueStatusLabel }}</strong>
             </div>
-            <div class="setup-step" :class="{ 'is-complete': selectedZone }">
-              <ShieldPlus :size="17" aria-hidden="true" />
+            <div
+              class="setup-step"
+              :class="{ 'is-complete': selectedZone }"
+            >
+              <ShieldPlus
+                :size="17"
+                aria-hidden="true"
+              />
               <div class="setup-step__body">
                 <span>Zone</span>
                 <strong>{{ selectedZone ? displayDnsName(selectedZone.name) : 'Not selected' }}</strong>
                 <small v-if="selectedZone">{{ selectedZone.dnsProviderName }}</small>
               </div>
             </div>
-            <div class="setup-step" :class="{ 'is-complete': form.dnsNames.length > 0 }">
-              <CirclePlus :size="17" aria-hidden="true" />
+            <div
+              class="setup-step"
+              :class="{ 'is-complete': form.dnsNames.length > 0 }"
+            >
+              <CirclePlus
+                :size="17"
+                aria-hidden="true"
+              />
               <div class="setup-step__body">
                 <span>Names</span>
                 <strong>{{ dnsNamesSummary }}</strong>
                 <small>{{ dnsNameCountLabel }}</small>
               </div>
             </div>
-            <div class="setup-step" :class="{ 'is-complete': form.useAdvancedOptions }">
-              <KeyRound :size="17" aria-hidden="true" />
+            <div
+              class="setup-step"
+              :class="{ 'is-complete': form.useAdvancedOptions }"
+            >
+              <KeyRound
+                :size="17"
+                aria-hidden="true"
+              />
               <div class="setup-step__body">
                 <span>Key</span>
                 <strong>{{ keySummary }}</strong>
@@ -384,11 +430,18 @@ function submit(): void {
           <div class="wizard-body">
             <div class="form-section">
               <label class="form-label">DNS Zone</label>
-              <SearchableZoneSelect v-model:selected="selectedZone" :groups="zones" :loading="loadingZones" />
+              <SearchableZoneSelect
+                v-model:selected="selectedZone"
+                :groups="zones"
+                :loading="loadingZones"
+              />
             </div>
 
             <div class="form-section">
-              <label class="form-label" for="record-name">DNS Name</label>
+              <label
+                class="form-label"
+                for="record-name"
+              >DNS Name</label>
               <div class="compound-input">
                 <input
                   id="record-name"
@@ -399,23 +452,50 @@ function submit(): void {
                   :aria-invalid="validationErrors.dnsName ? 'true' : 'false'"
                   @keydown.enter.prevent="addDnsName"
                   @input="clearDnsNameError"
-                />
+                >
                 <span class="compound-input__suffix">.{{ selectedZone ? displayDnsName(selectedZone.name) : 'zone' }}</span>
-                <button class="icon-button" type="button" :disabled="!selectedZone" @click="addDnsName">
-                  <Plus :size="16" aria-hidden="true" />
+                <button
+                  class="icon-button"
+                  type="button"
+                  :disabled="!selectedZone"
+                  @click="addDnsName"
+                >
+                  <Plus
+                    :size="16"
+                    aria-hidden="true"
+                  />
                   <span>Add</span>
                 </button>
               </div>
-              <div v-if="fullDnsName" class="form-result">
+              <div
+                v-if="fullDnsName"
+                class="form-result"
+              >
                 <span>Full DNS name</span>
                 <strong>{{ displayDnsName(fullDnsName) }}</strong>
               </div>
-              <p v-if="validationErrors.dnsName" class="form-error">{{ validationErrors.dnsName }}</p>
+              <p
+                v-if="validationErrors.dnsName"
+                class="form-error"
+              >
+                {{ validationErrors.dnsName }}
+              </p>
               <div class="dns-list dns-list--editable">
-                <span v-for="dnsName in form.dnsNames" :key="dnsName" class="dns-chip dns-chip--removable">
+                <span
+                  v-for="dnsName in form.dnsNames"
+                  :key="dnsName"
+                  class="dns-chip dns-chip--removable"
+                >
                   {{ displayDnsName(dnsName) }}
-                  <button type="button" title="Remove DNS name" @click="removeDnsName(dnsName)">
-                    <Trash2 :size="13" aria-hidden="true" />
+                  <button
+                    type="button"
+                    title="Remove DNS name"
+                    @click="removeDnsName(dnsName)"
+                  >
+                    <Trash2
+                      :size="13"
+                      aria-hidden="true"
+                    />
                   </button>
                 </span>
               </div>
@@ -423,28 +503,54 @@ function submit(): void {
 
             <div class="form-section form-section--inline">
               <label class="toggle-row">
-                <input v-model="form.useAdvancedOptions" type="checkbox" />
+                <input
+                  v-model="form.useAdvancedOptions"
+                  type="checkbox"
+                >
                 <span>Advanced options</span>
               </label>
             </div>
 
-            <div v-if="form.useAdvancedOptions" class="advanced-grid">
-              <label class="form-field" :class="{ 'is-invalid': certificateNameError }">
+            <div
+              v-if="form.useAdvancedOptions"
+              class="advanced-grid"
+            >
+              <label
+                class="form-field"
+                :class="{ 'is-invalid': certificateNameError }"
+              >
                 <span class="form-label">Certificate Name</span>
-                <input v-model="form.certificateName" type="text" placeholder="Optional certificate name" :aria-invalid="certificateNameError ? 'true' : 'false'" />
-                <span v-if="certificateNameError" class="form-error">{{ certificateNameError }}</span>
+                <input
+                  v-model="form.certificateName"
+                  type="text"
+                  placeholder="Optional certificate name"
+                  :aria-invalid="certificateNameError ? 'true' : 'false'"
+                >
+                <span
+                  v-if="certificateNameError"
+                  class="form-error"
+                >{{ certificateNameError }}</span>
               </label>
 
-              <label class="form-field" :class="{ 'is-invalid': keyOptionError }">
+              <label
+                class="form-field"
+                :class="{ 'is-invalid': keyOptionError }"
+              >
                 <span class="form-label">Key Type</span>
                 <select v-model="form.keyType">
                   <option value="RSA">RSA</option>
                   <option value="EC">EC</option>
                 </select>
-                <span v-if="keyOptionError" class="form-error">{{ keyOptionError }}</span>
+                <span
+                  v-if="keyOptionError"
+                  class="form-error"
+                >{{ keyOptionError }}</span>
               </label>
 
-              <label v-if="form.keyType === 'RSA'" class="form-field">
+              <label
+                v-if="form.keyType === 'RSA'"
+                class="form-field"
+              >
                 <span class="form-label">Key Size</span>
                 <select v-model.number="form.keySize">
                   <option :value="2048">2048</option>
@@ -453,7 +559,10 @@ function submit(): void {
                 </select>
               </label>
 
-              <label v-else class="form-field">
+              <label
+                v-else
+                class="form-field"
+              >
                 <span class="form-label">Curve</span>
                 <select v-model="form.keyCurveName">
                   <option value="P-256">P-256</option>
@@ -463,14 +572,28 @@ function submit(): void {
                 </select>
               </label>
 
-              <label class="form-field" :class="{ 'is-invalid': dnsAliasError }">
+              <label
+                class="form-field"
+                :class="{ 'is-invalid': dnsAliasError }"
+              >
                 <span class="form-label">DNS Alias</span>
-                <input v-model="form.dnsAlias" type="text" placeholder="alias.example.com" :aria-invalid="dnsAliasError ? 'true' : 'false'" />
-                <span v-if="dnsAliasError" class="form-error">{{ dnsAliasError }}</span>
+                <input
+                  v-model="form.dnsAlias"
+                  type="text"
+                  placeholder="alias.example.com"
+                  :aria-invalid="dnsAliasError ? 'true' : 'false'"
+                >
+                <span
+                  v-if="dnsAliasError"
+                  class="form-error"
+                >{{ dnsAliasError }}</span>
               </label>
 
               <label class="toggle-row advanced-grid__toggle">
-                <input v-model="form.reuseKey" type="checkbox" />
+                <input
+                  v-model="form.reuseKey"
+                  type="checkbox"
+                >
                 <span>Reuse key on renewal</span>
               </label>
             </div>
@@ -483,9 +606,24 @@ function submit(): void {
             <span>{{ keySummary }}</span>
           </div>
           <div class="modal-panel__footer-actions">
-            <button class="secondary-button" type="button" :disabled="sending" @click="emit('close')">Cancel</button>
-            <button class="primary-button" type="button" :disabled="!canSubmit" @click="submit">
-              <ShieldPlus :size="17" aria-hidden="true" />
+            <button
+              class="secondary-button"
+              type="button"
+              :disabled="sending"
+              @click="emit('close')"
+            >
+              Cancel
+            </button>
+            <button
+              class="primary-button"
+              type="button"
+              :disabled="!canSubmit"
+              @click="submit"
+            >
+              <ShieldPlus
+                :size="17"
+                aria-hidden="true"
+              />
               <span>Issue Certificate</span>
             </button>
           </div>
