@@ -1116,6 +1116,24 @@
               }
             }
           ]
+        },
+        {
+          "name": "tagsStep",
+          "label": "Tags",
+          "elements": [
+            {
+              "name": "tagsByResource",
+              "type": "Microsoft.Common.TagsByResource",
+              "resources": [
+                "Microsoft.Storage/storageAccounts",
+                "Microsoft.OperationalInsights/workspaces",
+                "Microsoft.Insights/components",
+                "Microsoft.Web/serverfarms",
+                "Microsoft.Web/sites",
+                "Microsoft.KeyVault/vaults"
+              ]
+            }
+          ]
         }
       ]
     },
@@ -1125,6 +1143,7 @@
       "location": "[steps('basics').resourceScope.location.name]",
       "parameters": {
         "location": "[steps('basics').resourceScope.location.name]",
+        "tagsByResource": "[steps('tagsStep').tagsByResource]",
         "resourceNames": {
           "functionAppName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').functionAppName, concat('func-', steps('basics').appPrefix))]",
           "appServicePlanName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appServicePlanName, concat('plan-', steps('basics').appPrefix))]",
