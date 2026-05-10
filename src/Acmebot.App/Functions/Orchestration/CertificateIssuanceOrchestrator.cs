@@ -35,22 +35,27 @@ public partial class CertificateIssuanceOrchestrator
                 // ACME DNS-01 Challenge を実行
                 var (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations));
 
-                // DNS Provider が指定した分だけ後続の処理を遅延させる
-                LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
+                try
+                {
+                    // DNS Provider が指定した分だけ後続の処理を遅延させる
+                    LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
 
-                await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
+                    await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
 
-                // 正しく追加した DNS TXT レコードが引けるか確認
-                await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(_retryPolicy));
+                    // 正しく追加した DNS TXT レコードが引けるか確認
+                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(_retryPolicy));
 
-                // ACME Answer Challenge を実行
-                await context.CallAnswerChallengesAsync(challengeResults);
+                    // ACME Answer Challenge を実行
+                    await context.CallAnswerChallengesAsync(challengeResults);
 
-                // ACME Order のステータスが ready になるまで 60 秒待機
-                await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(_retryPolicy));
-
-                // 作成した DNS レコードを削除
-                await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName, challengeResults));
+                    // ACME Order のステータスが ready になるまで 60 秒待機
+                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(_retryPolicy));
+                }
+                finally
+                {
+                    // 作成した DNS レコードを削除
+                    await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName ?? "", challengeResults));
+                }
             }
 
             // Key Vault で CSR を作成し Finalize を実行
