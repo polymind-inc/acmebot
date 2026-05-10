@@ -51,4 +51,7 @@ public class CertificateItem
 
     [JsonProperty("dnsAlias")]
     public string? DnsAlias { get; set; }
+
+    [JsonProperty("tags")]
+    public IReadOnlyDictionary<string, string>? Tags { get; set; }
 }

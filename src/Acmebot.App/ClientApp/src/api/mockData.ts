@@ -27,6 +27,7 @@ let mockCertificates: CertificateItem[] = [
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
     dnsAlias: null,
+    tags: { Customer: 'Contoso', Stage: 'production' },
   },
   {
     id: 'https://mock.vault/certificates/apex-example-co-jp',
@@ -44,6 +45,7 @@ let mockCertificates: CertificateItem[] = [
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
     dnsAlias: null,
+    tags: { Stage: 'staging' },
   },
   {
     id: 'https://mock.vault/certificates/app-www-example-co-jp',
@@ -197,6 +199,7 @@ export async function mockIssueCertificate(policy: CertificatePolicyItem): Promi
       isSameEndpoint: true,
       acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
       dnsAlias: policy.dnsAlias,
+      tags: policy.tags ? { ...policy.tags } : {},
     },
   ];
 }

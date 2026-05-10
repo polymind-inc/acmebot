@@ -33,6 +33,9 @@ public class CertificatePolicyItem : IValidatableObject
     [JsonProperty("dnsAlias")]
     public string? DnsAlias { get; set; }
 
+    [JsonProperty("tags")]
+    public IDictionary<string, string>? Tags { get; set; }
+
     [JsonProperty("certificateId")]
     public string? CertificateId { get; set; }
 
@@ -57,6 +60,32 @@ public class CertificatePolicyItem : IValidatableObject
             if (KeyCurveName is not ("P-256" or "P-384" or "P-521" or "P-256K"))
             {
                 yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is EC.", [nameof(KeyCurveName)]);
+            }
+        }
+
+        if (Tags is not null)
+        {
+            var tagNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var tag in Tags)
+            {
+                if (string.IsNullOrWhiteSpace(tag.Key))
+                {
+                    yield return new ValidationResult($"The {nameof(Tags)} contains an empty tag name.", [nameof(Tags)]);
+                    continue;
+                }
+
+                var tagName = tag.Key.Trim();
+
+                if (string.Equals(tagName, "Acmebot", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return new ValidationResult($"The Acmebot tag is reserved for internal metadata.", [nameof(Tags)]);
+                }
+
+                if (!tagNames.Add(tagName))
+                {
+                    yield return new ValidationResult($"The {nameof(Tags)} contains duplicate tag names.", [nameof(Tags)]);
+                }
             }
         }
     }
