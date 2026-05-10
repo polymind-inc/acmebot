@@ -7,7 +7,7 @@ import { displayDnsName, formatDateTime, getCategoryLabel, getCertificateCategor
 
 import StatusBadge from './StatusBadge.vue';
 
-defineProps<{
+const props = defineProps<{
   certificate: CertificateItem | null;
   open: boolean;
   busy: boolean;
@@ -213,15 +213,30 @@ const customTagsCopyText = computed(() => customTags.value.map(([key, value]) =>
           </dl>
         </section>
 
-        <section v-if="customTags.length > 0" class="detail-section">
+        <section
+          v-if="customTags.length > 0"
+          class="detail-section"
+        >
           <div class="detail-section__heading">
             <h3>Tags</h3>
-            <button class="copy-button" type="button" title="Copy tags" @click="emit('copy', 'Tags', customTagsCopyText)">
-              <Copy :size="15" aria-hidden="true" />
+            <button
+              class="copy-button"
+              type="button"
+              title="Copy tags"
+              @click="emit('copy', 'Tags', customTagsCopyText)"
+            >
+              <Copy
+                :size="15"
+                aria-hidden="true"
+              />
             </button>
           </div>
           <dl class="metadata-list">
-            <div v-for="[key, value] in customTags" :key="key" class="metadata-row metadata-row--stacked">
+            <div
+              v-for="[key, value] in customTags"
+              :key="key"
+              class="metadata-row metadata-row--stacked"
+            >
               <dt>{{ key }}</dt>
               <dd class="metadata-value-line">
                 <span class="metadata-value">{{ value || '-' }}</span>

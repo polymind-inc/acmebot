@@ -497,8 +497,14 @@ function submit(): void {
                 <small>{{ form.useAdvancedOptions ? 'Custom settings' : 'Default settings' }}</small>
               </div>
             </div>
-            <div class="setup-step" :class="{ 'is-complete': tagCount > 0 }">
-              <Tag :size="17" aria-hidden="true" />
+            <div
+              class="setup-step"
+              :class="{ 'is-complete': tagCount > 0 }"
+            >
+              <Tag
+                :size="17"
+                aria-hidden="true"
+              />
               <div class="setup-step__body">
                 <span>Tags</span>
                 <strong>{{ tagCountLabel }}</strong>
@@ -680,24 +686,72 @@ function submit(): void {
               <div class="tag-editor advanced-grid__wide">
                 <div class="tag-editor__header">
                   <span class="form-label">Key Vault Tags</span>
-                  <button class="secondary-button" type="button" @click="addTag">
-                    <Plus :size="16" aria-hidden="true" />
+                  <button
+                    class="secondary-button"
+                    type="button"
+                    @click="addTag"
+                  >
+                    <Plus
+                      :size="16"
+                      aria-hidden="true"
+                    />
                     <span>Add tag</span>
                   </button>
                 </div>
-                <div v-if="form.tags.length === 0" class="tag-editor__empty">No tags</div>
-                <div v-else class="tag-editor__rows">
-                  <div v-for="tagItem in form.tags" :key="tagItem.id" class="tag-row">
-                    <label class="visually-hidden" :for="`tag-key-${tagItem.id}`">Tag name</label>
-                    <input :id="`tag-key-${tagItem.id}`" v-model="tagItem.key" type="text" placeholder="Name" :aria-invalid="tagError ? 'true' : 'false'" />
-                    <label class="visually-hidden" :for="`tag-value-${tagItem.id}`">Tag value</label>
-                    <input :id="`tag-value-${tagItem.id}`" v-model="tagItem.value" type="text" placeholder="Value" :aria-invalid="tagError ? 'true' : 'false'" />
-                    <button class="icon-only-button" type="button" title="Remove tag" @click="removeTag(tagItem.id)">
-                      <Trash2 :size="15" aria-hidden="true" />
+                <div
+                  v-if="form.tags.length === 0"
+                  class="tag-editor__empty"
+                >
+                  No tags
+                </div>
+                <div
+                  v-else
+                  class="tag-editor__rows"
+                >
+                  <div
+                    v-for="tagItem in form.tags"
+                    :key="tagItem.id"
+                    class="tag-row"
+                  >
+                    <label
+                      class="visually-hidden"
+                      :for="`tag-key-${tagItem.id}`"
+                    >Tag name</label>
+                    <input
+                      :id="`tag-key-${tagItem.id}`"
+                      v-model="tagItem.key"
+                      type="text"
+                      placeholder="Name"
+                      :aria-invalid="tagError ? 'true' : 'false'"
+                    >
+                    <label
+                      class="visually-hidden"
+                      :for="`tag-value-${tagItem.id}`"
+                    >Tag value</label>
+                    <input
+                      :id="`tag-value-${tagItem.id}`"
+                      v-model="tagItem.value"
+                      type="text"
+                      placeholder="Value"
+                      :aria-invalid="tagError ? 'true' : 'false'"
+                    >
+                    <button
+                      class="icon-only-button"
+                      type="button"
+                      title="Remove tag"
+                      @click="removeTag(tagItem.id)"
+                    >
+                      <Trash2
+                        :size="15"
+                        aria-hidden="true"
+                      />
                     </button>
                   </div>
                 </div>
-                <span v-if="tagError" class="form-error">{{ tagError }}</span>
+                <span
+                  v-if="tagError"
+                  class="form-error"
+                >{{ tagError }}</span>
               </div>
             </div>
           </div>
