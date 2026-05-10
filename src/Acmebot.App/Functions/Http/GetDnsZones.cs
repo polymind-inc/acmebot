@@ -36,7 +36,9 @@ public partial class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogg
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
-        return Ok(metadata.SerializedOutput);
+        var output = metadata.ReadOutputAs<IReadOnlyList<DnsZoneGroup>>();
+
+        return Ok(output);
     }
 
     [LoggerMessage(LogLevel.Information, "DNS zone retrieval orchestration started. InstanceId: {InstanceId}")]

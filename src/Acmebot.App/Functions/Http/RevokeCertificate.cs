@@ -47,7 +47,12 @@ public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor,
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
-        return Ok(metadata.SerializedOutput);
+        if (metadata.RuntimeStatus != OrchestrationRuntimeStatus.Completed)
+        {
+            return Problem();
+        }
+
+        return Ok();
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate revocation orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]

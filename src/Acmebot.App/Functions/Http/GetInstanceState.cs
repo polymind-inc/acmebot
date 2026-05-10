@@ -21,18 +21,18 @@ public partial class GetInstanceState(IHttpContextAccessor httpContextAccessor, 
             return Unauthorized();
         }
 
-        var status = await starter.GetInstanceAsync(instanceId, getInputsAndOutputs: true);
+        var metadata = await starter.GetInstanceAsync(instanceId, getInputsAndOutputs: true);
 
-        if (status is null)
+        if (metadata is null)
         {
             LogInstanceStateNotFound(logger, instanceId);
 
             return BadRequest();
         }
 
-        return status.RuntimeStatus switch
+        return metadata.RuntimeStatus switch
         {
-            OrchestrationRuntimeStatus.Failed => Problem(status.SerializedOutput),
+            OrchestrationRuntimeStatus.Failed => Problem(metadata.FailureDetails?.ErrorMessage, type: metadata.FailureDetails?.ErrorType),
             OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(HttpStart)}", new { instanceId }, null),
             _ => Ok()
         };
