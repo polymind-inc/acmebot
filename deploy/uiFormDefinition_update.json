@@ -24,33 +24,17 @@
                   "visible": true
                 },
                 {
-                  "name": "functionAppsApi",
-                  "type": "Microsoft.Solutions.ArmApiControl",
-                  "request": {
-                    "method": "POST",
-                    "path": "providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01",
-                    "body": {
-                      "subscriptions": [
-                        "[steps('basics').targetSection.subscription.subscriptionId]"
-                      ],
-                      "query": "Resources | where type =~ 'microsoft.web/sites' | where kind contains 'functionapp' | where kind !contains 'workflowapp' | project label = tostring(name), description = strcat('Resource group: ', resourceGroup), value = strcat(id, '|', location) | order by label asc"
-                    }
-                  }
-                },
-                {
                   "name": "functionApp",
-                  "type": "Microsoft.Common.DropDown",
+                  "type": "Microsoft.Solutions.ResourceSelector",
                   "label": "Function App",
-                  "placeholder": "Select existing...",
                   "toolTip": "Existing Acmebot Function App to update. The deployment is submitted to the selected Function App's resource group.",
-                  "filter": true,
-                  "filterPlaceholder": "Type to start filtering...",
-                  "multiLine": true,
+                  "resourceType": "Microsoft.Web/sites",
                   "constraints": {
-                    "allowedValues": "[steps('basics').targetSection.functionAppsApi.data]",
                     "required": true
                   },
-                  "visible": true
+                  "scope": {
+                    "subscriptionId": "[steps('basics').targetSection.subscription.subscriptionId]"
+                  }
                 }
               ]
             },
@@ -143,10 +127,10 @@
     },
     "outputs": {
       "kind": "ResourceGroup",
-      "resourceGroupId": "[substring(first(split(steps('basics').targetSection.functionApp, '|')), 0, indexOf(toLower(first(split(steps('basics').targetSection.functionApp, '|'))), '/providers/microsoft.web/sites/'))]",
-      "location": "[last(split(steps('basics').targetSection.functionApp, '|'))]",
+      "resourceGroupId": "[substring(steps('basics').targetSection.functionApp.id, 0, indexOf(steps('basics').targetSection.functionApp.id, '/providers/Microsoft.Web/sites/'))]",
+      "location": "[steps('basics').targetSection.functionApp.location]",
       "parameters": {
-        "functionAppName": "[last(split(first(split(steps('basics').targetSection.functionApp, '|')), '/'))]",
+        "functionAppName": "[steps('basics').targetSection.functionApp.name]",
         "majorVersion": "[steps('basics').packageSection.majorVersion]",
         "targetVersion": "[if(equals(steps('basics').packageSection.targetVersionType, 'latest'), 'latest', steps('basics').packageSection.specificVersion)]"
       }
