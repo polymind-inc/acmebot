@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Activity, AlertTriangle, BadgeCheck, CircleSlash, Shield, ShieldAlert, ShieldCheck } from 'lucide-vue-next';
+import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, Shield, ShieldAlert, ShieldCheck, X } from 'lucide-vue-next';
 
 import { formatApiError, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
-import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup } from '@/api/types';
+import { getLatestRelease } from '@/api/releases';
+import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
 import ConfirmRevokeDialog from '@/components/ConfirmRevokeDialog.vue';
@@ -11,6 +12,7 @@ import DetailsDrawer from '@/components/DetailsDrawer.vue';
 import OperationOverlay from '@/components/OperationOverlay.vue';
 import ToastStack, { type ToastMessage } from '@/components/ToastStack.vue';
 import { getCertificateCategory, getCertificateStatus } from '@/utils/certificates';
+import { isNewerVersion, isVersionLike } from '@/utils/versions';
 
 const certificates = ref<CertificateItem[]>([]);
 const dnsZoneGroups = ref<DnsZoneGroup[]>([]);
@@ -19,9 +21,12 @@ const pendingRevokeCertificate = ref<CertificateItem | null>(null);
 const addDialogOpen = ref(false);
 const detailsBusy = ref(false);
 const toasts = ref<ToastMessage[]>([]);
+const upgradeNotice = ref<ReleaseInfo | null>(null);
 let toastId = 0;
-const dashboardVersion = __ACMEBOT_DASHBOARD_VERSION__;
-const dashboardCommitHash = __ACMEBOT_DASHBOARD_COMMIT_HASH__;
+const acmebotVersion = __ACMEBOT_VERSION__;
+const acmebotCommitHash = __ACMEBOT_COMMIT_HASH__;
+const acmebotRepositoryUrl = 'https://github.com/polymind-inc/acmebot';
+const dismissedUpgradeStorageKey = 'acmebot.dismissedUpgradeVersion';
 
 const certificateState = reactive({
   loading: false,
@@ -66,12 +71,65 @@ const summaryItems = computed(() => [
   { label: 'Unmanaged', value: summary.value.unmanaged, tone: 'neutral', icon: CircleSlash },
 ]);
 
-const dashboardCommitLabel = computed(() => (dashboardCommitHash.length > 7 ? dashboardCommitHash.slice(0, 7) : dashboardCommitHash));
+const acmebotCommitLabel = computed(() => (acmebotCommitHash.length > 7 ? acmebotCommitHash.slice(0, 7) : acmebotCommitHash));
+const acmebotVersionUrl = computed(() => (isVersionLike(acmebotVersion) ? `${acmebotRepositoryUrl}/releases/tag/${encodeURIComponent(acmebotVersion)}` : null));
+const acmebotCommitUrl = computed(() => (isCommitHashLike(acmebotCommitHash) ? `${acmebotRepositoryUrl}/commit/${encodeURIComponent(acmebotCommitHash)}` : null));
 
 onMounted(async () => {
+  void loadUpgradeNotice();
   await loadCertificates();
   await loadDnsZones(false);
 });
+
+async function loadUpgradeNotice(): Promise<void> {
+  if (!isVersionLike(acmebotVersion)) {
+    return;
+  }
+
+  try {
+    const latestRelease = await getLatestRelease();
+
+    if (!latestRelease || !isNewerVersion(latestRelease.version, acmebotVersion)) {
+      return;
+    }
+
+    if (getDismissedUpgradeVersion() === latestRelease.version) {
+      return;
+    }
+
+    upgradeNotice.value = latestRelease;
+  } catch {
+    return;
+  }
+}
+
+function getDismissedUpgradeVersion(): string | null {
+  try {
+    return window.localStorage.getItem(dismissedUpgradeStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function rememberDismissedUpgradeVersion(version: string): void {
+  try {
+    window.localStorage.setItem(dismissedUpgradeStorageKey, version);
+  } catch {
+    return;
+  }
+}
+
+function dismissUpgradeNotice(): void {
+  if (upgradeNotice.value) {
+    rememberDismissedUpgradeVersion(upgradeNotice.value.version);
+  }
+
+  upgradeNotice.value = null;
+}
+
+function isCommitHashLike(value: string): boolean {
+  return /^[0-9a-f]{7,40}$/i.test(value.trim());
+}
 
 function pushToast(type: ToastMessage['type'], title: string, message: string): void {
   const id = ++toastId;
@@ -217,6 +275,44 @@ async function confirmRevokeCertificate(): Promise<void> {
         Certificate Operations
       </h1>
 
+      <div
+        v-if="upgradeNotice"
+        class="banner banner--upgrade"
+        role="status"
+      >
+        <Info
+          :size="17"
+          aria-hidden="true"
+        />
+        <div class="banner__body">
+          <span class="banner__title">Acmebot {{ upgradeNotice.version }} is available</span>
+          <span class="banner__message">This Acmebot installation is running {{ acmebotVersion }}.</span>
+        </div>
+        <a
+          class="secondary-button banner__action"
+          :href="upgradeNotice.releaseUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ExternalLink
+            :size="15"
+            aria-hidden="true"
+          />
+          Release notes
+        </a>
+        <button
+          class="icon-only-button banner__dismiss"
+          type="button"
+          title="Dismiss upgrade notification"
+          @click="dismissUpgradeNotice"
+        >
+          <X
+            :size="16"
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
       <section
         class="summary-grid"
         aria-label="Certificate summary"
@@ -268,19 +364,39 @@ async function confirmRevokeCertificate(): Promise<void> {
 
     <footer
       class="app-footer"
-      aria-label="Dashboard build metadata"
+      aria-label="Acmebot build metadata"
     >
       <div class="app-footer__inner">
-        <span>Acmebot Dashboard</span>
+        <span>Acmebot</span>
         <dl class="build-metadata">
           <div class="build-metadata__item">
             <dt>Version</dt>
-            <dd>{{ dashboardVersion }}</dd>
+            <dd>
+              <a
+                v-if="acmebotVersionUrl"
+                class="build-metadata__link"
+                :href="acmebotVersionUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >{{ acmebotVersion }}</a>
+              <span v-else>{{ acmebotVersion }}</span>
+            </dd>
           </div>
           <div class="build-metadata__item">
             <dt>Commit</dt>
-            <dd :title="dashboardCommitHash">
-              {{ dashboardCommitLabel }}
+            <dd>
+              <a
+                v-if="acmebotCommitUrl"
+                class="build-metadata__link"
+                :href="acmebotCommitUrl"
+                :title="acmebotCommitHash"
+                target="_blank"
+                rel="noopener noreferrer"
+              >{{ acmebotCommitLabel }}</a>
+              <span
+                v-else
+                :title="acmebotCommitHash"
+              >{{ acmebotCommitLabel }}</span>
             </dd>
           </div>
         </dl>

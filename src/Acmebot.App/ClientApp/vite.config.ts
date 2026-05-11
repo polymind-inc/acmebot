@@ -5,14 +5,14 @@ import { defineConfig } from 'vite';
 
 const apiOrigin = process.env.ACMEBOT_API_ORIGIN;
 const buildSourceMap = process.env.ACMEBOT_BUILD_SOURCEMAP === 'true';
-const dashboardVersion = normalizeVersion(process.env.ACMEBOT_DASHBOARD_VERSION);
-const dashboardCommitHash = normalizeCommitHash(process.env.ACMEBOT_DASHBOARD_COMMIT ?? process.env.GITHUB_SHA);
+const acmebotVersion = normalizeVersion(process.env.ACMEBOT_VERSION);
+const acmebotCommitHash = normalizeCommitHash(process.env.ACMEBOT_COMMIT_HASH ?? process.env.GITHUB_SHA);
 
 function normalizeVersion(value: string | undefined): string {
   const version = value?.trim();
 
   if (!version) {
-    return 'dev';
+    return 'v1.0.0';
   }
 
   if (/^v?\d/i.test(version)) {
@@ -30,8 +30,8 @@ export default defineConfig({
   base: '/dashboard-vnext/',
   plugins: [vue()],
   define: {
-    __ACMEBOT_DASHBOARD_VERSION__: JSON.stringify(dashboardVersion),
-    __ACMEBOT_DASHBOARD_COMMIT_HASH__: JSON.stringify(dashboardCommitHash),
+    __ACMEBOT_VERSION__: JSON.stringify(acmebotVersion),
+    __ACMEBOT_COMMIT_HASH__: JSON.stringify(acmebotCommitHash),
   },
   resolve: {
     alias: {

@@ -54,3 +54,8 @@ export interface ProblemDetails {
   output?: string;
   errors?: Record<string, string[]>;
 }
+
+export interface ReleaseInfo {
+  version: string;
+  releaseUrl: string;
+}

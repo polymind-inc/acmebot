@@ -19,7 +19,9 @@ Production builds always call the same-origin `/api/*` Azure Functions endpoints
 
 Source maps are disabled by default for deployable output. Set `ACMEBOT_BUILD_SOURCEMAP=true` before `npm run build` when you need browser debugging symbols.
 
-The dashboard footer displays build metadata embedded by Vite at build time. Set `ACMEBOT_DASHBOARD_VERSION` to the release version and `ACMEBOT_DASHBOARD_COMMIT` to the source commit hash before `npm run build`; when the commit variable is omitted, GitHub Actions `GITHUB_SHA` is used if available.
+The dashboard footer displays Acmebot build metadata embedded by Vite at build time. Set `ACMEBOT_VERSION` to the Acmebot release version and `ACMEBOT_COMMIT_HASH` to the source commit hash before `npm run build`; when the version variable is omitted, `v1.0.0` is used, and when the commit hash variable is omitted, GitHub Actions `GITHUB_SHA` is used if available. Version and commit values link to the matching GitHub release and commit when possible.
+
+When the embedded Acmebot version is a release-like value such as `v5.0.0`, the dashboard checks Acmebot GitHub releases, including prereleases, and shows an upgrade notification when a newer version is available. Non-version values such as `dev` skip this check.
 
 For local API proxying during Vite development, set `ACMEBOT_API_ORIGIN` to an Azure Functions host, for example `http://localhost:7071`.
 

@@ -42,8 +42,8 @@ jobs:
     - name: Build Dashboard
       working-directory: ./src/Acmebot.App/ClientApp
       env:
-        ACMEBOT_DASHBOARD_VERSION: ${{ steps.setup_version.outputs.version }}
-        ACMEBOT_DASHBOARD_COMMIT: ${{ github.sha }}
+        ACMEBOT_VERSION: ${{ steps.setup_version.outputs.version }}
+        ACMEBOT_COMMIT_HASH: ${{ github.sha }}
       run: |
         npm ci
         npm run build

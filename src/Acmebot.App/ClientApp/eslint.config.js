@@ -24,8 +24,8 @@ export default defineConfig([
       sourceType: 'module',
       globals: {
         ...globals.browser,
-        __ACMEBOT_DASHBOARD_COMMIT_HASH__: 'readonly',
-        __ACMEBOT_DASHBOARD_VERSION__: 'readonly',
+        __ACMEBOT_COMMIT_HASH__: 'readonly',
+        __ACMEBOT_VERSION__: 'readonly',
       },
     },
   },

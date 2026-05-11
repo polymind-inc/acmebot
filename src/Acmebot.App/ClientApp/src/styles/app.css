@@ -157,6 +157,16 @@
   font-weight: 700;
 }
 
+.build-metadata__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.build-metadata__link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
 .eyebrow {
   color: var(--color-accent);
   font-size: 0.78rem;
@@ -225,6 +235,44 @@ p {
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.banner__body {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.banner__title {
+  font-size: 0.9rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.banner__message {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.banner__action {
+  margin-left: auto;
+  text-decoration: none;
+}
+
+.banner__dismiss {
+  flex: 0 0 auto;
+}
+
+.banner--upgrade {
+  color: var(--color-accent);
+  border-color: #c7e0f4;
+  background: #fbfdff;
+}
+
+.banner--upgrade .banner__body {
+  color: var(--color-text);
 }
 
 .banner--error {
@@ -1671,5 +1719,17 @@ button:disabled {
     right: 12px;
     bottom: 12px;
     width: calc(100vw - 24px);
+  }
+
+  .banner--upgrade {
+    align-items: flex-start;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .banner__action.secondary-button {
+    grid-column: 2 / -1;
+    margin-left: 0;
+    width: max-content;
   }
 }
