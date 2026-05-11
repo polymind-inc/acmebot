@@ -126,6 +126,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 
     var dnsProviders = new List<IDnsProvider>();
 
+    dnsProviders.TryAdd(options.AcmeDns, o => new AcmeDnsProvider(o));
     dnsProviders.TryAdd(options.Akamai, o => new AkamaiEdgeDnsProvider(o));
     dnsProviders.TryAdd(options.AzureDns, o => new AzureDnsProvider(o, environment, credential));
     dnsProviders.TryAdd(options.AzurePrivateDns, o => new AzurePrivateDnsProvider(o, environment, credential));
