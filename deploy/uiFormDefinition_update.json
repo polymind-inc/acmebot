@@ -1,0 +1,155 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json#",
+  "view": {
+    "kind": "Form",
+    "properties": {
+      "title": "Acmebot Update",
+      "steps": [
+        {
+          "name": "basics",
+          "label": "Basics",
+          "description": "Select the existing Acmebot Function App and package version to deploy.",
+          "elements": [
+            {
+              "name": "targetSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Update target",
+              "elements": [
+                {
+                  "name": "subscription",
+                  "type": "Microsoft.Common.SubscriptionSelector",
+                  "resourceProviders": [
+                    "Microsoft.Web"
+                  ],
+                  "visible": true
+                },
+                {
+                  "name": "functionAppsApi",
+                  "type": "Microsoft.Solutions.ArmApiControl",
+                  "request": {
+                    "method": "POST",
+                    "path": "providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01",
+                    "body": {
+                      "subscriptions": [
+                        "[steps('basics').targetSection.subscription.subscriptionId]"
+                      ],
+                      "query": "Resources | where type =~ 'microsoft.web/sites' | where kind contains 'functionapp' | where kind !contains 'workflowapp' | project label = tostring(name), description = strcat('Resource group: ', resourceGroup), value = strcat(id, '|', location) | order by label asc"
+                    }
+                  }
+                },
+                {
+                  "name": "functionApp",
+                  "type": "Microsoft.Common.DropDown",
+                  "label": "Function App",
+                  "placeholder": "Select existing...",
+                  "toolTip": "Existing Acmebot Function App to update. The deployment is submitted to the selected Function App's resource group.",
+                  "filter": true,
+                  "filterPlaceholder": "Type to start filtering...",
+                  "multiLine": true,
+                  "constraints": {
+                    "allowedValues": "[steps('basics').targetSection.functionAppsApi.data]",
+                    "required": true
+                  },
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "packageSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Package",
+              "elements": [
+                {
+                  "name": "updateNotice",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Info",
+                    "text": "This update redeploys only the Acmebot application package. Existing Function App settings and related resources are preserved."
+                  }
+                },
+                {
+                  "name": "majorVersion",
+                  "type": "Microsoft.Common.DropDown",
+                  "label": "Major version",
+                  "placeholder": "Major version",
+                  "defaultValue": {
+                    "value": "v5"
+                  },
+                  "toolTip": "Acmebot major version channel to deploy.",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "v5 (Preview)",
+                        "value": "v5"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "targetVersionType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Target version",
+                  "toolTip": "Deploy the latest package for the selected major version or enter a specific release version.",
+                  "defaultValue": "latest",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "Latest",
+                        "value": "latest"
+                      },
+                      {
+                        "label": "Specific version",
+                        "value": "specific"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "specificVersionNotice",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Warning",
+                    "text": "The specified package version must already be published. Deployment fails if the package cannot be found."
+                  },
+                  "visible": "[if(equals(steps('basics').packageSection.targetVersionType, 'specific'), true, false)]"
+                },
+                {
+                  "name": "specificVersion",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Specific version",
+                  "placeholder": "5.0.0",
+                  "defaultValue": "",
+                  "toolTip": "Acmebot v5 release version to deploy. The leading v is optional.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[vV]?5\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+                        "message": "Enter a valid v5 release version, such as 5.0.0 or v5.0.0."
+                      }
+                    ]
+                  },
+                  "visible": "[if(equals(steps('basics').packageSection.targetVersionType, 'specific'), true, false)]"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "kind": "ResourceGroup",
+      "resourceGroupId": "[substring(first(split(steps('basics').targetSection.functionApp, '|')), 0, indexOf(toLower(first(split(steps('basics').targetSection.functionApp, '|'))), '/providers/microsoft.web/sites/'))]",
+      "location": "[last(split(steps('basics').targetSection.functionApp, '|'))]",
+      "parameters": {
+        "functionAppName": "[last(split(first(split(steps('basics').targetSection.functionApp, '|')), '/'))]",
+        "majorVersion": "[steps('basics').packageSection.majorVersion]",
+        "targetVersion": "[if(equals(steps('basics').packageSection.targetVersionType, 'latest'), 'latest', steps('basics').packageSection.specificVersion)]"
+      }
+    }
+  }
+}

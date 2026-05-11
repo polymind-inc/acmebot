@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "16749310730509452827"
+    }
+  },
+  "parameters": {
+    "functionAppName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Name of the existing Acmebot Function App to update."
+      }
+    },
+    "majorVersion": {
+      "type": "string",
+      "defaultValue": "v5",
+      "allowedValues": [
+        "v5"
+      ],
+      "metadata": {
+        "description": "Acmebot major version channel to deploy."
+      }
+    },
+    "targetVersion": {
+      "type": "string",
+      "defaultValue": "latest",
+      "minLength": 1,
+      "metadata": {
+        "description": "Acmebot version to deploy. Use latest or a specific v5 version such as 5.0.0 or v5.0.0."
+      }
+    }
+  },
+  "variables": {
+    "versionIsLatest": "[equals(toLower(parameters('targetVersion')), 'latest')]",
+    "normalizedTargetVersion": "[if(startsWith(toLower(parameters('targetVersion')), 'v'), substring(parameters('targetVersion'), 1, sub(length(parameters('targetVersion')), 1)), parameters('targetVersion'))]",
+    "packageFileName": "[if(variables('versionIsLatest'), 'latest.zip', format('{0}.zip', variables('normalizedTargetVersion')))]",
+    "appPackageUri": "[format('https://stacmebotprod.blob.core.windows.net/acmebot/{0}/{1}', parameters('majorVersion'), variables('packageFileName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites/extensions",
+      "apiVersion": "2025-03-01",
+      "name": "[format('{0}/{1}', parameters('functionAppName'), 'onedeploy')]",
+      "properties": {
+        "packageUri": "[variables('appPackageUri')]",
+        "remoteBuild": false
+      }
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[parameters('functionAppName')]"
+    },
+    "majorVersion": {
+      "type": "string",
+      "value": "[parameters('majorVersion')]"
+    },
+    "targetVersion": {
+      "type": "string",
+      "value": "[parameters('targetVersion')]"
+    },
+    "appPackageUri": {
+      "type": "string",
+      "value": "[variables('appPackageUri')]"
+    }
+  }
+}
