@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
 const sourceFiles = ['**/*.{js,ts,vue}'];
 
 export default defineConfig([
-  globalIgnores(['dist/', '../wwwroot/dashboard-vnext/']),
+  globalIgnores(['dist/', '../wwwroot/']),
   {
     name: 'acmebot-dashboard/linter-options',
     linterOptions: {

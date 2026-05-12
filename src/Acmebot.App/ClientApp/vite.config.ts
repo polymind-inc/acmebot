@@ -27,7 +27,7 @@ function normalizeCommitHash(value: string | undefined): string {
 }
 
 export default defineConfig({
-  base: '/dashboard-vnext/',
+  base: '/',
   plugins: [vue()],
   define: {
     __ACMEBOT_VERSION__: JSON.stringify(acmebotVersion),
@@ -39,7 +39,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../wwwroot/dashboard-vnext',
+    outDir: '../wwwroot',
     emptyOutDir: true,
     sourcemap: buildSourceMap,
   },

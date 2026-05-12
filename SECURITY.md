@@ -6,8 +6,7 @@ Security fixes are handled on a best-effort basis for versions that are still ac
 
 | Version | Status |
 | --- | --- |
-| v5 preview on `master` | Supported |
-| v4 | Supported until November 2026 |
+| v5 | Supported |
 | Older releases | Not supported |
 
 ## Reporting a Vulnerability

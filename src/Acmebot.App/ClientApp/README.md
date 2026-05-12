@@ -13,9 +13,9 @@ npm run lint
 
 Linting is handled by ESLint flat config with ESLint Stylistic. `npm run lint` checks Vue and TypeScript files.
 
-`npm run build` writes the static dashboard assets to `../wwwroot/dashboard-vnext` so they can be served by the existing Azure Functions static page endpoint while the current `/dashboard` UI remains available.
+`npm run build` writes the static dashboard assets directly to `../wwwroot` so they can be served from the Azure Functions app root.
 
-Production builds always call the same-origin `/api/*` Azure Functions endpoints. The mock API switch is limited to the Vite development server, so files generated under `../wwwroot/dashboard-vnext` are safe to deploy with the Function app package.
+Production builds always call the same-origin `/api/*` Azure Functions endpoints. The mock API switch is limited to the Vite development server, so files generated under `../wwwroot` are safe to deploy with the Function app package.
 
 Source maps are disabled by default for deployable output. Set `ACMEBOT_BUILD_SOURCEMAP=true` before `npm run build` when you need browser debugging symbols.
 

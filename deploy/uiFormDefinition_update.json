@@ -63,7 +63,7 @@
                   "constraints": {
                     "allowedValues": [
                       {
-                        "label": "v5 (Preview)",
+                        "label": "v5",
                         "value": "v5"
                       }
                     ],
