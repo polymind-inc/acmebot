@@ -14,9 +14,22 @@ updates:
         patterns:
           - "*"
     ignore:
-      - dependency-name: '*'
+      - dependency-name: "*"
         update-types:
-          - version-update:semver-major
+          - "version-update:semver-major"
+
+  - package-ecosystem: "npm"
+    directory: "/src/Acmebot.App/ClientApp"
+    schedule:
+      interval: "weekly"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
