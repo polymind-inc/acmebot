@@ -19,7 +19,7 @@ updates:
           - "version-update:semver-major"
 
   - package-ecosystem: "npm"
-    directory: "/frontend"
+    directory: "/src/Acmebot.App/ClientApp"
     schedule:
       interval: "weekly"
     groups:
