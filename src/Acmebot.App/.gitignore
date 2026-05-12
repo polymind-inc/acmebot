@@ -269,5 +269,4 @@ Properties/serviceDependencies.*.json
 Properties/ServiceDependencies/
 
 # Dashboard build output
-wwwroot/*
-!wwwroot/.gitkeep
+wwwroot/
