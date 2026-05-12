@@ -7,7 +7,7 @@ on:
 env:
   DOTNET_VERSION: 10.0.x
   NODE_VERSION: 24.x
-  BICEP_VERSION: 0.42.1
+  BICEP_VERSION: 0.43.8
 
 jobs:
   publish:
