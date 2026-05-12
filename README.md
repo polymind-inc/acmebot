@@ -3,6 +3,7 @@
 </h1>
 <p align="center">
   Automated ACME SSL/TLS certificate management built around Azure Key Vault
+  <br>
   (App Service / Container Apps / Application Gateway / Front Door / CDN / others)
 </p>
 <p align="center">
@@ -52,15 +53,15 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 ## Deployment
 
-### v5
-
-v5 is built on [Azure Functions Flex Consumption plan](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan), which provides built-in VNET integration support.
+Deploy the latest **v5** release with a single click. The template provisions everything required — Function App ([Flex Consumption](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)), Storage, Application Insights, Log Analytics, and optionally a new Key Vault.
 
 | Azure (Public) | Azure China | Azure Government |
 | :---: | :---: | :---: |
 | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
 
-For detailed setup instructions, see: [Getting Started](https://github.com/polymind-inc/acmebot/wiki/Getting-Started)
+> Already running Acmebot? Use the [update template](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_update.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition_update.json) to upgrade an existing deployment in place.
+
+For detailed setup instructions and DNS provider configuration, see the [Getting Started](https://github.com/polymind-inc/acmebot/wiki/Getting-Started) guide.
 
 ## Sponsors
 
