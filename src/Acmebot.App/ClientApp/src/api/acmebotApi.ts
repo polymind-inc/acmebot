@@ -125,7 +125,7 @@ export async function issueCertificate(policy: CertificatePolicyItem): Promise<v
     return;
   }
 
-  const location = await startOperation('/api/certificate', {
+  const location = await startOperation('/api/certificates', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(policy),
@@ -141,7 +141,7 @@ export async function renewCertificate(certificateName: string): Promise<void> {
     return;
   }
 
-  const location = await startOperation(`/api/certificate/${encodeURIComponent(certificateName)}/renew`, {
+  const location = await startOperation(`/api/certificates/${encodeURIComponent(certificateName)}/renew`, {
     method: 'POST',
   });
 
@@ -155,7 +155,7 @@ export async function revokeCertificate(certificateName: string): Promise<void> 
     return;
   }
 
-  await requestJson(`/api/certificate/${encodeURIComponent(certificateName)}/revoke`, {
+  await requestJson(`/api/certificates/${encodeURIComponent(certificateName)}/revoke`, {
     method: 'POST',
   });
 }
