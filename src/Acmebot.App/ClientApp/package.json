@@ -20,15 +20,15 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
-    "@types/node": "25.7.0",
-    "@vitejs/plugin-vue": "6.0.6",
-    "eslint": "10.3.0",
+    "@types/node": "25.8.0",
+    "@vitejs/plugin-vue": "6.0.7",
+    "eslint": "10.4.0",
     "eslint-plugin-vue": "10.9.1",
     "globals": "17.6.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.59.3",
-    "vite": "8.0.12",
+    "vite": "8.0.13",
     "vue-eslint-parser": "10.4.0",
-    "vue-tsc": "3.2.8"
+    "vue-tsc": "3.2.9"
   }
 }
