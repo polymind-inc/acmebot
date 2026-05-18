@@ -11,7 +11,7 @@ namespace Acmebot.App.Providers;
 
 public class OvhProvider(OvhOptions options) : IDnsProvider
 {
-    private const string OvhApiEndpoint = "https://api.ovh.com/v2/";
+    private const string OvhApiEndpoint = "https://eu.api.ovh.com/1.0/";
     private const int TxtRecordTtl = 60;
 
     private readonly OvhClient _ovhClient = new(options.ApplicationKey, options.ApplicationSecret, options.ConsumerKey);
