@@ -70,7 +70,7 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
             return $"{normalizedZone}.";
         }
 
-        return $"{relativeRecordName}.{normalizedZone}.";
+        return $"{StripTrailingDot(relativeRecordName)}.{normalizedZone}.";
     }
 
     private class PowerDnsClient
