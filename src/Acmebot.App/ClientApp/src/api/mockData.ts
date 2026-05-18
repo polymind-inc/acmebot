@@ -1,0 +1,228 @@
+import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup } from './types';
+
+const day = 86_400_000;
+
+function dateFromNow(days: number): string {
+  return new Date(Date.now() + days * day).toISOString();
+}
+
+function dateBefore(days: number): string {
+  return new Date(Date.now() - days * day).toISOString();
+}
+
+let mockCertificates: CertificateItem[] = [
+  {
+    id: 'https://mock.vault/certificates/www-example-com',
+    name: 'www-example-com',
+    dnsNames: ['www.example.com', 'example.com'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(38),
+    expiresOn: dateFromNow(52),
+    x509Thumbprint: 'A4B2C2D9F1E0ACB81E7A1022E8C5F4A55F90D4B1',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null,
+    tags: { Customer: 'Contoso', Stage: 'production' },
+  },
+  {
+    id: 'https://mock.vault/certificates/apex-example-co-jp',
+    name: 'apex-example-co-jp',
+    dnsNames: ['example.co.jp'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(20),
+    expiresOn: dateFromNow(68),
+    x509Thumbprint: '62B4E2103E9B4E46B9E09172B0A321AD108D2D54',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null,
+    tags: { Stage: 'staging' },
+  },
+  {
+    id: 'https://mock.vault/certificates/app-www-example-co-jp',
+    name: 'app-www-example-co-jp',
+    dnsNames: ['app.www.example.co.jp'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(19),
+    expiresOn: dateFromNow(69),
+    x509Thumbprint: '78E62B4E2103E9B4E46B9E09172B0A321AD108D',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null,
+  },
+  {
+    id: 'https://mock.vault/certificates/api-contoso-com',
+    name: 'api-contoso-com',
+    dnsNames: ['api.contoso.com'],
+    dnsProviderName: 'Cloudflare',
+    createdOn: dateBefore(82),
+    expiresOn: dateFromNow(12),
+    x509Thumbprint: '9C98E7D650C181B04A15AE0C096027862B73E33A',
+    keyType: 'EC',
+    keyCurveName: 'P-256',
+    reuseKey: true,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null,
+  },
+  {
+    id: 'https://mock.vault/certificates/edge-adatum-io',
+    name: 'edge-adatum-io',
+    dnsNames: ['edge.adatum.io'],
+    dnsProviderName: 'Cloudflare',
+    createdOn: dateBefore(6),
+    expiresOn: dateFromNow(1.5),
+    x509Thumbprint: '35B9E8D3A20F42629D01C8D8CDAE0E31E2A0B90B',
+    keyType: 'EC',
+    keyCurveName: 'P-256',
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: null,
+  },
+  {
+    id: 'https://mock.vault/certificates/wildcard-fabrikam-net',
+    name: 'wildcard-fabrikam-net',
+    dnsNames: ['*.fabrikam.net', 'fabrikam.net'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(94),
+    expiresOn: dateFromNow(-3),
+    x509Thumbprint: '10F0403D238C285E9B4E46B9E09172B0A321AD10',
+    keyType: 'RSA',
+    keySize: 3072,
+    reuseKey: false,
+    isExpired: true,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: true,
+    acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+    dnsAlias: 'dns-alias.fabrikam.net',
+  },
+  {
+    id: 'https://mock.vault/certificates/portal-example-org',
+    name: 'portal-example-org',
+    dnsNames: ['portal.example.org'],
+    dnsProviderName: 'Azure DNS',
+    createdOn: dateBefore(31),
+    expiresOn: dateFromNow(58),
+    x509Thumbprint: '66342F778F40DA3CCECFB2D908390F0B4119084A',
+    keyType: 'RSA',
+    keySize: 2048,
+    reuseKey: false,
+    isExpired: false,
+    isIssuedByAcmebot: true,
+    isSameEndpoint: false,
+    acmeEndpoint: 'https://acme.zerossl.com/v2/DV90',
+    dnsAlias: null,
+  },
+  {
+    id: 'https://mock.vault/certificates/imported-legacy-net',
+    name: 'imported-legacy-net',
+    dnsNames: ['legacy.net'],
+    dnsProviderName: null,
+    createdOn: dateBefore(120),
+    expiresOn: dateFromNow(144),
+    x509Thumbprint: 'E42F40A663778F40DA3CCECFB2D908390F0B4119',
+    keyType: 'RSA',
+    keySize: 4096,
+    reuseKey: null,
+    isExpired: false,
+    isIssuedByAcmebot: false,
+    isSameEndpoint: false,
+    acmeEndpoint: null,
+    dnsAlias: null,
+  },
+];
+
+const mockDnsZoneGroups: DnsZoneGroup[] = [
+  {
+    dnsProviderName: 'Azure DNS',
+    dnsZones: [{ name: 'example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }],
+  },
+  {
+    dnsProviderName: 'Cloudflare',
+    dnsZones: [{ name: 'contoso.com' }, { name: 'adatum.io' }],
+  },
+  {
+    dnsProviderName: 'Route 53',
+    dnsZones: [{ name: 'wingtiptoys.com' }],
+  },
+];
+
+export async function getMockCertificates(): Promise<CertificateItem[]> {
+  await delay(250);
+  return structuredClone(mockCertificates).toSorted((left, right) => left.expiresOn.localeCompare(right.expiresOn));
+}
+
+export async function getMockDnsZones(): Promise<DnsZoneGroup[]> {
+  await delay(250);
+  return structuredClone(mockDnsZoneGroups);
+}
+
+export async function mockIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
+  await delay(700);
+  const certificateName = policy.certificateName || policy.dnsNames[0].replaceAll('*', 'wildcard').replaceAll('.', '-');
+
+  mockCertificates = [
+    ...mockCertificates,
+    {
+      id: `https://mock.vault/certificates/${certificateName}`,
+      name: certificateName,
+      dnsNames: [...policy.dnsNames],
+      dnsProviderName: policy.dnsProviderName,
+      createdOn: new Date().toISOString(),
+      expiresOn: dateFromNow(90),
+      x509Thumbprint: 'MOCKEDCERTIFICATEOPERATION0000000000000000',
+      keyType: policy.keyType,
+      keySize: policy.keySize,
+      keyCurveName: policy.keyCurveName,
+      reuseKey: policy.reuseKey,
+      isExpired: false,
+      isIssuedByAcmebot: true,
+      isSameEndpoint: true,
+      acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
+      dnsAlias: policy.dnsAlias,
+      tags: policy.tags ? { ...policy.tags } : {},
+    },
+  ];
+}
+
+export async function mockRenewCertificate(certificateName: string): Promise<void> {
+  await delay(650);
+  mockCertificates = mockCertificates.map((certificate) =>
+    certificate.name === certificateName
+      ? {
+          ...certificate,
+          createdOn: new Date().toISOString(),
+          expiresOn: dateFromNow(90),
+          isExpired: false,
+        }
+      : certificate,
+  );
+}
+
+export async function mockRevokeCertificate(certificateName: string): Promise<void> {
+  await delay(650);
+  mockCertificates = mockCertificates.filter((certificate) => certificate.name !== certificateName);
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}

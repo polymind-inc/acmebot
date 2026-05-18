@@ -54,7 +54,11 @@ public class AcmebotOptions
 
     public OvhOptions? OVH { get; set; }
 
+    public RegfishOptions? Regfish { get; set; }
+
     public Route53Options? Route53 { get; set; }
 
     public TransIpOptions? TransIp { get; set; }
+
+    public UnitedDomainsOptions? UnitedDomains { get; set; }
 }

@@ -1,0 +1,1236 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json#",
+  "view": {
+    "kind": "Form",
+    "properties": {
+      "title": "Acmebot",
+      "steps": [
+        {
+          "name": "basics",
+          "label": "Basics",
+          "description": "Create a new ACME client for certificate management",
+          "elements": [
+            {
+              "name": "resourceScope",
+              "type": "Microsoft.Common.ResourceScope",
+              "subscription": {
+                "constraints": {
+                  "validations": [
+                    {
+                      "permission": "Microsoft.KeyVault/vaults/write",
+                      "message": "You must have permission to create and update Key Vaults"
+                    },
+                    {
+                      "permission": "Microsoft.Web/sites/write",
+                      "message": "You must have permission to create and update Azure Functions"
+                    },
+                    {
+                      "permission": "Microsoft.Web/serverFarms/write",
+                      "message": "You must have permission to create and update App Service Plans"
+                    },
+                    {
+                      "permission": "Microsoft.Storage/storageAccounts/write",
+                      "message": "You must have permission to create and update Storage Accounts"
+                    },
+                    {
+                      "permission": "Microsoft.Insights/components/write",
+                      "message": "You must have permission to create and update Application Insights components"
+                    },
+                    {
+                      "permission": "Microsoft.OperationalInsights/workspaces/write",
+                      "message": "You must have permission to create and update Log Analytics workspaces"
+                    },
+                    {
+                      "permission": "Microsoft.Authorization/roleAssignments/write",
+                      "message": "You must have permission to create role assignments for Key Vault access"
+                    }
+                  ]
+                }
+              },
+              "resourceGroup": {
+                "allowExisting": true
+              },
+              "location": {
+                "label": "Location",
+                "toolTip": "Azure region where the Function App, Storage account, Key Vault, and monitoring resources are deployed.",
+                "resourceTypes": [
+                  "Microsoft.KeyVault/vaults",
+                  "Microsoft.Web/sites",
+                  "Microsoft.Web/serverfarms",
+                  "Microsoft.Storage/storageAccounts",
+                  "Microsoft.Insights/components",
+                  "Microsoft.OperationalInsights/workspaces"
+                ]
+              }
+            },
+            {
+              "name": "namingRule",
+              "type": "Microsoft.Common.OptionsGroup",
+              "label": "Naming rule",
+              "toolTip": "Choose how resource names are generated for Acmebot resources.",
+              "constraints": {
+                "allowedValues": [
+                  {
+                    "label": "Prefixed (recommended)",
+                    "value": "prefixed"
+                  },
+                  {
+                    "label": "Custom",
+                    "value": "custom"
+                  }
+                ],
+                "required": true
+              },
+              "visible": true
+            },
+            {
+              "name": "appPrefix",
+              "type": "Microsoft.Common.TextBox",
+              "label": "App prefix name",
+              "placeholder": "acmebot",
+              "defaultValue": "",
+              "toolTip": "Short prefix used to generate resource names. Use lowercase letters, numbers, or hyphens; maximum 18 characters.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^(?!.*--)[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?$",
+                    "message": "Use 1 to 18 lowercase letters, numbers, or hyphens. Start and end with a letter or number, and avoid consecutive hyphens."
+                  }
+                ]
+              },
+              "visible": "[if(equals(steps('basics').namingRule, 'prefixed'), true, false)]"
+            },
+            {
+              "name": "functionAppName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Function App name",
+              "placeholder": "func-acmebot-0000",
+              "toolTip": "Name of the Azure Functions app.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^(?!.*--)[A-Za-z0-9][A-Za-z0-9-]{0,49}[A-Za-z0-9]$",
+                    "message": "Use 2 to 51 letters, numbers, or hyphens. Start and end with a letter or number, and avoid consecutive hyphens."
+                  }
+                ]
+              },
+              "visible": "[if(equals(steps('basics').namingRule, 'custom'), true, false)]"
+            },
+            {
+              "name": "appServicePlanName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "App Service plan name",
+              "placeholder": "plan-acmebot-0000",
+              "toolTip": "Name of the App Service plan used by the Function App.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^[A-Za-z0-9][A-Za-z0-9-]{0,58}[A-Za-z0-9]$",
+                    "message": "Use 2 to 60 letters, numbers, or hyphens. Start and end with a letter or number."
+                  }
+                ]
+              },
+              "visible": "[if(equals(steps('basics').namingRule, 'custom'), true, false)]"
+            },
+            {
+              "name": "storageAccountName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Storage account name",
+              "placeholder": "stacmebot0000func",
+              "toolTip": "Name of the storage account used by the Function App.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^[a-z0-9]{3,24}$",
+                    "message": "Use 3 to 24 lowercase letters or numbers."
+                  }
+                ]
+              },
+              "visible": "[if(equals(steps('basics').namingRule, 'custom'), true, false)]"
+            },
+            {
+              "name": "appInsightsName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Application Insights name",
+              "placeholder": "appi-acmebot-0000",
+              "toolTip": "Name of the Application Insights component.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^[A-Za-z0-9][A-Za-z0-9-]{0,253}[A-Za-z0-9]$",
+                    "message": "Use letters, numbers, or hyphens. Start and end with a letter or number."
+                  }
+                ]
+              },
+              "visible": "[if(equals(steps('basics').namingRule, 'custom'), true, false)]"
+            }
+          ]
+        },
+        {
+          "name": "acmeStep",
+          "label": "ACME settings",
+          "elements": [
+            {
+              "name": "endpointSection",
+              "type": "Microsoft.Common.Section",
+              "label": "ACME endpoint",
+              "elements": [
+                {
+                  "name": "endpointType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Endpoint type",
+                  "toolTip": "Use a predefined ACME directory endpoint or enter the directory URL provided by your certificate authority.",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "Known endpoint (recommended)",
+                        "value": "known"
+                      },
+                      {
+                        "label": "Custom",
+                        "value": "custom"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "knownEndpoint",
+                  "type": "Microsoft.Common.DropDown",
+                  "label": "Known ACME endpoint",
+                  "placeholder": "ACME endpoint",
+                  "defaultValue": "",
+                  "multiLine": true,
+                  "toolTip": "Certificate authority ACME directory endpoint used to create the ACME account and issue certificates.",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "Let's Encrypt",
+                        "description": "Let's Encrypt ACME v2 production endpoint for publicly trusted certificates.",
+                        "value": "https://acme-v02.api.letsencrypt.org/directory"
+                      },
+                      {
+                        "label": "ZeroSSL",
+                        "description": "ZeroSSL ACME endpoint for 90-day DV certificates. EAB credentials are required.",
+                        "value": "https://acme.zerossl.com/v2/DV90"
+                      },
+                      {
+                        "label": "Google Trust Services",
+                        "description": "Google Trust Services ACME endpoint for public TLS certificates.",
+                        "value": "https://dv.acme-v02.api.pki.goog/directory"
+                      },
+                      {
+                        "label": "SSL.com (RSA)",
+                        "description": "SSL.com ACME endpoint for DV certificates using RSA certificate keys.",
+                        "value": "https://acme.ssl.com/sslcom-dv-rsa"
+                      },
+                      {
+                        "label": "SSL.com (ECC)",
+                        "description": "SSL.com ACME endpoint for DV certificates using ECC certificate keys.",
+                        "value": "https://acme.ssl.com/sslcom-dv-ecc"
+                      },
+                      {
+                        "label": "Entrust",
+                        "description": "Entrust ACME endpoint for accounts enabled for Entrust certificate automation.",
+                        "value": "https://acme.entrust.net/acme2/directory"
+                      },
+                      {
+                        "label": "Global Sign",
+                        "description": "GlobalSign Atlas ACME endpoint for accounts enabled for certificate automation.",
+                        "value": "https://emea.acme.atlas.globalsign.com/directory"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'known'), true, false)]"
+                },
+                {
+                  "name": "customEndpoint",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Custom ACME endpoint",
+                  "placeholder": "Custom ACME endpoint",
+                  "defaultValue": "",
+                  "toolTip": "Full ACME directory URL for a certificate authority that is not listed above.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'custom'), true, false)]"
+                }
+              ],
+              "visible": true
+            },
+            {
+              "name": "credentialSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Credential",
+              "elements": [
+                {
+                  "name": "mailAddress",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Mail address",
+                  "placeholder": "Mail address",
+                  "defaultValue": "",
+                  "toolTip": "Email address registered with the ACME account for certificate notices.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "credentialType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Credential type",
+                  "toolTip": "Select EAB only when your certificate authority requires external account binding.",
+                  "defaultValue": "None",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "External Account Binding (EAB)",
+                        "value": "eab"
+                      },
+                      {
+                        "label": "None",
+                        "value": "none"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "name": "eabSection",
+              "type": "Microsoft.Common.Section",
+              "label": "External account binding (EAB)",
+              "elements": [
+                {
+                  "name": "keyId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Key ID",
+                  "placeholder": "Key ID",
+                  "defaultValue": "",
+                  "toolTip": "External Account Binding key identifier issued by your certificate authority.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "hmacKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "HMAC key",
+                    "confirmPassword": "Confirm HMAC key"
+                  },
+                  "toolTip": "External Account Binding HMAC key issued by your certificate authority.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "algorithm",
+                  "type": "Microsoft.Common.DropDown",
+                  "label": "HMAC algorithm",
+                  "placeholder": "HMAC algorithm",
+                  "defaultValue": "HS256",
+                  "toolTip": "HMAC signing algorithm required by your certificate authority for EAB.",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "HS256",
+                        "value": "HS256"
+                      },
+                      {
+                        "label": "HS384",
+                        "value": "HS384"
+                      },
+                      {
+                        "label": "HS512",
+                        "value": "HS512"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), true, false)]"
+            }
+          ]
+        },
+        {
+          "name": "dnsProviderStep",
+          "label": "DNS Provider",
+          "elements": [
+            {
+              "name": "providerType",
+              "type": "Microsoft.Common.DropDown",
+              "label": "DNS provider",
+              "placeholder": "DNS provider",
+              "defaultValue": "AzureDns",
+              "toolTip": "DNS provider used to create and remove ACME DNS-01 challenge TXT records.",
+              "filter": true,
+              "filterPlaceholder": "Filter DNS providers",
+              "multiLine": true,
+              "constraints": {
+                "allowedValues": [
+                  {
+                    "label": "Akamai Edge DNS",
+                    "description": "Use Akamai Edge DNS with EdgeGrid API credentials.",
+                    "value": "Akamai"
+                  },
+                  {
+                    "label": "Amazon Route 53",
+                    "description": "Use Amazon Route 53 with an AWS access key, secret key, and region.",
+                    "value": "Route53"
+                  },
+                  {
+                    "label": "Azure DNS",
+                    "description": "Use Azure public DNS zones in the selected subscription.",
+                    "value": "AzureDns"
+                  },
+                  {
+                    "label": "Azure Private DNS",
+                    "description": "Use Azure Private DNS zones in the selected subscription.",
+                    "value": "AzurePrivateDns"
+                  },
+                  {
+                    "label": "Cloudflare",
+                    "description": "Use Cloudflare with a scoped API token.",
+                    "value": "Cloudflare"
+                  },
+                  {
+                    "label": "Custom DNS",
+                    "description": "Use an HTTP API compatible with Acmebot custom DNS endpoints.",
+                    "value": "CustomDns"
+                  },
+                  {
+                    "label": "DNS Made Easy",
+                    "description": "Use DNS Made Easy with an API key and secret key.",
+                    "value": "DnsMadeEasy"
+                  },
+                  {
+                    "label": "Gandi LiveDNS",
+                    "description": "Use Gandi LiveDNS with an API key.",
+                    "value": "GandiLiveDns"
+                  },
+                  {
+                    "label": "GoDaddy",
+                    "description": "Use GoDaddy with an API key and secret.",
+                    "value": "GoDaddy"
+                  },
+                  {
+                    "label": "Google Cloud DNS",
+                    "description": "Use Google Cloud DNS with a base64-encoded service account key file.",
+                    "value": "GoogleDns"
+                  },
+                  {
+                    "label": "IONOS DNS",
+                    "description": "Use IONOS DNS with an API key.",
+                    "value": "IonosDns"
+                  },
+                  {
+                    "label": "Regfish",
+                    "description": "Use Regfish with an API key.",
+                    "value": "Regfish"
+                  },
+                  {
+                    "label": "TransIP DNS",
+                    "description": "Use TransIP DNS with a customer name and Key Vault key name.",
+                    "value": "TransIp"
+                  },
+                  {
+                    "label": "UnitedDomains",
+                    "description": "Use UnitedDomains with an API key.",
+                    "value": "UnitedDomains"
+                  }
+                ],
+                "required": true
+              },
+              "visible": true
+            },
+            {
+              "name": "azureDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Azure DNS",
+              "elements": [
+                {
+                  "name": "subscriptionId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Subscription ID",
+                  "placeholder": "Subscription ID",
+                  "defaultValue": "[steps('basics').resourceScope.subscription.subscriptionId]",
+                  "toolTip": "Azure subscription ID that contains the public DNS zones Acmebot manages.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                        "message": "Enter a valid Azure subscription ID."
+                      }
+                    ]
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'AzureDns'), true, false)]"
+            },
+            {
+              "name": "azurePrivateDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Azure Private DNS",
+              "elements": [
+                {
+                  "name": "subscriptionId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Subscription ID",
+                  "placeholder": "Subscription ID",
+                  "defaultValue": "[steps('basics').resourceScope.subscription.subscriptionId]",
+                  "toolTip": "Azure subscription ID that contains the private DNS zones Acmebot manages.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                        "message": "Enter a valid Azure subscription ID."
+                      }
+                    ]
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'AzurePrivateDns'), true, false)]"
+            },
+            {
+              "name": "akamaiSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Akamai Edge DNS",
+              "elements": [
+                {
+                  "name": "host",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Host",
+                  "placeholder": "akab-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
+                  "defaultValue": "",
+                  "toolTip": "Akamai EdgeGrid API host name.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "clientToken",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Client token",
+                    "confirmPassword": "Confirm client token"
+                  },
+                  "toolTip": "Akamai EdgeGrid client token.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "clientSecret",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Client secret",
+                    "confirmPassword": "Confirm client secret"
+                  },
+                  "toolTip": "Akamai EdgeGrid client secret.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "accessToken",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Access token",
+                    "confirmPassword": "Confirm access token"
+                  },
+                  "toolTip": "Akamai EdgeGrid access token.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), true, false)]"
+            },
+            {
+              "name": "route53Section",
+              "type": "Microsoft.Common.Section",
+              "label": "Amazon Route 53",
+              "elements": [
+                {
+                  "name": "accessKey",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Access key ID",
+                  "placeholder": "Access key ID",
+                  "defaultValue": "",
+                  "toolTip": "AWS access key ID used for Route 53 DNS operations.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "secretKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Secret access key",
+                    "confirmPassword": "Confirm secret access key"
+                  },
+                  "toolTip": "AWS secret access key used for Route 53 DNS operations.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "region",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Region",
+                  "placeholder": "us-east-1",
+                  "defaultValue": "us-east-1",
+                  "toolTip": "AWS region used by the Route 53 client.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[a-z]{2}-[a-z]+-[0-9]+$",
+                        "message": "Enter a valid AWS region name."
+                      }
+                    ]
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), true, false)]"
+            },
+            {
+              "name": "cloudflareSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Cloudflare",
+              "elements": [
+                {
+                  "name": "apiToken",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API token",
+                    "confirmPassword": "Confirm API token"
+                  },
+                  "toolTip": "Cloudflare API token with permissions to manage DNS records for the target zones.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Cloudflare'), true, false)]"
+            },
+            {
+              "name": "customDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Custom DNS",
+              "elements": [
+                {
+                  "name": "endpoint",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Endpoint",
+                  "placeholder": "https://example.com/",
+                  "defaultValue": "",
+                  "toolTip": "Base URL of the custom DNS API endpoint.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^https://.+",
+                        "message": "Enter a valid HTTPS endpoint URL."
+                      }
+                    ]
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "API key sent to the custom DNS API endpoint.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiKeyHeaderName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "API key header name",
+                  "placeholder": "X-Api-Key",
+                  "defaultValue": "X-Api-Key",
+                  "toolTip": "HTTP header name used to send the custom DNS API key.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[A-Za-z0-9-]+$",
+                        "message": "Use only letters, numbers, and hyphens."
+                      }
+                    ]
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "propagationSeconds",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Propagation seconds",
+                  "placeholder": "180",
+                  "defaultValue": "180",
+                  "toolTip": "Seconds to wait after creating DNS challenge records before validation starts.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^[1-9][0-9]*$",
+                        "message": "Enter a positive number of seconds."
+                      }
+                    ]
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'CustomDns'), true, false)]"
+            },
+            {
+              "name": "dnsMadeEasySection",
+              "type": "Microsoft.Common.Section",
+              "label": "DNS Made Easy",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "DNS Made Easy API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "secretKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Secret key",
+                    "confirmPassword": "Confirm secret key"
+                  },
+                  "toolTip": "DNS Made Easy secret key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), true, false)]"
+            },
+            {
+              "name": "gandiLiveDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Gandi LiveDNS",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "Gandi LiveDNS API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'GandiLiveDns'), true, false)]"
+            },
+            {
+              "name": "goDaddySection",
+              "type": "Microsoft.Common.Section",
+              "label": "GoDaddy",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "GoDaddy API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiSecret",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API secret",
+                    "confirmPassword": "Confirm API secret"
+                  },
+                  "toolTip": "GoDaddy API secret.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'GoDaddy'), true, false)]"
+            },
+            {
+              "name": "googleDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Google Cloud DNS",
+              "elements": [
+                {
+                  "name": "keyFile64",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Base64 key file",
+                    "confirmPassword": "Confirm base64 key file"
+                  },
+                  "toolTip": "Base64-encoded Google Cloud service account key JSON used for Cloud DNS operations.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), true, false)]"
+            },
+            {
+              "name": "ionosDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "IONOS DNS",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "IONOS DNS API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'IonosDns'), true, false)]"
+            },
+            {
+              "name": "regfishSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Regfish",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "Regfish API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), true, false)]"
+            },
+            {
+              "name": "transIpSection",
+              "type": "Microsoft.Common.Section",
+              "label": "TransIP DNS",
+              "elements": [
+                {
+                  "name": "customerName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Customer name",
+                  "placeholder": "Customer name",
+                  "defaultValue": "",
+                  "toolTip": "TransIP customer name used to authenticate DNS API requests.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "privateKeyName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Private key name",
+                  "placeholder": "Private key name",
+                  "defaultValue": "",
+                  "toolTip": "Name of the Key Vault key that contains the TransIP private key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'TransIp'), true, false)]"
+            },
+            {
+              "name": "unitedDomainsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "UnitedDomains",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "UnitedDomains API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'UnitedDomains'), true, false)]"
+            }
+          ]
+        },
+        {
+          "name": "identityStep",
+          "label": "Identity",
+          "elements": [
+            {
+              "name": "identityType",
+              "type": "Microsoft.Common.OptionsGroup",
+              "label": "Managed identity type",
+              "toolTip": "Managed identity Acmebot uses to access Key Vault and related Azure resources.",
+              "constraints": {
+                "allowedValues": [
+                  {
+                    "label": "System assigned (recommended)",
+                    "value": "systemAssigned"
+                  },
+                  {
+                    "label": "User assigned",
+                    "value": "userAssigned"
+                  }
+                ],
+                "required": true
+              },
+              "visible": true
+            },
+            {
+              "name": "userAssignedSelector",
+              "type": "Microsoft.Solutions.ResourceSelector",
+              "label": "Select user assigned identity",
+              "toolTip": "Existing user-assigned managed identity to attach to the Function App.",
+              "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "visible": "[if(equals(steps('identityStep').identityType, 'userAssigned'), true, false)]",
+              "scope": {
+                "subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]"
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyvaultStep",
+          "label": "Key Vault",
+          "elements": [
+            {
+              "name": "createNew",
+              "type": "Microsoft.Common.OptionsGroup",
+              "label": "Create new Key Vault",
+              "toolTip": "Create a new Key Vault for certificates or use an existing vault.",
+              "constraints": {
+                "allowedValues": [
+                  {
+                    "label": "Create new (recommended)",
+                    "value": "create"
+                  },
+                  {
+                    "label": "Use existing",
+                    "value": "existing"
+                  }
+                ],
+                "required": true
+              },
+              "visible": true
+            },
+            {
+              "name": "keyVaultName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Key Vault name",
+              "placeholder": "kv-acmebot-0000",
+              "toolTip": "Name of the new Key Vault where Acmebot stores and renews certificates.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^(?!.*--)[A-Za-z][A-Za-z0-9-]{1,22}[A-Za-z0-9]$",
+                    "message": "Use 3 to 24 letters, numbers, or hyphens. Start with a letter, end with a letter or number, and avoid consecutive hyphens."
+                  }
+                ]
+              },
+              "visible": "[if(and(equals(steps('basics').namingRule, 'custom'), equals(steps('keyvaultStep').createNew, 'create')), true, false)]"
+            },
+            {
+              "name": "keyVaultSelector",
+              "type": "Microsoft.Solutions.ResourceSelector",
+              "label": "Select key vault",
+              "toolTip": "Existing Key Vault where Acmebot stores and renews certificates.",
+              "resourceType": "Microsoft.KeyVault/vaults",
+              "visible": "[if(equals(steps('keyvaultStep').createNew, 'existing'), true, false)]",
+              "scope": {
+                "subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]"
+              }
+            }
+          ]
+        },
+        {
+          "name": "loggingStep",
+          "label": "Logging",
+          "elements": [
+            {
+              "name": "createNew",
+              "type": "Microsoft.Common.OptionsGroup",
+              "label": "Create new Log analytics workspace",
+              "toolTip": "Create a new Log Analytics workspace for Application Insights or use an existing workspace.",
+              "constraints": {
+                "allowedValues": [
+                  {
+                    "label": "Create new (recommended)",
+                    "value": "create"
+                  },
+                  {
+                    "label": "Use existing",
+                    "value": "existing"
+                  }
+                ],
+                "required": true
+              },
+              "visible": true
+            },
+            {
+              "name": "logAnalyticsWorkspaceName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Log Analytics workspace name",
+              "placeholder": "log-acmebot-0000",
+              "toolTip": "Name of the new Log Analytics workspace used by Application Insights for Acmebot logs.",
+              "constraints": {
+                "required": true,
+                "validations": [
+                  {
+                    "regex": "^[A-Za-z0-9][A-Za-z0-9-]{2,61}[A-Za-z0-9]$",
+                    "message": "Use 4 to 63 letters, numbers, or hyphens. Start and end with a letter or number."
+                  }
+                ]
+              },
+              "visible": "[if(and(equals(steps('basics').namingRule, 'custom'), equals(steps('loggingStep').createNew, 'create')), true, false)]"
+            },
+            {
+              "name": "logAnalyticsSelector",
+              "type": "Microsoft.Solutions.ResourceSelector",
+              "label": "Select log analytics workspace",
+              "toolTip": "Existing Log Analytics workspace used by Application Insights for Acmebot logs.",
+              "resourceType": "Microsoft.OperationalInsights/workspaces",
+              "visible": "[if(equals(steps('loggingStep').createNew, 'existing'), true, false)]",
+              "scope": {
+                "subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]",
+                "location": "[steps('basics').resourceScope.location.name]"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tagsStep",
+          "label": "Tags",
+          "elements": [
+            {
+              "name": "tagsByResource",
+              "type": "Microsoft.Common.TagsByResource",
+              "resources": [
+                "Microsoft.Storage/storageAccounts",
+                "Microsoft.OperationalInsights/workspaces",
+                "Microsoft.Insights/components",
+                "Microsoft.Web/serverfarms",
+                "Microsoft.Web/sites",
+                "Microsoft.KeyVault/vaults"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "kind": "ResourceGroup",
+      "resourceGroupId": "[steps('basics').resourceScope.resourceGroup.id]",
+      "location": "[steps('basics').resourceScope.location.name]",
+      "parameters": {
+        "location": "[steps('basics').resourceScope.location.name]",
+        "tagsByResource": "[steps('tagsStep').tagsByResource]",
+        "resourceNames": {
+          "functionAppName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').functionAppName, concat('func-', steps('basics').appPrefix))]",
+          "appServicePlanName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appServicePlanName, concat('plan-', steps('basics').appPrefix))]",
+          "storageAccountName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').storageAccountName, concat('st', replace(steps('basics').appPrefix, '-', ''), 'func'))]",
+          "keyVaultName": "[if(equals(steps('keyvaultStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('keyvaultStep').keyVaultName, concat('kv-', steps('basics').appPrefix)), '')]",
+          "appInsightsName": "[if(equals(steps('basics').namingRule, 'custom'), steps('basics').appInsightsName, concat('appi-', steps('basics').appPrefix))]",
+          "logAnalyticsWorkspaceName": "[if(equals(steps('loggingStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('loggingStep').logAnalyticsWorkspaceName, concat('log-', steps('basics').appPrefix)), '')]"
+        },
+        "acme": {
+          "endpoint": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'known'), steps('acmeStep').endpointSection.knownEndpoint, steps('acmeStep').endpointSection.customEndpoint)]",
+          "contacts": "[steps('acmeStep').credentialSection.mailAddress]",
+          "externalAccountBinding": {
+            "enabled": "[equals(steps('acmeStep').credentialSection.credentialType, 'eab')]",
+            "keyId": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.keyId, '')]",
+            "hmacKey": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.hmacKey, '')]",
+            "algorithm": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.algorithm, 'HS256')]"
+          }
+        },
+        "dnsProvider": {
+          "type": "[steps('dnsProviderStep').providerType]",
+          "akamai": {
+            "host": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), steps('dnsProviderStep').akamaiSection.host, '')]",
+            "clientToken": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), steps('dnsProviderStep').akamaiSection.clientToken, '')]",
+            "clientSecret": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), steps('dnsProviderStep').akamaiSection.clientSecret, '')]",
+            "accessToken": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), steps('dnsProviderStep').akamaiSection.accessToken, '')]"
+          },
+          "route53": {
+            "accessKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.accessKey, '')]",
+            "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.secretKey, '')]",
+            "region": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.region, '')]"
+          },
+          "azureDns": {
+            "subscriptionId": "[if(equals(steps('dnsProviderStep').providerType, 'AzureDns'), steps('dnsProviderStep').azureDnsSection.subscriptionId, '')]"
+          },
+          "azurePrivateDns": {
+            "subscriptionId": "[if(equals(steps('dnsProviderStep').providerType, 'AzurePrivateDns'), steps('dnsProviderStep').azurePrivateDnsSection.subscriptionId, '')]"
+          },
+          "cloudflare": {
+            "apiToken": "[if(equals(steps('dnsProviderStep').providerType, 'Cloudflare'), steps('dnsProviderStep').cloudflareSection.apiToken, '')]"
+          },
+          "customDns": {
+            "endpoint": "[if(equals(steps('dnsProviderStep').providerType, 'CustomDns'), steps('dnsProviderStep').customDnsSection.endpoint, '')]",
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'CustomDns'), steps('dnsProviderStep').customDnsSection.apiKey, '')]",
+            "apiKeyHeaderName": "[if(equals(steps('dnsProviderStep').providerType, 'CustomDns'), steps('dnsProviderStep').customDnsSection.apiKeyHeaderName, '')]",
+            "propagationSeconds": "[if(equals(steps('dnsProviderStep').providerType, 'CustomDns'), steps('dnsProviderStep').customDnsSection.propagationSeconds, '')]"
+          },
+          "dnsMadeEasy": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), steps('dnsProviderStep').dnsMadeEasySection.apiKey, '')]",
+            "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), steps('dnsProviderStep').dnsMadeEasySection.secretKey, '')]"
+          },
+          "gandiLiveDns": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'GandiLiveDns'), steps('dnsProviderStep').gandiLiveDnsSection.apiKey, '')]"
+          },
+          "goDaddy": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'GoDaddy'), steps('dnsProviderStep').goDaddySection.apiKey, '')]",
+            "apiSecret": "[if(equals(steps('dnsProviderStep').providerType, 'GoDaddy'), steps('dnsProviderStep').goDaddySection.apiSecret, '')]"
+          },
+          "googleDns": {
+            "keyFile64": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), steps('dnsProviderStep').googleDnsSection.keyFile64, '')]"
+          },
+          "ionosDns": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'IonosDns'), steps('dnsProviderStep').ionosDnsSection.apiKey, '')]"
+          },
+          "regfish": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), steps('dnsProviderStep').regfishSection.apiKey, '')]"
+          },
+          "transIp": {
+            "customerName": "[if(equals(steps('dnsProviderStep').providerType, 'TransIp'), steps('dnsProviderStep').transIpSection.customerName, '')]",
+            "privateKeyName": "[if(equals(steps('dnsProviderStep').providerType, 'TransIp'), steps('dnsProviderStep').transIpSection.privateKeyName, '')]"
+          },
+          "unitedDomains": {
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'UnitedDomains'), steps('dnsProviderStep').unitedDomainsSection.apiKey, '')]"
+          }
+        },
+        "managedIdentity": {
+          "type": "[if(equals(steps('identityStep').identityType, 'userAssigned'), 'UserAssigned', 'SystemAssigned')]",
+          "userAssignedResourceId": "[if(equals(steps('identityStep').identityType, 'userAssigned'), steps('identityStep').userAssignedSelector.id, '')]"
+        },
+        "keyVault": {
+          "createNew": "[equals(steps('keyvaultStep').createNew, 'create')]",
+          "resourceId": "[if(equals(steps('keyvaultStep').createNew, 'existing'), steps('keyvaultStep').keyVaultSelector.id, '')]"
+        },
+        "monitoring": {
+          "createLogAnalyticsWorkspace": "[equals(steps('loggingStep').createNew, 'create')]",
+          "logAnalyticsWorkspaceResourceId": "[if(equals(steps('loggingStep').createNew, 'existing'), steps('loggingStep').logAnalyticsSelector.id, '')]"
+        }
+      }
+    }
+  }
+}

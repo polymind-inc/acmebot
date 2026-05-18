@@ -63,7 +63,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     {
         public DnsMadeEasyClient(string apiKey, string secretKey)
         {
-            _httpClient = new HttpClient(new ApiKeyHandler(apiKey, secretKey, new HttpClientHandler()))
+            _httpClient = new HttpClient(new ApiKeyHandler(apiKey, secretKey))
             {
                 BaseAddress = new Uri("https://api.dnsmadeeasy.com/V2.0/dns/")
             };
@@ -101,7 +101,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
             response.EnsureSuccessStatusCode();
         }
 
-        private sealed class ApiKeyHandler(string apiKey, string secretKey, HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
+        private sealed class ApiKeyHandler(string apiKey, string secretKey) : DelegatingHandler(new HttpClientHandler())
         {
             private string ApiKey { get; } = apiKey;
 

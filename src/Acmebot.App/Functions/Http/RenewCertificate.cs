@@ -30,7 +30,7 @@ public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, 
 
     [Function($"{nameof(RenewCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificate/{certificateName}/renew")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates/{certificateName}/renew")] HttpRequest req,
         string certificateName,
         [DurableClient] DurableTaskClient starter)
     {
@@ -49,7 +49,7 @@ public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, 
 
         LogOrchestrationStarted(logger, certificateName, instanceId);
 
-        return AcceptedAtFunction($"{nameof(GetInstanceState)}_{nameof(GetInstanceState.HttpStart)}", new { instanceId }, null);
+        return AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }, null);
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate renewal orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]

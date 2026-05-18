@@ -26,7 +26,7 @@ public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor,
 
     [Function($"{nameof(RevokeCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificate/{certificateName}/revoke")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates/{certificateName}/revoke")] HttpRequest req,
         string certificateName,
         [DurableClient] DurableTaskClient starter)
     {
@@ -47,7 +47,12 @@ public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor,
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
-        return Ok(metadata.SerializedOutput);
+        if (metadata.RuntimeStatus != OrchestrationRuntimeStatus.Completed)
+        {
+            return Problem();
+        }
+
+        return Ok();
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate revocation orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]

@@ -1,37 +1,42 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Acmebot.App.Models;
 
 public class CertificatePolicyItem : IValidatableObject
 {
-    [JsonProperty("certificateName")]
+    [JsonPropertyName("certificateName")]
     [RegularExpression("^[0-9a-zA-Z-]+$")]
     public string? CertificateName { get; set; }
 
-    [JsonProperty("dnsNames")]
+    [JsonPropertyName("dnsNames")]
     public required string[] DnsNames { get; set; }
 
-    [JsonProperty("dnsProviderName")]
+    [JsonPropertyName("dnsProviderName")]
     public string? DnsProviderName { get; set; }
 
-    [JsonProperty("keyType")]
+    [JsonPropertyName("keyType")]
     [RegularExpression("^(RSA|EC)$")]
     public required string KeyType { get; set; }
 
-    [JsonProperty("keySize")]
+    [JsonPropertyName("keySize")]
     public int? KeySize { get; set; }
 
-    [JsonProperty("keyCurveName")]
+    [JsonPropertyName("keyCurveName")]
     [RegularExpression(@"^P\-(256|384|521|256K)$")]
     public string? KeyCurveName { get; set; }
 
-    [JsonProperty("reuseKey")]
+    [JsonPropertyName("reuseKey")]
     public bool? ReuseKey { get; set; }
 
-    [JsonProperty("dnsAlias")]
+    [JsonPropertyName("dnsAlias")]
     public string? DnsAlias { get; set; }
+
+    [JsonPropertyName("tags")]
+    public IDictionary<string, string>? Tags { get; set; }
+
+    [JsonPropertyName("certificateId")]
+    public string? CertificateId { get; set; }
 
     public IEnumerable<string> AliasedDnsNames => string.IsNullOrEmpty(DnsAlias) ? DnsNames : [DnsAlias];
 
@@ -54,6 +59,32 @@ public class CertificatePolicyItem : IValidatableObject
             if (KeyCurveName is not ("P-256" or "P-384" or "P-521" or "P-256K"))
             {
                 yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is EC.", [nameof(KeyCurveName)]);
+            }
+        }
+
+        if (Tags is not null)
+        {
+            var tagNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var tag in Tags)
+            {
+                if (string.IsNullOrWhiteSpace(tag.Key))
+                {
+                    yield return new ValidationResult($"The {nameof(Tags)} contains an empty tag name.", [nameof(Tags)]);
+                    continue;
+                }
+
+                var tagName = tag.Key.Trim();
+
+                if (string.Equals(tagName, "Acmebot", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return new ValidationResult($"The Acmebot tag is reserved for internal metadata.", [nameof(Tags)]);
+                }
+
+                if (!tagNames.Add(tagName))
+                {
+                    yield return new ValidationResult($"The {nameof(Tags)} contains duplicate tag names.", [nameof(Tags)]);
+                }
             }
         }
     }

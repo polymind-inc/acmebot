@@ -396,3 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# C# Dev Kit for Visual Studio Code
+*.csproj.lscache

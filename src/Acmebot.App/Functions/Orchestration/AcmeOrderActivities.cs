@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 using Acmebot.Acme.Models;
 using Acmebot.App.Acme;
@@ -13,8 +14,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using Newtonsoft.Json;
-
 namespace Acmebot.App.Functions.Orchestration;
 
 public partial class AcmeOrderActivities(
@@ -26,8 +25,10 @@ public partial class AcmeOrderActivities(
     private readonly AcmebotOptions _options = options.Value;
 
     [Function(nameof(Order))]
-    public async Task<OrderDetails> Order([ActivityTrigger] IReadOnlyList<string> dnsNames)
+    public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?) input)
     {
+        var (dnsNames, replaces) = input;
+
         using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         var result = await acmeContext.Client.CreateOrderAsync(
@@ -37,7 +38,8 @@ public partial class AcmeOrderActivities(
                 Type = AcmeIdentifierTypes.Dns,
                 Value = x
             }).ToArray(),
-            profile: _options.PreferredProfile);
+            profile: _options.PreferredProfile,
+            replaces: replaces);
 
         return OrderDetails.FromResult(result);
     }
@@ -76,7 +78,7 @@ public partial class AcmeOrderActivities(
                     continue;
                 }
 
-                LogAcmeDomainValidationError(logger, JsonConvert.SerializeObject(challenge.Error));
+                LogAcmeDomainValidationError(logger, JsonSerializer.Serialize(challenge.Error));
 
                 problems.Add(challenge.Error);
             }
@@ -86,7 +88,7 @@ public partial class AcmeOrderActivities(
                 throw new RetriableOrchestratorException("ACME validation failed because of a DNS-related error. The operation will be retried automatically.");
             }
 
-            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonConvert.SerializeObject(problems.Last())}");
+            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonSerializer.Serialize(problems.Last())}");
         }
 
         if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
@@ -105,9 +107,9 @@ public partial class AcmeOrderActivities(
         try
         {
             var certificatePolicy = certificatePolicyItem.ToCertificatePolicy();
-            var metadata = certificatePolicyItem.ToCertificateMetadata(_options.Endpoint);
+            var tags = certificatePolicyItem.ToCertificateTags(_options.Endpoint);
 
-            var certificateOperation = await certificateClient.StartCreateCertificateAsync(certificatePolicyItem.CertificateName, certificatePolicy, tags: metadata);
+            var certificateOperation = await certificateClient.StartCreateCertificateAsync(certificatePolicyItem.CertificateName, certificatePolicy, tags: tags);
 
             csr = certificateOperation.Properties.Csr;
         }
@@ -162,7 +164,16 @@ public partial class AcmeOrderActivities(
             [x509Certificates.Export(X509ContentType.Pfx)]
         );
 
-        return (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value.ToCertificateItem();
+        var mergedCertificate = (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value;
+
+        // ARI による更新判定に使う ACME Certificate Identifier (AKI + Serial) をタグに保存する
+        var certificateIdentifier = Acmebot.Acme.AcmeClient.CreateCertificateIdentifier(x509Certificates[0]);
+
+        mergedCertificate.Properties.Tags.SetCertificateId(certificateIdentifier);
+
+        await certificateClient.UpdateCertificatePropertiesAsync(mergedCertificate.Properties);
+
+        return mergedCertificate.ToCertificateItem();
     }
 
     [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]

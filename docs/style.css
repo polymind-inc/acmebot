@@ -556,9 +556,10 @@ img {
 /* ===== Deploy ===== */
 .deploy-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
-  margin-bottom: 32px;
+  max-width: 760px;
+  margin: 0 auto 32px;
 }
 
 .deploy-card {
@@ -588,10 +589,6 @@ img {
   border-radius: 12px;
   background: var(--primary);
   color: #ffffff;
-}
-
-.deploy-tag-legacy {
-  background: var(--text-muted);
 }
 
 .deploy-card > p {

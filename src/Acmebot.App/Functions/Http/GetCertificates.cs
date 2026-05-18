@@ -36,7 +36,9 @@ public partial class GetCertificates(IHttpContextAccessor httpContextAccessor, I
 
         var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
 
-        return Ok(metadata.SerializedOutput);
+        var output = metadata.ReadOutputAs<IReadOnlyList<CertificateItem>>();
+
+        return Ok(output);
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate list retrieval orchestration started. InstanceId: {InstanceId}")]

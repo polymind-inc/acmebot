@@ -1,18 +1,18 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Acmebot.App.Models;
 
 public class DnsZoneItem
 {
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public required string Name { get; set; }
 }
 
 public class DnsZoneGroup
 {
-    [JsonProperty("dnsProviderName")]
+    [JsonPropertyName("dnsProviderName")]
     public required string DnsProviderName { get; set; }
 
-    [JsonProperty("dnsZones")]
+    [JsonPropertyName("dnsZones")]
     public required IReadOnlyList<DnsZoneItem> DnsZones { get; set; }
 }
