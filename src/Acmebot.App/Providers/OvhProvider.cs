@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Acmebot.App.Options;
@@ -97,8 +96,7 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
 
         public async Task CreateRecordAsync(string zoneName, RecordParam record, CancellationToken cancellationToken = default)
         {
-            using var request = CreateJsonRequest(HttpMethod.Post, $"domain/zone/{Uri.EscapeDataString(zoneName)}/record", record);
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await _httpClient.PostAsJsonAsync($"domain/zone/{Uri.EscapeDataString(zoneName)}/record", record, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
@@ -112,17 +110,10 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
 
         public async Task RefreshZoneAsync(string zoneName, CancellationToken cancellationToken = default)
         {
+            // OVH requires refreshing the zone after record mutations before changes are published.
             using var response = await _httpClient.PostAsync($"domain/zone/{Uri.EscapeDataString(zoneName)}/refresh", null, cancellationToken);
 
             response.EnsureSuccessStatusCode();
-        }
-
-        private static HttpRequestMessage CreateJsonRequest<T>(HttpMethod method, string requestUri, T value)
-        {
-            return new HttpRequestMessage(method, requestUri)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json")
-            };
         }
 
         private sealed class ApiKeyHandler(string applicationKey, string applicationSecret, string consumerKey) : DelegatingHandler(new HttpClientHandler())
