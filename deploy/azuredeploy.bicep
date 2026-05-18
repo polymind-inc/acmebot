@@ -47,6 +47,7 @@ var workspaceName = 'log-${appNamePrefix}-${take(generatedToken, 4)}'
 var storageAccountName = 'st${generatedToken}func'
 var keyVaultName = 'kv-${appNamePrefix}-${take(generatedToken, 4)}'
 var deploymentStorageContainerName = 'app-package-${take(appNamePrefix, 32)}-${take(generatedToken, 7)}'
+var stateStorageContainerName = 'acmebot-state'
 
 var roleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')
 
@@ -101,6 +102,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
     }
     resource deploymentContainer 'containers' = {
       name: deploymentStorageContainerName
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+
+    resource stateContainer 'containers' = {
+      name: stateStorageContainerName
       properties: {
         publicAccess: 'None'
       }

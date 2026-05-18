@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-using Acmebot.Acme;
+﻿using Acmebot.Acme;
 using Acmebot.Acme.Models;
 using Acmebot.App.Infrastructure;
 using Acmebot.App.Options;
@@ -9,20 +7,14 @@ using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-public class AcmeClientFactory(IOptions<AcmebotOptions> options)
+public class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeStateStore stateStore)
 {
     private readonly AcmebotOptions _options = options.Value;
 
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true
-    };
-
     public async Task<AcmeClientContext> CreateClientAsync()
     {
-        var account = LoadState<AccountDetails>("account.json");
-        var accountKey = LoadState<AccountKey>("account_key.json");
+        var account = await stateStore.LoadAsync<AccountDetails>("account.json");
+        var accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json");
         var contacts = GetContacts();
         var isNewAccountKey = false;
 
@@ -66,12 +58,12 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
                 externalAccountBinding);
             account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
 
-            SaveState(account, "account.json");
-
             if (isNewAccountKey)
             {
-                SaveState(accountKey, "account_key.json");
+                await stateStore.SaveAsync(accountKey, "account_key.json");
             }
+
+            await stateStore.SaveAsync(account, "account.json");
         }
         else
         {
@@ -88,7 +80,7 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
                 });
             account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
 
-            SaveState(account, "account.json");
+            await stateStore.SaveAsync(account, "account.json");
         }
 
         return new AcmeClientContext
@@ -117,35 +109,4 @@ public class AcmeClientFactory(IOptions<AcmebotOptions> options)
 
     private static bool ContactsEqual(IReadOnlyList<string>? actualContacts, IReadOnlyList<string> expectedContacts)
         => actualContacts is not null && actualContacts.SequenceEqual(expectedContacts, StringComparer.Ordinal);
-
-    private TState? LoadState<TState>(string path)
-    {
-        var fullPath = ResolveStateFullPath(path);
-
-        if (!File.Exists(fullPath))
-        {
-            return default;
-        }
-
-        var json = File.ReadAllText(fullPath);
-
-        return JsonSerializer.Deserialize<TState>(json, s_jsonSerializerOptions);
-    }
-
-    private void SaveState<TState>(TState value, string path)
-    {
-        var fullPath = ResolveStateFullPath(path);
-        var directoryPath = Path.GetDirectoryName(fullPath);
-
-        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        var json = JsonSerializer.Serialize(value, s_jsonSerializerOptions);
-
-        File.WriteAllText(fullPath, json);
-    }
-
-    private string ResolveStateFullPath(string path) => Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{_options.Endpoint.Host}/{path}");
 }

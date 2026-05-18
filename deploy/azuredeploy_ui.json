@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "17724728527648616220"
+      "templateHash": "17385215688447288281"
     }
   },
   "definitions": {
@@ -186,6 +186,7 @@
     "storageAccountName": "[parameters('resourceNames').storageAccountName]",
     "newKeyVaultName": "[parameters('resourceNames').keyVaultName]",
     "deploymentStorageContainerName": "[format('app-package-{0}', toLower(variables('functionAppName')))]",
+    "stateStorageContainerName": "acmebot-state",
     "createKeyVault": "[parameters('keyVault').createNew]",
     "createLogAnalyticsWorkspace": "[parameters('monitoring').createLogAnalyticsWorkspace]",
     "useUserAssignedIdentity": "[equals(parameters('managedIdentity').type, 'UserAssigned')]",
@@ -232,6 +233,17 @@
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2025-06-01",
       "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('deploymentStorageContainerName'))]",
+      "properties": {
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "storageAccount::blobServices"
+      ]
+    },
+    "storageAccount::blobServices::stateContainer": {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('stateStorageContainerName'))]",
       "properties": {
         "publicAccess": "None"
       },

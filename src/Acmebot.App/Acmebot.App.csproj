@@ -19,6 +19,7 @@
     <PackageReference Include="Azure.ResourceManager.PrivateDns" Version="1.2.2" />
     <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.8.0" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.10.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageReference Include="DnsClient" Version="1.8.0" />
     <PackageReference Include="Functions.Worker.Extensions.HttpApi" Version="3.0.5" />
     <PackageReference Include="Google.Apis.Dns.v1" Version="1.74.0.4128" />

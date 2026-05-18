@@ -12,17 +12,21 @@ using Azure.Functions.Worker.Extensions.HttpApi.Config;
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using Azure.Security.KeyVault.Certificates;
+using Azure.Storage.Blobs;
 
 using DnsClient;
 
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+
+const string AcmeStateContainerName = "acmebot-state";
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -88,6 +92,24 @@ builder.Services.AddSingleton(provider =>
     return new CertificateClient(new Uri(options.Value.VaultBaseUrl), credential);
 });
 
+builder.Services.AddSingleton(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration["AzureWebJobsStorage"] ?? throw new InvalidOperationException("AzureWebJobsStorage is not configured.");
+
+    return new BlobContainerClient(connectionString, AcmeStateContainerName);
+});
+
+builder.Services.AddSingleton<BlobAcmeStateStore>();
+builder.Services.AddSingleton<FileSystemAcmeStateStore>();
+builder.Services.AddSingleton<IAcmeStateStore>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    return HasAzureFilesContentShare(configuration) || !IsRunningOnAzure(configuration)
+        ? provider.GetRequiredService<FileSystemAcmeStateStore>()
+        : provider.GetRequiredService<BlobAcmeStateStore>();
+});
 builder.Services.AddSingleton<AcmeClientFactory>();
 
 // Add Webhook invoker
@@ -150,3 +172,11 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 });
 
 builder.Build().Run();
+
+static bool HasAzureFilesContentShare(IConfiguration configuration)
+    => !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"])
+       || !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTSHARE"]);
+
+static bool IsRunningOnAzure(IConfiguration configuration)
+    => !string.IsNullOrEmpty(configuration["WEBSITE_SITE_NAME"])
+       || !string.IsNullOrEmpty(configuration["WEBSITE_INSTANCE_ID"]);

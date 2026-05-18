@@ -83,6 +83,7 @@ var workspaceName = resourceNames.logAnalyticsWorkspaceName
 var storageAccountName = resourceNames.storageAccountName
 var newKeyVaultName = resourceNames.keyVaultName
 var deploymentStorageContainerName = 'app-package-${toLower(functionAppName)}'
+var stateStorageContainerName = 'acmebot-state'
 
 var createKeyVault = keyVault.createNew
 var createLogAnalyticsWorkspace = monitoring.createLogAnalyticsWorkspace
@@ -327,6 +328,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
 
     resource deploymentContainer 'containers' = {
       name: deploymentStorageContainerName
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+
+    resource stateContainer 'containers' = {
+      name: stateStorageContainerName
       properties: {
         publicAccess: 'None'
       }
