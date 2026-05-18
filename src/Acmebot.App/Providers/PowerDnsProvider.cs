@@ -32,7 +32,7 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
             Type = "TXT",
             Ttl = 60,
             ChangeType = "REPLACE",
-            Records = values.Select(value => new Record { Content = $"\"{value}\"", Disabled = false }).ToArray()
+            Records = values.Select(value => new Record { Content = QuoteTxtValue(value), Disabled = false }).ToArray()
         };
 
         return _powerDnsClient.PatchZoneAsync(zone.Id, [rrset], cancellationToken);
@@ -58,6 +58,8 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
     }
 
     private static string StripTrailingDot(string value) => value.EndsWith('.') ? value[..^1] : value;
+
+    private static string QuoteTxtValue(string value) => $"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"";
 
     private static string BuildRecordName(string zoneName, string relativeRecordName)
     {
