@@ -11,9 +11,10 @@ namespace Acmebot.App.Providers;
 
 public class OvhProvider(OvhOptions options) : IDnsProvider
 {
+    private const string OvhApiEndpoint = "https://eu.api.ovh.com/v2/";
     private const int TxtRecordTtl = 60;
 
-    private readonly OvhClient _ovhClient = new(options.Endpoint, options.ApplicationKey, options.ApplicationSecret, options.ConsumerKey);
+    private readonly OvhClient _ovhClient = new(options.ApplicationKey, options.ApplicationSecret, options.ConsumerKey);
 
     public string Name => "OVH";
 
@@ -66,12 +67,12 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
 
     private class OvhClient
     {
-        public OvhClient(string endpoint, string applicationKey, string applicationSecret, string consumerKey)
+        public OvhClient(string applicationKey, string applicationSecret, string consumerKey)
         {
             // DNS providers in this project own their API clients; this one is constructed once by the singleton provider.
             _httpClient = new HttpClient(new ApiKeyHandler(applicationKey, applicationSecret, consumerKey))
             {
-                BaseAddress = new Uri(endpoint)
+                BaseAddress = new Uri(OvhApiEndpoint)
             };
 
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
