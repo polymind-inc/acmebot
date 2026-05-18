@@ -442,6 +442,11 @@
                     "value": "IonosDns"
                   },
                   {
+                    "label": "OVH",
+                    "description": "Use OVH with an application key, application secret, and consumer key.",
+                    "value": "Ovh"
+                  },
+                  {
                     "label": "Regfish",
                     "description": "Use Regfish with an API key.",
                     "value": "Regfish"
@@ -914,6 +919,62 @@
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), true, false)]"
             },
             {
+              "name": "ovhSection",
+              "type": "Microsoft.Common.Section",
+              "label": "OVH",
+              "elements": [
+                {
+                  "name": "applicationKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Application key",
+                    "confirmPassword": "Confirm application key"
+                  },
+                  "toolTip": "OVH application key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "applicationSecret",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Application secret",
+                    "confirmPassword": "Confirm application secret"
+                  },
+                  "toolTip": "OVH application secret.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "consumerKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Consumer key",
+                    "confirmPassword": "Confirm consumer key"
+                  },
+                  "toolTip": "OVH consumer key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), true, false)]"
+            },
+            {
               "name": "transIpSection",
               "type": "Microsoft.Common.Section",
               "label": "TransIP DNS",
@@ -1206,6 +1267,11 @@
           },
           "ionosDns": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'IonosDns'), steps('dnsProviderStep').ionosDnsSection.apiKey, '')]"
+          },
+          "ovh": {
+            "applicationKey": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.applicationKey, '')]",
+            "applicationSecret": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.applicationSecret, '')]",
+            "consumerKey": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.consumerKey, '')]"
           },
           "regfish": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), steps('dnsProviderStep').regfishSection.apiKey, '')]"

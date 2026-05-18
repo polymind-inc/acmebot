@@ -138,6 +138,7 @@ var gandiLiveDnsProvider = dnsProvider.?gandiLiveDns ?? {}
 var goDaddyProvider = dnsProvider.?goDaddy ?? {}
 var googleDnsProvider = dnsProvider.?googleDns ?? {}
 var ionosDnsProvider = dnsProvider.?ionosDns ?? {}
+var ovhProvider = dnsProvider.?ovh ?? {}
 var regfishProvider = dnsProvider.?regfish ?? {}
 var transIpProvider = dnsProvider.?transIp ?? {}
 var unitedDomainsProvider = dnsProvider.?unitedDomains ?? {}
@@ -237,6 +238,19 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
   {
     name: 'Acmebot__IonosDns__ApiKey'
     value: ionosDnsProvider.?apiKey ?? ''
+  }
+] : dnsProviderType == 'Ovh' ? [
+  {
+    name: 'Acmebot__Ovh__ApplicationKey'
+    value: ovhProvider.?applicationKey ?? ''
+  }
+  {
+    name: 'Acmebot__Ovh__ApplicationSecret'
+    value: ovhProvider.?applicationSecret ?? ''
+  }
+  {
+    name: 'Acmebot__Ovh__ConsumerKey'
+    value: ovhProvider.?consumerKey ?? ''
   }
 ] : dnsProviderType == 'Regfish' ? [
   {
