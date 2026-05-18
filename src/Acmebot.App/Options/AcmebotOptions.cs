@@ -54,6 +54,8 @@ public class AcmebotOptions
 
     public OvhOptions? Ovh { get; set; }
 
+    public PowerDnsOptions? PowerDns { get; set; }
+
     public RegfishOptions? Regfish { get; set; }
 
     public Route53Options? Route53 { get; set; }
