@@ -447,6 +447,11 @@
                     "value": "Ovh"
                   },
                   {
+                    "label": "PowerDNS",
+                    "description": "Use a PowerDNS Authoritative server with the HTTP API enabled.",
+                    "value": "PowerDns"
+                  },
+                  {
                     "label": "Regfish",
                     "description": "Use Regfish with an API key.",
                     "value": "Regfish"
@@ -895,30 +900,6 @@
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'IonosDns'), true, false)]"
             },
             {
-              "name": "regfishSection",
-              "type": "Microsoft.Common.Section",
-              "label": "Regfish",
-              "elements": [
-                {
-                  "name": "apiKey",
-                  "type": "Microsoft.Common.PasswordBox",
-                  "label": {
-                    "password": "API key",
-                    "confirmPassword": "Confirm API key"
-                  },
-                  "toolTip": "Regfish API key.",
-                  "constraints": {
-                    "required": true
-                  },
-                  "options": {
-                    "hideConfirmation": true
-                  },
-                  "visible": true
-                }
-              ],
-              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), true, false)]"
-            },
-            {
               "name": "ovhSection",
               "type": "Microsoft.Common.Section",
               "label": "OVH",
@@ -973,6 +954,83 @@
                 }
               ],
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), true, false)]"
+            },
+            {
+              "name": "powerDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "PowerDNS",
+              "elements": [
+                {
+                  "name": "endpoint",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "API endpoint",
+                  "placeholder": "https://pdns.example.com/api/v1/",
+                  "toolTip": "Full base URL of the PowerDNS HTTP API, including /api/v1/.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^https?:\\/\\/.+",
+                        "message": "Enter a valid http(s) URL."
+                      }
+                    ]
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "PowerDNS HTTP API key sent in the X-API-Key header.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "serverId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Server ID",
+                  "placeholder": "localhost",
+                  "defaultValue": "localhost",
+                  "toolTip": "PowerDNS server identifier (path segment after /servers/). Defaults to localhost.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'PowerDns'), true, false)]"
+            },
+            {
+              "name": "regfishSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Regfish",
+              "elements": [
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "Regfish API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), true, false)]"
             },
             {
               "name": "transIpSection",
@@ -1272,6 +1330,11 @@
             "applicationKey": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.applicationKey, '')]",
             "applicationSecret": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.applicationSecret, '')]",
             "consumerKey": "[if(equals(steps('dnsProviderStep').providerType, 'Ovh'), steps('dnsProviderStep').ovhSection.consumerKey, '')]"
+          },
+          "powerDns": {
+            "endpoint": "[if(equals(steps('dnsProviderStep').providerType, 'PowerDns'), steps('dnsProviderStep').powerDnsSection.endpoint, '')]",
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'PowerDns'), steps('dnsProviderStep').powerDnsSection.apiKey, '')]",
+            "serverId": "[if(equals(steps('dnsProviderStep').providerType, 'PowerDns'), steps('dnsProviderStep').powerDnsSection.serverId, '')]"
           },
           "regfish": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), steps('dnsProviderStep').regfishSection.apiKey, '')]"

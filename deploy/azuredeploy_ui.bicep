@@ -139,6 +139,7 @@ var goDaddyProvider = dnsProvider.?goDaddy ?? {}
 var googleDnsProvider = dnsProvider.?googleDns ?? {}
 var ionosDnsProvider = dnsProvider.?ionosDns ?? {}
 var ovhProvider = dnsProvider.?ovh ?? {}
+var powerDnsProvider = dnsProvider.?powerDns ?? {}
 var regfishProvider = dnsProvider.?regfish ?? {}
 var transIpProvider = dnsProvider.?transIp ?? {}
 var unitedDomainsProvider = dnsProvider.?unitedDomains ?? {}
@@ -251,6 +252,19 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
   {
     name: 'Acmebot__Ovh__ConsumerKey'
     value: ovhProvider.?consumerKey ?? ''
+  }
+] : dnsProviderType == 'PowerDns' ? [
+  {
+    name: 'Acmebot__PowerDns__Endpoint'
+    value: powerDnsProvider.?endpoint ?? ''
+  }
+  {
+    name: 'Acmebot__PowerDns__ApiKey'
+    value: powerDnsProvider.?apiKey ?? ''
+  }
+  {
+    name: 'Acmebot__PowerDns__ServerId'
+    value: powerDnsProvider.?serverId ?? 'localhost'
   }
 ] : dnsProviderType == 'Regfish' ? [
   {
