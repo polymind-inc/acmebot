@@ -29,7 +29,7 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
             var blobClient = containerClient.GetBlobClient(CreateBlobName(path));
             var response = await blobClient.DownloadContentAsync(cancellationToken);
 
-            return JsonSerializer.Deserialize<TState>(response.Value.Content, s_jsonSerializerOptions);
+            return response.Value.Content.ToObjectFromJson<TState>(s_jsonSerializerOptions);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
