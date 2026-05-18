@@ -74,6 +74,7 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        // OvhClient is owned by a singleton DNS provider, so this HttpClient is long-lived for the app lifetime.
         private readonly HttpClient _httpClient;
 
         public async Task<IReadOnlyList<string>> ListZonesAsync(CancellationToken cancellationToken = default)
@@ -132,6 +133,7 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
                 request.Headers.Add("X-Ovh-Application", applicationKey);
                 request.Headers.Add("X-Ovh-Consumer", consumerKey);
                 request.Headers.Add("X-Ovh-Timestamp", timestamp);
+                // OVH API signatures require SHA-1 and the "$1$" prefix.
                 request.Headers.Add("X-Ovh-Signature", $"$1${Convert.ToHexStringLower(SHA1.HashData(Encoding.UTF8.GetBytes(signaturePayload)))}");
 
                 return await base.SendAsync(request, cancellationToken);
