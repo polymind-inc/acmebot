@@ -1,11 +1,25 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "5333924408175871037"
+      "templateHash": "8613793935928150981"
+    }
+  },
+  "definitions": {
+    "appSettingType": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
     }
   },
   "parameters": {
@@ -74,6 +88,9 @@
     },
     "additionalAppSettings": {
       "type": "array",
+      "items": {
+        "$ref": "#/definitions/appSettingType"
+      },
       "defaultValue": [],
       "metadata": {
         "description": "Specifies additional name/value pairs to be appended to the functionap app appsettings."
@@ -92,8 +109,8 @@
     "stateStorageContainerName": "acmebot-state",
     "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
   },
-  "resources": [
-    {
+  "resources": {
+    "storageAccount::blobServices::deploymentContainer": {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2025-06-01",
       "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('deploymentStorageContainerName'))]",
@@ -101,10 +118,10 @@
         "publicAccess": "None"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), 'default')]"
+        "storageAccount::blobServices"
       ]
     },
-    {
+    "storageAccount::blobServices::stateContainer": {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2025-06-01",
       "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('stateStorageContainerName'))]",
@@ -112,10 +129,10 @@
         "publicAccess": "None"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), 'default')]"
+        "storageAccount::blobServices"
       ]
     },
-    {
+    "storageAccount::blobServices": {
       "type": "Microsoft.Storage/storageAccounts/blobServices",
       "apiVersion": "2025-06-01",
       "name": "[format('{0}/{1}', variables('storageAccountName'), 'default')]",
@@ -123,10 +140,10 @@
         "deleteRetentionPolicy": {}
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "storageAccount"
       ]
     },
-    {
+    "storageAccount": {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2025-06-01",
       "name": "[variables('storageAccountName')]",
@@ -141,7 +158,7 @@
         "minimumTlsVersion": "TLS1_2"
       }
     },
-    {
+    "workspace": {
       "type": "Microsoft.OperationalInsights/workspaces",
       "apiVersion": "2025-07-01",
       "name": "[variables('workspaceName')]",
@@ -153,7 +170,7 @@
         "retentionInDays": 30
       }
     },
-    {
+    "appInsights": {
       "type": "Microsoft.Insights/components",
       "apiVersion": "2020-02-02",
       "name": "[variables('appInsightsName')]",
@@ -167,10 +184,10 @@
         "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+        "workspace"
       ]
     },
-    {
+    "appServicePlan": {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2025-03-01",
       "name": "[variables('appServicePlanName')]",
@@ -184,7 +201,7 @@
         "reserved": true
       }
     },
-    {
+    "functionApp": {
       "type": "Microsoft.Web/sites",
       "apiVersion": "2025-03-01",
       "name": "[variables('functionAppName')]",
@@ -201,7 +218,7 @@
           "deployment": {
             "storage": {
               "type": "blobContainer",
-              "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2025-06-01').primaryEndpoints.blob, variables('deploymentStorageContainerName'))]",
+              "value": "[format('{0}{1}', reference('storageAccount').primaryEndpoints.blob, variables('deploymentStorageContainerName'))]",
               "authentication": {
                 "type": "StorageAccountConnectionString",
                 "storageAccountConnectionStringName": "DEPLOYMENT_STORAGE_CONNECTION_STRING"
@@ -218,7 +235,7 @@
           }
         },
         "siteConfig": {
-          "appSettings": "[concat(createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString), createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'DEPLOYMENT_STORAGE_CONNECTION_STRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'Acmebot__Contacts', 'value', parameters('mailAddress')), createObject('name', 'Acmebot__Endpoint', 'value', parameters('acmeEndpoint')), createObject('name', 'Acmebot__VaultBaseUrl', 'value', if(parameters('createWithKeyVault'), format('https://{0}{1}', variables('keyVaultName'), environment().suffixes.keyvaultDns), parameters('keyVaultBaseUrl'))), createObject('name', 'Acmebot__Environment', 'value', environment().name)), parameters('additionalAppSettings'))]",
+          "appSettings": "[concat(createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference('appInsights').ConnectionString), createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'DEPLOYMENT_STORAGE_CONNECTION_STRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'Acmebot__Contacts', 'value', parameters('mailAddress')), createObject('name', 'Acmebot__Endpoint', 'value', parameters('acmeEndpoint')), createObject('name', 'Acmebot__VaultBaseUrl', 'value', if(parameters('createWithKeyVault'), format('https://{0}{1}', variables('keyVaultName'), environment().suffixes.keyvaultDns), parameters('keyVaultBaseUrl'))), createObject('name', 'Acmebot__Environment', 'value', environment().name)), parameters('additionalAppSettings'))]",
           "minTlsVersion": "1.2",
           "cors": {
             "allowedOrigins": [
@@ -229,12 +246,12 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
-        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "appInsights",
+        "appServicePlan",
+        "storageAccount"
       ]
     },
-    {
+    "functionAppDeploy": {
       "type": "Microsoft.Web/sites/extensions",
       "apiVersion": "2025-03-01",
       "name": "[format('{0}/{1}', variables('functionAppName'), 'onedeploy')]",
@@ -243,10 +260,10 @@
         "remoteBuild": false
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+        "functionApp"
       ]
     },
-    {
+    "keyVault": {
       "condition": "[parameters('createWithKeyVault')]",
       "type": "Microsoft.KeyVault/vaults",
       "apiVersion": "2025-05-01",
@@ -261,7 +278,7 @@
         "enableRbacAuthorization": true
       }
     },
-    {
+    "keyVault_roleAssignment": {
       "condition": "[parameters('createWithKeyVault')]",
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
@@ -269,15 +286,15 @@
       "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), variables('functionAppName'), variables('roleDefinitionId'))]",
       "properties": {
         "roleDefinitionId": "[variables('roleDefinitionId')]",
-        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2025-03-01', 'full').identity.principalId]",
+        "principalId": "[reference('functionApp', '2025-03-01', 'full').identity.principalId]",
         "principalType": "ServicePrincipal"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
-        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+        "functionApp",
+        "keyVault"
       ]
     }
-  ],
+  },
   "outputs": {
     "functionAppName": {
       "type": "string",
@@ -285,11 +302,11 @@
     },
     "principalId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2025-03-01', 'full').identity.principalId]"
+      "value": "[reference('functionApp', '2025-03-01', 'full').identity.principalId]"
     },
     "tenantId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2025-03-01', 'full').identity.tenantId]"
+      "value": "[reference('functionApp', '2025-03-01', 'full').identity.tenantId]"
     },
     "keyVaultName": {
       "type": "string",
