@@ -36,7 +36,12 @@ param keyVaultSkuName string = 'standard'
 param keyVaultBaseUrl string = ''
 
 @description('Specifies additional name/value pairs to be appended to the functionap app appsettings.')
-param additionalAppSettings array = []
+param additionalAppSettings appSettingType[] = []
+
+type appSettingType = {
+  name: string
+  value: string
+}
 
 var generatedToken = toLower(uniqueString(resourceGroup().id, location))
 
