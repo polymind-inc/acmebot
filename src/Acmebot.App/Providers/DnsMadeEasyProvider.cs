@@ -21,7 +21,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     {
         var zones = await _dnsMadeEasyClient.ListDomainsAsync(cancellationToken);
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Id.toString(), Name = x.Name }).ToArray();
+        return zones.Select(x => new DnsZone(this) { Id = x.Id.ToString(), Name = x.Name }).ToArray();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
