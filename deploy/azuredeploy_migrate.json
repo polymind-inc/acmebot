@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "17574436574139873436"
+    }
+  },
+  "parameters": {
+    "functionAppName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Name of the existing Acmebot Function App to update."
+      }
+    }
+  },
+  "variables": {
+    "appPackageUri": "https://stacmebotprod.blob.core.windows.net/acmebot/v5/latest.zip"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2025-03-01",
+      "name": "[format('{0}/{1}', parameters('functionAppName'), 'web')]",
+      "properties": {
+        "netFrameworkVersion": "v10.0"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2025-03-01",
+      "name": "[format('{0}/{1}', parameters('functionAppName'), 'appsettings')]",
+      "properties": "[union(list(format('{0}/config/appsettings', resourceId('Microsoft.Web/sites', parameters('functionAppName'))), '2025-03-01').properties, createObject('FUNCTIONS_EXTENSION_VERSION', '~4', 'FUNCTIONS_WORKER_RUNTIME', 'dotnet-isolated', 'WEBSITE_RUN_FROM_PACKAGE', '1'))]"
+    },
+    {
+      "type": "Microsoft.Web/sites/extensions",
+      "apiVersion": "2025-03-01",
+      "name": "[format('{0}/{1}', parameters('functionAppName'), 'onedeploy')]",
+      "properties": {
+        "packageUri": "[variables('appPackageUri')]",
+        "remoteBuild": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites/config', parameters('functionAppName'), 'appsettings')]",
+        "[resourceId('Microsoft.Web/sites/config', parameters('functionAppName'), 'web')]"
+      ]
+    }
+  ]
+}

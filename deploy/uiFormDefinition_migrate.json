@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json#",
+  "view": {
+    "kind": "Form",
+    "properties": {
+      "title": "Acmebot Update",
+      "steps": [
+        {
+          "name": "basics",
+          "label": "Basics",
+          "description": "Select the existing Acmebot Function App and package version to deploy.",
+          "elements": [
+            {
+              "name": "targetSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Migrate target",
+              "elements": [
+                {
+                  "name": "subscription",
+                  "type": "Microsoft.Common.SubscriptionSelector",
+                  "resourceProviders": [
+                    "Microsoft.Web"
+                  ],
+                  "visible": true
+                },
+                {
+                  "name": "functionApp",
+                  "type": "Microsoft.Solutions.ResourceSelector",
+                  "label": "Function App",
+                  "toolTip": "Existing Acmebot Function App to update. The deployment is submitted to the selected Function App's resource group.",
+                  "resourceType": "Microsoft.Web/sites",
+                  "constraints": {
+                    "required": true
+                  },
+                  "scope": {
+                    "subscriptionId": "[steps('basics').targetSection.subscription.subscriptionId]"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "kind": "ResourceGroup",
+      "resourceGroupId": "[substring(steps('basics').targetSection.functionApp.id, 0, indexOf(steps('basics').targetSection.functionApp.id, '/providers/Microsoft.Web/sites/'))]",
+      "location": "[steps('basics').targetSection.functionApp.location]",
+      "parameters": {
+        "functionAppName": "[steps('basics').targetSection.functionApp.name]"
+      }
+    }
+  }
+}
