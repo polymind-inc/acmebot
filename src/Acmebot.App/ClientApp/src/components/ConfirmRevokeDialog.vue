@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { AlertTriangle } from 'lucide-vue-next';
 import {
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -21,10 +23,20 @@ const emit = defineEmits<{
   confirm: [];
 }>();
 
+const confirmed = ref(false);
+
 function handleOpenChange(open: boolean): void {
   if (!open) {
-    emit('cancel');
+    if (!confirmed.value) {
+      emit('cancel');
+    }
+    confirmed.value = false;
   }
+}
+
+function handleConfirm(): void {
+  confirmed.value = true;
+  emit('confirm');
 }
 </script>
 
@@ -60,14 +72,16 @@ function handleOpenChange(open: boolean): void {
               Cancel
             </button>
           </AlertDialogCancel>
-          <button
-            class="danger-button"
-            type="button"
-            :disabled="busy"
-            @click="emit('confirm')"
-          >
-            Revoke
-          </button>
+          <AlertDialogAction as-child>
+            <button
+              class="danger-button"
+              type="button"
+              :disabled="busy"
+              @click="handleConfirm"
+            >
+              Revoke
+            </button>
+          </AlertDialogAction>
         </div>
       </AlertDialogContent>
     </AlertDialogPortal>
