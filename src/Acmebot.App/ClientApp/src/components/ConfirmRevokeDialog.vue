@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { AlertTriangle } from 'lucide-vue-next';
 import {
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -61,16 +60,14 @@ function handleOpenChange(open: boolean): void {
               Cancel
             </button>
           </AlertDialogCancel>
-          <AlertDialogAction as-child>
-            <button
-              class="danger-button"
-              type="button"
-              :disabled="busy"
-              @click="emit('confirm')"
-            >
-              Revoke
-            </button>
-          </AlertDialogAction>
+          <button
+            class="danger-button"
+            type="button"
+            :disabled="busy"
+            @click="emit('confirm')"
+          >
+            Revoke
+          </button>
         </div>
       </AlertDialogContent>
     </AlertDialogPortal>
