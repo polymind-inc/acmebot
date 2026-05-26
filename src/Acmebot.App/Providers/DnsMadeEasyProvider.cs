@@ -21,7 +21,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     {
         var zones = await _dnsMadeEasyClient.ListDomainsAsync(cancellationToken);
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name }).ToArray();
+        return zones.Select(x => new DnsZone(this) { Id = x.Id.toString(), Name = x.Name }).ToArray();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
@@ -144,7 +144,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     internal class Domain
     {
         [JsonPropertyName("id")]
-        public required string Id { get; set; }
+        public required long Id { get; set; }
 
         [JsonPropertyName("name")]
         public required string Name { get; set; }
