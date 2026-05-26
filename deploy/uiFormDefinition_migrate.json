@@ -8,7 +8,7 @@
         {
           "name": "basics",
           "label": "Basics",
-          "description": "Select the existing Acmebot Function App and package version to deploy.",
+          "description": "Select the existing Acmebot Function App.",
           "elements": [
             {
               "name": "targetSection",
