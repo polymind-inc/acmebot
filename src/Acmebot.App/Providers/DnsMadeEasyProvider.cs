@@ -26,6 +26,8 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
+        var zoneId = long.Parse(zone.Id);
+
         foreach (var value in values)
         {
             var record = new RecordParam
@@ -35,8 +37,6 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
                 Ttl = 60,
                 Value = value
             };
-
-            var zoneId = long.Parse(zone.Id);
 
             await _dnsMadeEasyClient.CreateRecordAsync(zoneId, record, cancellationToken);
         }
