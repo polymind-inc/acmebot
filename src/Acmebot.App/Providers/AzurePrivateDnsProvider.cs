@@ -38,7 +38,7 @@ public class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, AzureEnviro
         // TXT レコードに値をセットする
         var txtRecordData = new PrivateDnsTxtRecordData
         {
-            TtlInSeconds = 3600
+            TtlInSeconds = 60
         };
 
         foreach (var value in values)

@@ -77,18 +77,39 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _httpClient.GetFromJsonAsync<PaginationArray<Domain>>("managed", cancellationToken);
-
-            return result?.Data ?? [];
+            return GetAllPagesAsync<Domain>("managed", cancellationToken);
         }
 
-        public async Task<IReadOnlyList<Record>> ListRecordsAsync(long zoneId, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Record>> ListRecordsAsync(long zoneId, CancellationToken cancellationToken = default)
         {
-            var entries = await _httpClient.GetFromJsonAsync<PaginationArray<Record>>($"managed/{zoneId}/records", cancellationToken);
+            return GetAllPagesAsync<Record>($"managed/{zoneId}/records", cancellationToken);
+        }
 
-            return entries?.Data ?? [];
+        private async Task<IReadOnlyList<T>> GetAllPagesAsync<T>(string path, CancellationToken cancellationToken)
+        {
+            var items = new List<T>();
+            var page = 0;
+
+            while (true)
+            {
+                var result = await _httpClient.GetFromJsonAsync<PaginationArray<T>>($"{path}?page={page}", cancellationToken);
+
+                if (result?.Data is { Length: > 0 })
+                {
+                    items.AddRange(result.Data);
+                }
+
+                if (result is null || page >= result.TotalPages - 1)
+                {
+                    break;
+                }
+
+                page++;
+            }
+
+            return items;
         }
 
         public async Task DeleteRecordAsync(long zoneId, long recordId, CancellationToken cancellationToken = default)

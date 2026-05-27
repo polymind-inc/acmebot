@@ -30,11 +30,13 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
+        var recordName = $"{relativeRecordName}.{zone.Name}";
+
         foreach (var value in values)
         {
             var record = new RecordParam
             {
-                Name = relativeRecordName,
+                Name = recordName,
                 Type = "TXT",
                 Content = value,
                 Ttl = 60
@@ -46,7 +48,9 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var records = await _ionosDnsClient.ListRecordsAsync(zone.Id, relativeRecordName, cancellationToken);
+        var recordName = $"{relativeRecordName}.{zone.Name}";
+
+        var records = await _ionosDnsClient.ListRecordsAsync(zone.Id, recordName, cancellationToken);
 
         foreach (var record in records)
         {
