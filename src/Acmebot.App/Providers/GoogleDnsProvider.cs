@@ -13,7 +13,10 @@ public class GoogleDnsProvider : IDnsProvider
 {
     public GoogleDnsProvider(GoogleDnsOptions options)
     {
-        _credential = CredentialFactory.FromJson<ServiceAccountCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
+        var serviceAccount = CredentialFactory.FromJson<ServiceAccountCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
+
+        _projectId = serviceAccount.ProjectId;
+        _credential = serviceAccount.ToGoogleCredential().CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
 
         _dnsService = new DnsService(new BaseClientService.Initializer
         {
@@ -21,7 +24,8 @@ public class GoogleDnsProvider : IDnsProvider
         });
     }
 
-    private readonly ServiceAccountCredential _credential;
+    private readonly string _projectId;
+    private readonly GoogleCredential _credential;
     private readonly DnsService _dnsService;
 
     public string Name => "Google Cloud DNS";
@@ -36,7 +40,7 @@ public class GoogleDnsProvider : IDnsProvider
 
         do
         {
-            var request = _dnsService.ManagedZones.List(_credential.ProjectId);
+            var request = _dnsService.ManagedZones.List(_projectId);
 
             request.PageToken = response?.NextPageToken;
 
@@ -69,14 +73,14 @@ public class GoogleDnsProvider : IDnsProvider
             ]
         };
 
-        return _dnsService.Changes.Create(change, _credential.ProjectId, zone.Id).ExecuteAsync(cancellationToken);
+        return _dnsService.Changes.Create(change, _projectId, zone.Id).ExecuteAsync(cancellationToken);
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
-        var request = _dnsService.ResourceRecordSets.List(_credential.ProjectId, zone.Id);
+        var request = _dnsService.ResourceRecordSets.List(_projectId, zone.Id);
 
         request.Name = recordName;
         request.Type = "TXT";
@@ -90,6 +94,6 @@ public class GoogleDnsProvider : IDnsProvider
 
         var change = new Change { Deletions = txtRecords.Rrsets };
 
-        await _dnsService.Changes.Create(change, _credential.ProjectId, zone.Id).ExecuteAsync(cancellationToken);
+        await _dnsService.Changes.Create(change, _projectId, zone.Id).ExecuteAsync(cancellationToken);
     }
 }
