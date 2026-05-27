@@ -1,0 +1,117 @@
+# Architecture
+
+Acmebot is an Azure Functions application that coordinates ACME certificate orders, DNS-01 validation, Azure Key Vault certificate operations, scheduled renewal, and optional notifications.
+
+## Components
+
+| Component | Responsibility |
+| --- | --- |
+| Dashboard | Browser UI for certificate operations. |
+| HTTP API | Authenticated endpoints for certificate and DNS operations. |
+| Durable Functions | Long-running issuance, renewal, and revocation orchestration. |
+| DNS providers | Create and delete DNS-01 TXT records. |
+| ACME client | Talks to the configured ACME directory. |
+| Key Vault certificate client | Creates certificate operations and merges issued certificate chains. |
+| Acme state store | Stores ACME account and client state. |
+| Webhook invoker | Sends operation notifications. |
+
+## Issuance Flow
+
+1. The dashboard posts a certificate policy to `POST /api/certificates`.
+2. The HTTP function validates authentication, authorization, and request shape.
+3. A Durable Functions orchestration starts.
+4. Acmebot checks that requested DNS names map to configured DNS zones.
+5. Acmebot creates an ACME order.
+6. Acmebot creates DNS-01 TXT records through the selected provider.
+7. Acmebot waits for provider-specific propagation.
+8. Acmebot queries DNS for the expected TXT values.
+9. Acmebot answers ACME challenges and waits for the order to become ready.
+10. Key Vault creates the certificate operation and CSR.
+11. Acmebot finalizes the ACME order with the Key Vault CSR.
+12. Acmebot downloads the issued chain and merges it into Key Vault.
+13. Acmebot stores metadata tags and sends a completion webhook.
+
+DNS records are cleaned up in a `finally` path after challenge processing.
+
+## Renewal Flow
+
+The scheduled renewal timer runs daily and starts a renewal orchestrator.
+
+The orchestrator:
+
+1. Lists certificates in the configured Key Vault.
+2. Filters to certificates tagged as Acmebot-managed.
+3. Filters to the current ACME endpoint.
+4. Uses ACME renewal information when available.
+5. Falls back to `RenewBeforeExpiry` day-based renewal.
+6. Adds random jitter up to 600 seconds.
+7. Reissues each due certificate with its stored Key Vault policy.
+
+Persistent DNS-related ACME validation errors can be retried by the renewal workflow. Other failures are logged and the orchestrator continues with the next due certificate.
+
+## State Storage
+
+Acmebot uses `IAcmeStateStore` for ACME account state.
+
+| Environment | Store |
+| --- | --- |
+| Azure without Azure Files content share | Blob storage container `acmebot-state`. |
+| Local development or Azure Files content share deployments | File system under `%HOME%/data/.acmebot/<endpoint-host>/`. |
+
+The v5 template creates the `acmebot-state` container.
+
+## Identity
+
+Azure resource access uses `DefaultAzureCredential`.
+
+In Azure, this normally resolves to the Function App managed identity. If `Acmebot__ManagedIdentityClientId` is set, Azure SDK clients use that user-assigned managed identity.
+
+The same identity is used for:
+
+- Key Vault certificate operations.
+- Azure DNS and Azure Private DNS provider operations.
+- TransIP request signing with Key Vault keys.
+
+## Key Vault Metadata
+
+Acmebot stores internal metadata in the `Acmebot` certificate tag as JSON. The metadata includes:
+
+- ACME endpoint host.
+- DNS provider name.
+- Optional DNS alias.
+- ACME certificate identifier used for renewal information.
+
+Older certificates with legacy tags are still read for compatibility.
+
+## DNS Zone Matching
+
+Acmebot asks each configured provider for zones, then finds the matching zone for each requested DNS name.
+
+If a provider returns name servers, Acmebot checks that public DNS NS responses intersect with the provider's expected name servers. This catches common cases where a zone exists in the provider account but the domain is not delegated to it.
+
+## Timers
+
+| Function | Schedule | Purpose |
+| --- | --- | --- |
+| `RenewCertificates_Timer` | Daily at midnight UTC | Starts scheduled renewal. |
+| `PurgeInstanceHistory_Timer` | Monthly on day 1 at midnight UTC | Purges completed and failed Durable Functions history older than one month. |
+
+## Observability
+
+The Function App uses OpenTelemetry and Azure Monitor export. The deployment template creates Application Insights connected to Log Analytics.
+
+Monitor:
+
+- Orchestration failures.
+- ACME validation problem details.
+- DNS provider HTTP failures.
+- Key Vault request failures.
+- Webhook delivery warnings.
+
+## Security Boundaries
+
+- The Function App HTTP triggers use anonymous trigger authorization but application code requires an authenticated user.
+- Dashboard access should be enforced with App Service Authentication.
+- Optional app roles can restrict issue and revoke operations.
+- Key Vault access is handled through Azure identity and RBAC.
+- DNS provider secrets are app settings and should be scoped and rotated like other operational credentials.

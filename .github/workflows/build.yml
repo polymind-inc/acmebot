@@ -29,7 +29,9 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: npm
-        cache-dependency-path: src/Acmebot.App/ClientApp/package-lock.json
+        cache-dependency-path: |
+          src/Acmebot.App/ClientApp/package-lock.json
+          docs/package-lock.json
 
     - name: Use Bicep ${{ env.BICEP_VERSION }}
       run: |
@@ -47,6 +49,12 @@ jobs:
       run: |
         npm ci
         npm run lint
+        npm run build
+
+    - name: Build Docs
+      working-directory: ./docs
+      run: |
+        npm ci
         npm run build
 
     - name: Lint Bicep templates

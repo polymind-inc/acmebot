@@ -1,0 +1,13 @@
+{
+  "name": "acmebot-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev --host 127.0.0.1",
+    "build": "vitepress build",
+    "preview": "vitepress preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.17"
+  }
+}

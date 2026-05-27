@@ -1,0 +1,104 @@
+# Getting Started
+
+This walkthrough deploys a first Acmebot v5 environment and issues a certificate into Azure Key Vault.
+
+## Prerequisites
+
+- An Azure subscription where you can create Function App, Storage, monitoring, and Key Vault resources.
+- Permission to create role assignments when the template creates or updates Key Vault access.
+- A DNS zone in a supported provider.
+- Credentials or managed identity access that can create and delete TXT records in that DNS zone.
+- A contact email address for the ACME account.
+- A Microsoft Entra ID or App Service Authentication configuration for dashboard access.
+
+## 1. Choose an ACME Endpoint
+
+For a first test, use a staging endpoint if your certificate authority provides one. For production, the deployment form includes these known endpoints:
+
+| CA | Endpoint |
+| --- | --- |
+| Let's Encrypt | `https://acme-v02.api.letsencrypt.org/directory` |
+| ZeroSSL | `https://acme.zerossl.com/v2/DV90` |
+| Google Trust Services | `https://dv.acme-v02.api.pki.goog/directory` |
+| SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` |
+| SSL.com ECC | `https://acme.ssl.com/sslcom-dv-ecc` |
+| Entrust | `https://acme.entrust.net/acme2/directory` |
+| GlobalSign Atlas | `https://emea.acme.atlas.globalsign.com/directory` |
+
+Some certificate authorities require external account binding. If your CA gives you EAB credentials, select the EAB credential type during deployment.
+
+## 2. Deploy Acmebot
+
+Open [Deployment](./deployment) and choose the Azure cloud that matches your tenant.
+
+During deployment:
+
+1. Select the subscription, resource group, and region.
+2. Choose a resource naming mode.
+3. Enter the ACME endpoint and contact email.
+4. Configure one DNS provider.
+5. Choose a system-assigned or user-assigned managed identity.
+6. Create a new Key Vault or select an existing vault.
+7. Create a new Log Analytics workspace or select an existing workspace.
+
+The template creates the Function App, Flex Consumption plan, Storage account, Application Insights component, and required app settings.
+
+## 3. Grant DNS Access
+
+The template configures Key Vault access for the Function App identity, but DNS access depends on the provider.
+
+For Azure DNS, assign the Function App identity a role that can read zones and manage TXT records, such as `DNS Zone Contributor`, on the DNS zone or a narrow resource group that contains only the relevant zones.
+
+For Azure Private DNS, assign `Private DNS Zone Contributor` on the private DNS zone or resource group.
+
+For external DNS providers, use credentials scoped to the hosted zones Acmebot should manage. Prefer least-privilege API tokens when the provider supports them.
+
+When possible, store provider secrets in Key Vault and reference them from Function App settings with App Service Key Vault references. This keeps app configuration readable while moving the secret value into Key Vault access control.
+
+## 4. Enable Dashboard Authentication
+
+The dashboard and HTTP API expect authenticated requests. Configure App Service Authentication on the Function App and require sign-in before requests reach the app.
+
+A typical setup uses Microsoft Entra ID as the identity provider. After authentication is enabled, browse to the Function App URL and sign in.
+
+If you want to require app roles for issue and revoke operations, see [Security](../reference/security).
+
+## 5. Issue Your First Certificate
+
+In the dashboard:
+
+1. Open the certificate creation dialog.
+2. Select the DNS provider and DNS zone.
+3. Enter the record name. Use an empty record name for the zone apex, or use `*` for a wildcard certificate.
+4. Review the full DNS name that will be requested.
+5. Keep the default RSA 2048 key unless you need a different key type.
+6. Submit the request.
+
+Acmebot creates the `_acme-challenge` TXT record, waits for propagation, finalizes the ACME order, and stores the certificate in Key Vault.
+
+## 6. Verify the Result
+
+After the operation completes:
+
+- Confirm the certificate appears in the dashboard.
+- Open the Key Vault and verify that the certificate has a current version.
+- Check Application Insights logs if the operation failed or remained pending.
+- Confirm that downstream Azure services can read the certificate from Key Vault or import the PFX as needed.
+
+## 7. Let Renewals Run
+
+The `RenewCertificates` timer runs daily. A certificate is renewed when either:
+
+- The ACME server's renewal information says the suggested renewal window has started.
+- The certificate expires within `Acmebot__RenewBeforeExpiry` days.
+
+The default renewal window is 30 days before expiry. See [Operations](./operations) for monitoring and troubleshooting guidance.
+
+## Next Steps
+
+- Configure more providers in [DNS Providers](./dns-providers).
+- Review CA-specific notes in [Certificate Authorities](./certificate-authorities).
+- Learn dashboard operations in [Dashboard](./dashboard).
+- Connect certificates to Azure services in [Azure Service Integration](./service-integration).
+- Keep [Troubleshooting](./troubleshooting) nearby for first-issuance validation.
+- Review every app setting in [Configuration](../reference/configuration).

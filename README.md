@@ -15,7 +15,7 @@
   <a href="https://registry.terraform.io/modules/polymind-inc/acmebot/azurerm/latest" rel="nofollow"><img src="https://badgen.net/badge/terraform/registry/5c4ee5" alt="Terraform" style="max-width: 100%;"></a>
   <br>
   <a href="https://github.com/polymind-inc/acmebot/commits/master" rel="nofollow"><img src="https://badgen.net/github/last-commit/polymind-inc/acmebot" alt="Last commit" style="max-width: 100%;"></a>
-  <a href="https://github.com/polymind-inc/acmebot/wiki" rel="nofollow"><img src="https://badgen.net/badge/documentation/available/ff7733" alt="Documentation" style="max-width: 100%;"></a>
+  <a href="https://acmebot.dev/guide/" rel="nofollow"><img src="https://badgen.net/badge/documentation/available/ff7733" alt="Documentation" style="max-width: 100%;"></a>
   <a href="https://github.com/polymind-inc/acmebot/discussions" rel="nofollow"><img src="https://badgen.net/badge/discussions/welcome/ff7733" alt="Discussions" style="max-width: 100%;"></a>
 </p>
 
@@ -59,7 +59,7 @@ Deploy the latest **v5** release with a single click. The template provisions ev
 | :---: | :---: | :---: |
 | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
 
-For detailed setup instructions and DNS provider configuration, see the [Getting Started](https://github.com/polymind-inc/acmebot/wiki/Getting-Started) guide.
+For detailed setup instructions and DNS provider configuration, see the [Getting Started](https://acmebot.dev/guide/getting-started.html) guide.
 
 ## Sponsors
 
