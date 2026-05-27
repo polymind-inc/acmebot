@@ -52,26 +52,6 @@
                   }
                 },
                 {
-                  "name": "majorVersion",
-                  "type": "Microsoft.Common.DropDown",
-                  "label": "Major version",
-                  "placeholder": "Major version",
-                  "defaultValue": {
-                    "value": "v5"
-                  },
-                  "toolTip": "Acmebot major version to deploy. Only v5 releases are currently supported.",
-                  "constraints": {
-                    "allowedValues": [
-                      {
-                        "label": "v5",
-                        "value": "v5"
-                      }
-                    ],
-                    "required": true
-                  },
-                  "visible": true
-                },
-                {
                   "name": "targetVersionType",
                   "type": "Microsoft.Common.OptionsGroup",
                   "label": "Target version",
@@ -131,7 +111,6 @@
       "location": "[steps('basics').targetSection.functionApp.location]",
       "parameters": {
         "functionAppName": "[steps('basics').targetSection.functionApp.name]",
-        "majorVersion": "[steps('basics').packageSection.majorVersion]",
         "targetVersion": "[if(equals(steps('basics').packageSection.targetVersionType, 'latest'), 'latest', steps('basics').packageSection.specificVersion)]"
       }
     }

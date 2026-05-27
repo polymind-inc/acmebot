@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "13891239680625672059"
+      "templateHash": "499901938734517665"
     }
   },
   "parameters": {
@@ -14,16 +14,6 @@
       "minLength": 1,
       "metadata": {
         "description": "Name of the existing Acmebot Function App to update."
-      }
-    },
-    "majorVersion": {
-      "type": "string",
-      "defaultValue": "v5",
-      "allowedValues": [
-        "v5"
-      ],
-      "metadata": {
-        "description": "Acmebot major version channel to deploy."
       }
     },
     "targetVersion": {
@@ -55,10 +45,6 @@
     "functionAppName": {
       "type": "string",
       "value": "[parameters('functionAppName')]"
-    },
-    "majorVersion": {
-      "type": "string",
-      "value": "[parameters('majorVersion')]"
     },
     "targetVersion": {
       "type": "string",
