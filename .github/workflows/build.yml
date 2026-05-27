@@ -49,5 +49,9 @@ jobs:
         npm run lint
         npm run build
 
-    - name: Lint Bicep template
-      run: az bicep build -f ./deploy/azuredeploy.bicep && git diff --exit-code --quiet
+    - name: Lint Bicep templates
+      run: |
+        az bicep build -f ./deploy/azuredeploy.bicep
+        az bicep build -f ./deploy/update/azuredeploy.bicep
+        az bicep build -f ./deploy/migrate/azuredeploy.bicep
+        git diff --exit-code --quiet

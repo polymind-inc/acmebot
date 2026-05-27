@@ -35,7 +35,7 @@ dotnet format --verify-no-changes --verbosity detailed --no-restore ./Acmebot.sl
 az bicep build -f ./deploy/azuredeploy.bicep
 ```
 
-These commands mirror the checks currently enforced in CI.
+These commands cover the contributor-facing validation checks.
 
 ## Pull Request Guidelines
 
