@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { AlertTriangle } from 'lucide-vue-next';
 import {
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,7 +10,7 @@ import {
   AlertDialogTitle,
 } from 'reka-ui';
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   certificateName: string;
   busy: boolean;
@@ -23,7 +22,7 @@ const emit = defineEmits<{
 }>();
 
 function handleOpenChange(open: boolean): void {
-  if (!open) {
+  if (!open && !props.busy) {
     emit('cancel');
   }
 }
@@ -61,16 +60,14 @@ function handleOpenChange(open: boolean): void {
               Cancel
             </button>
           </AlertDialogCancel>
-          <AlertDialogAction as-child>
-            <button
-              class="danger-button"
-              type="button"
-              :disabled="busy"
-              @click="emit('confirm')"
-            >
-              Revoke
-            </button>
-          </AlertDialogAction>
+          <button
+            class="danger-button"
+            type="button"
+            :disabled="busy"
+            @click="emit('confirm')"
+          >
+            Revoke
+          </button>
         </div>
       </AlertDialogContent>
     </AlertDialogPortal>
