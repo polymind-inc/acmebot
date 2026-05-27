@@ -22,7 +22,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 
         await foreach (var domain in _goDaddyClient.ListDomainsAsync(cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = domain.DomainId, Name = domain.Domain, NameServers = domain.NameServers ?? [] });
+            zones.Add(new DnsZone(this) { Id = domain.DomainId.ToString(), Name = domain.Domain, NameServers = domain.NameServers ?? [] });
         }
 
         return zones;
@@ -105,7 +105,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
         public required string Domain { get; set; }
 
         [JsonPropertyName("domainId")]
-        public required string DomainId { get; set; }
+        public required long DomainId { get; set; }
 
         [JsonPropertyName("nameServers")]
         public string[]? NameServers { get; set; }

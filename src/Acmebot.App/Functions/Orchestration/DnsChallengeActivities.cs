@@ -149,7 +149,7 @@ public class DnsChallengeActivities(
                 throw new PreconditionException($"No DNS zone was found for record '{dnsRecordName}'.");
             }
 
-            var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
+            var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
             await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
             await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
@@ -210,9 +210,23 @@ public class DnsChallengeActivities(
                 continue;
             }
 
-            var acmeDnsRecordName = dnsRecordName.Replace($".{zone.Name}", "", StringComparison.OrdinalIgnoreCase);
+            var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
             await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
         }
+    }
+
+    private static string GetRelativeRecordName(string dnsRecordName, DnsZone zone)
+    {
+        if (string.Equals(dnsRecordName, zone.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return "";
+        }
+
+        var zoneSuffix = $".{zone.Name}";
+
+        return dnsRecordName.EndsWith(zoneSuffix, StringComparison.OrdinalIgnoreCase)
+            ? dnsRecordName[..^zoneSuffix.Length]
+            : dnsRecordName;
     }
 }

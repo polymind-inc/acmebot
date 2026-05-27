@@ -29,7 +29,9 @@ public class Route53Provider(Route53Options options) : IDnsProvider
 
         } while (response.IsTruncated ?? false);
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name.TrimEnd('.') }).ToArray();
+        return zones.Where(x => x.Config?.PrivateZone != true)
+                    .Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name.TrimEnd('.') })
+                    .ToArray();
     }
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)

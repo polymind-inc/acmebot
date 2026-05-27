@@ -36,13 +36,17 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
                 Value = value
             };
 
-            await _dnsMadeEasyClient.CreateRecordAsync(zone.Id, record, cancellationToken);
+            var zoneId = long.Parse(zone.Id);
+
+            await _dnsMadeEasyClient.CreateRecordAsync(zoneId, record, cancellationToken);
         }
     }
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var records = await _dnsMadeEasyClient.ListRecordsAsync(zone.Id, cancellationToken);
+        var zoneId = long.Parse(zone.Id);
+
+        var records = await _dnsMadeEasyClient.ListRecordsAsync(zoneId, cancellationToken);
 
         var recordsToDelete = records.Where(x => x.Name == relativeRecordName && x.Type == "TXT");
 
@@ -50,7 +54,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
         {
             try
             {
-                await _dnsMadeEasyClient.DeleteRecordAsync(zone.Id, record.Id, cancellationToken);
+                await _dnsMadeEasyClient.DeleteRecordAsync(zoneId, record.Id, cancellationToken);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -80,21 +84,21 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
             return result?.Data ?? [];
         }
 
-        public async Task<IReadOnlyList<Record>> ListRecordsAsync(string zoneId, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Record>> ListRecordsAsync(long zoneId, CancellationToken cancellationToken = default)
         {
             var entries = await _httpClient.GetFromJsonAsync<PaginationArray<Record>>($"managed/{zoneId}/records", cancellationToken);
 
             return entries?.Data ?? [];
         }
 
-        public async Task DeleteRecordAsync(string zoneId, string recordId, CancellationToken cancellationToken = default)
+        public async Task DeleteRecordAsync(long zoneId, long recordId, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.DeleteAsync($"managed/{zoneId}/records/{recordId}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task CreateRecordAsync(string zoneId, RecordParam txtRecord, CancellationToken cancellationToken = default)
+        public async Task CreateRecordAsync(long zoneId, RecordParam txtRecord, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync($"managed/{zoneId}/records", txtRecord, cancellationToken);
 
@@ -168,6 +172,6 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     internal class Record : RecordParam
     {
         [JsonPropertyName("id")]
-        public required string Id { get; set; }
+        public required long Id { get; set; }
     }
 }

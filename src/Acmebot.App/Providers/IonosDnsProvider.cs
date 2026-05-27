@@ -71,7 +71,7 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
             };
 
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("X-API-Key", apiKey);
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-API-Key", apiKey);
         }
 
         private readonly HttpClient _httpClient;

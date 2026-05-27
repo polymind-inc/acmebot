@@ -43,7 +43,8 @@ public class GoogleDnsProvider(GoogleDnsOptions options) : IDnsProvider
 
         } while (!string.IsNullOrEmpty(response.NextPageToken));
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers?.ToArray() ?? [] })
+        return zones.Where(x => !string.Equals(x.Visibility, "private", StringComparison.OrdinalIgnoreCase))
+                    .Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers?.ToArray() ?? [] })
                     .ToArray();
     }
 
