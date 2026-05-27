@@ -41,7 +41,7 @@ param keyVaultSkuName string = 'standard'
 
 @description('Package URI deployed to the Function App.')
 #disable-next-line no-hardcoded-env-urls
-param appPackageUri string = 'https://stacmebotprod.blob.core.windows.net/acmebot/v5/latest.zip'
+param appPackageUri string = 'https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip'
 
 @description('Additional name/value pairs appended to the Function App app settings.')
 param additionalAppSettings appSettingType[] = []

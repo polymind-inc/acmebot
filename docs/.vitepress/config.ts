@@ -1,5 +1,48 @@
 import { defineConfig } from "vitepress";
 
+const guideSidebar = [
+  {
+    text: "Start",
+    items: [
+      { text: "Overview", link: "/guide/" },
+      { text: "Getting Started", link: "/guide/getting-started" }
+    ]
+  },
+  {
+    text: "Deploy",
+    items: [
+      { text: "Deployment", link: "/guide/deployment" },
+      { text: "Migrating from v4 to v5", link: "/guide/migration-v5" }
+    ]
+  },
+  {
+    text: "Configure",
+    items: [
+      { text: "DNS Providers", link: "/guide/dns-providers" },
+      { text: "Certificate Authorities", link: "/guide/certificate-authorities" },
+      { text: "Azure Service Integration", link: "/guide/service-integration" }
+    ]
+  },
+  {
+    text: "Operate",
+    items: [
+      { text: "Dashboard", link: "/guide/dashboard" },
+      { text: "Operations", link: "/guide/operations" },
+      { text: "Troubleshooting", link: "/guide/troubleshooting" },
+      { text: "FAQ", link: "/guide/faq" }
+    ]
+  },
+  {
+    text: "Reference",
+    items: [
+      { text: "Configuration", link: "/reference/configuration" },
+      { text: "Architecture", link: "/reference/architecture" },
+      { text: "HTTP API", link: "/reference/api" },
+      { text: "Security", link: "/reference/security" }
+    ]
+  }
+];
+
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
@@ -25,58 +68,8 @@ export default defineConfig({
       { text: "GitHub", link: "https://github.com/polymind-inc/acmebot" }
     ],
     sidebar: {
-      "/guide/": [
-        {
-          text: "Guide",
-          items: [
-            { text: "Overview", link: "/guide/" },
-            { text: "Getting Started", link: "/guide/getting-started" },
-            { text: "Deployment", link: "/guide/deployment" },
-            { text: "Dashboard", link: "/guide/dashboard" },
-            { text: "DNS Providers", link: "/guide/dns-providers" },
-            { text: "Certificate Authorities", link: "/guide/certificate-authorities" },
-            { text: "Operations", link: "/guide/operations" },
-            { text: "Azure Service Integration", link: "/guide/service-integration" },
-            { text: "Troubleshooting", link: "/guide/troubleshooting" },
-            { text: "FAQ", link: "/guide/faq" }
-          ]
-        },
-        {
-          text: "Reference",
-          items: [
-            { text: "Configuration", link: "/reference/configuration" },
-            { text: "Architecture", link: "/reference/architecture" },
-            { text: "HTTP API", link: "/reference/api" },
-            { text: "Security", link: "/reference/security" }
-          ]
-        }
-      ],
-      "/reference/": [
-        {
-          text: "Guide",
-          items: [
-            { text: "Overview", link: "/guide/" },
-            { text: "Getting Started", link: "/guide/getting-started" },
-            { text: "Deployment", link: "/guide/deployment" },
-            { text: "Dashboard", link: "/guide/dashboard" },
-            { text: "DNS Providers", link: "/guide/dns-providers" },
-            { text: "Certificate Authorities", link: "/guide/certificate-authorities" },
-            { text: "Operations", link: "/guide/operations" },
-            { text: "Azure Service Integration", link: "/guide/service-integration" },
-            { text: "Troubleshooting", link: "/guide/troubleshooting" },
-            { text: "FAQ", link: "/guide/faq" }
-          ]
-        },
-        {
-          text: "Reference",
-          items: [
-            { text: "Configuration", link: "/reference/configuration" },
-            { text: "Architecture", link: "/reference/architecture" },
-            { text: "HTTP API", link: "/reference/api" },
-            { text: "Security", link: "/reference/security" }
-          ]
-        }
-      ]
+      "/guide/": guideSidebar,
+      "/reference/": guideSidebar
     },
     socialLinks: [
       { icon: "github", link: "https://github.com/polymind-inc/acmebot" }

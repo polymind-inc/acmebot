@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "16716232259059819569"
+      "templateHash": "11436136674992823003"
     }
   },
   "definitions": {
@@ -162,7 +162,7 @@
     },
     "appPackageUri": {
       "type": "string",
-      "defaultValue": "https://stacmebotprod.blob.core.windows.net/acmebot/v5/latest.zip",
+      "defaultValue": "https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip",
       "metadata": {
         "description": "Package URI deployed to the Function App."
       }

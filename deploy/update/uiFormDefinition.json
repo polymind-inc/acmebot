@@ -59,7 +59,7 @@
                   "defaultValue": {
                     "value": "v5"
                   },
-                  "toolTip": "Acmebot major version channel to deploy.",
+                  "toolTip": "Acmebot major version to deploy. Only v5 releases are currently supported.",
                   "constraints": {
                     "allowedValues": [
                       {
@@ -75,7 +75,7 @@
                   "name": "targetVersionType",
                   "type": "Microsoft.Common.OptionsGroup",
                   "label": "Target version",
-                  "toolTip": "Deploy the latest package for the selected major version or enter a specific release version.",
+                  "toolTip": "Deploy the latest GitHub Release asset or enter a specific release version.",
                   "defaultValue": "latest",
                   "constraints": {
                     "allowedValues": [
@@ -97,7 +97,7 @@
                   "type": "Microsoft.Common.InfoBox",
                   "options": {
                     "style": "Warning",
-                    "text": "The specified package version must already be published. Deployment fails if the package cannot be found."
+                    "text": "The specified GitHub Release must already include the acmebot.zip asset. Deployment fails if the asset cannot be found."
                   },
                   "visible": "[if(equals(steps('basics').packageSection.targetVersionType, 'specific'), true, false)]"
                 },

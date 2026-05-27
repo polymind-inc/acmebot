@@ -18,10 +18,11 @@ var versionIsLatest = toLower(targetVersion) == 'latest'
 var normalizedTargetVersion = startsWith(toLower(targetVersion), 'v')
   ? substring(targetVersion, 1, length(targetVersion) - 1)
   : targetVersion
-var packageFileName = versionIsLatest ? 'latest.zip' : '${normalizedTargetVersion}.zip'
 
 #disable-next-line no-hardcoded-env-urls
-var appPackageUri = 'https://stacmebotprod.blob.core.windows.net/acmebot/${majorVersion}/${packageFileName}'
+var appPackageUri = versionIsLatest
+  ? 'https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip'
+  : 'https://github.com/polymind-inc/acmebot/releases/download/v${normalizedTargetVersion}/acmebot.zip'
 
 resource functionApp 'Microsoft.Web/sites@2025-03-01' existing = {
   name: functionAppName

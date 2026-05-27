@@ -101,7 +101,9 @@ Use the update template to redeploy the application package while preserving exi
 
 [Update an existing deployment](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fupdate%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fupdate%2FuiFormDefinition.json)
 
-The update flow asks for the existing Function App and package version. It does not recreate Key Vault, Storage, or monitoring resources.
+The update flow asks for the existing Function App and package version. It deploys the `acmebot.zip` asset attached to GitHub Releases and does not recreate Key Vault, Storage, or monitoring resources.
+
+For Acmebot v4 deployments, use the migration flow instead of the update flow. See [Migrating from v4 to v5](./migration-v5).
 
 ## Terraform
 

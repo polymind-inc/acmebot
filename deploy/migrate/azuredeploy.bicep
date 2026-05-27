@@ -5,7 +5,7 @@ targetScope = 'resourceGroup'
 param functionAppName string
 
 #disable-next-line no-hardcoded-env-urls
-var appPackageUri = 'https://stacmebotprod.blob.core.windows.net/acmebot/v5/latest.zip'
+var appPackageUri = 'https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip'
 
 resource functionApp 'Microsoft.Web/sites@2025-03-01' existing = {
   name: functionAppName

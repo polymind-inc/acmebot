@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "16749310730509452827"
+      "templateHash": "13891239680625672059"
     }
   },
   "parameters": {
@@ -38,8 +38,7 @@
   "variables": {
     "versionIsLatest": "[equals(toLower(parameters('targetVersion')), 'latest')]",
     "normalizedTargetVersion": "[if(startsWith(toLower(parameters('targetVersion')), 'v'), substring(parameters('targetVersion'), 1, sub(length(parameters('targetVersion')), 1)), parameters('targetVersion'))]",
-    "packageFileName": "[if(variables('versionIsLatest'), 'latest.zip', format('{0}.zip', variables('normalizedTargetVersion')))]",
-    "appPackageUri": "[format('https://stacmebotprod.blob.core.windows.net/acmebot/{0}/{1}', parameters('majorVersion'), variables('packageFileName'))]"
+    "appPackageUri": "[if(variables('versionIsLatest'), 'https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip', format('https://github.com/polymind-inc/acmebot/releases/download/v{0}/acmebot.zip', variables('normalizedTargetVersion')))]"
   },
   "resources": [
     {
