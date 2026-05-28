@@ -15,7 +15,7 @@ The HTTP triggers are configured with anonymous trigger authorization so App Ser
 By default, any authenticated dashboard user can issue and revoke certificates. To require app roles for sensitive operations, set:
 
 ```text
-Acmebot:AppRoleRequired=true
+Acmebot__RequireAppRoles=true
 ```
 
 Then assign these roles in the application registration:
@@ -31,7 +31,7 @@ Listing certificates and DNS zones still requires authentication.
 
 1. Add the roles to the Microsoft Entra application registration used by App Service Authentication.
 2. Assign the roles to users, groups, or service principals that should operate Acmebot.
-3. Set `Acmebot:AppRoleRequired=true` on the Function App.
+3. Set `Acmebot__RequireAppRoles=true` on the Function App.
 4. Restart the Function App so the environment variable is re-read.
 5. Confirm a caller without the role receives `403` for issue or revoke operations.
 

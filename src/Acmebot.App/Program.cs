@@ -6,6 +6,7 @@ using Acmebot.App.Infrastructure;
 using Acmebot.App.Notifications;
 using Acmebot.App.Options;
 using Acmebot.App.Providers;
+using Acmebot.App.Services;
 
 using Azure.Core;
 using Azure.Functions.Worker.Extensions.HttpApi.Config;
@@ -52,6 +53,7 @@ builder.Services.AddOptions<AcmebotOptions>()
 
 // Add Services
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<AppRoleService>();
 
 builder.Services.AddSingleton(provider =>
 {

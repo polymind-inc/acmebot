@@ -1,5 +1,5 @@
-﻿using Acmebot.App.Extensions;
-using Acmebot.App.Functions.Orchestration;
+﻿using Acmebot.App.Functions.Orchestration;
+using Acmebot.App.Services;
 
 using Azure.Functions.Worker.Extensions.HttpApi;
 
@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, AppRoleService appRoleService, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
@@ -39,7 +39,7 @@ public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, 
             return Unauthorized();
         }
 
-        if (!User.HasIssueCertificateRole())
+        if (!appRoleService.HasIssueCertificateRole(User))
         {
             return Forbid();
         }

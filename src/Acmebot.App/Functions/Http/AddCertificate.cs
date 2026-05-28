@@ -1,6 +1,6 @@
-﻿using Acmebot.App.Extensions;
-using Acmebot.App.Functions.Orchestration;
+﻿using Acmebot.App.Functions.Orchestration;
 using Acmebot.App.Models;
+using Acmebot.App.Services;
 
 using Azure.Functions.Worker.Extensions.HttpApi;
 
@@ -14,7 +14,7 @@ using FromBodyAttribute = Microsoft.Azure.Functions.Worker.Http.FromBodyAttribut
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, ILogger<AddCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, AppRoleService appRoleService, ILogger<AddCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(AddCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
@@ -27,7 +27,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, IL
             return Unauthorized();
         }
 
-        if (!User.HasIssueCertificateRole())
+        if (!appRoleService.HasIssueCertificateRole(User))
         {
             return Forbid();
         }

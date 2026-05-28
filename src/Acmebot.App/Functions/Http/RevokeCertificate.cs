@@ -1,4 +1,4 @@
-﻿using Acmebot.App.Extensions;
+﻿using Acmebot.App.Services;
 
 using Azure.Functions.Worker.Extensions.HttpApi;
 
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor, AppRoleService appRoleService, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}")]
     public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
@@ -35,7 +35,7 @@ public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor,
             return Unauthorized();
         }
 
-        if (!User.HasRevokeCertificateRole())
+        if (!appRoleService.HasRevokeCertificateRole(User))
         {
             return Forbid();
         }

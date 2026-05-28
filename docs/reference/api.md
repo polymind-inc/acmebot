@@ -2,7 +2,7 @@
 
 The dashboard uses these same-origin HTTP endpoints. They are useful for understanding the integration surface and operation lifecycle.
 
-All endpoints expect authenticated requests. Issue and revoke operations may also require app roles when `Acmebot:AppRoleRequired=true`.
+All endpoints expect authenticated requests. Issue and revoke operations may also require app roles when `Acmebot__RequireAppRoles=true`.
 
 ## Authentication
 

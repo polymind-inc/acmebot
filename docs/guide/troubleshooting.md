@@ -73,7 +73,7 @@ What to verify:
 - App Service Authentication is configured for the Function App.
 - Requests reach the app with an authenticated principal.
 - Microsoft Entra ID is using the intended tenant and application registration.
-- If `Acmebot:AppRoleRequired=true`, the token contains `Acmebot.IssueCertificate` or `Acmebot.RevokeCertificate`.
+- If `Acmebot__RequireAppRoles=true`, the token contains `Acmebot.IssueCertificate` or `Acmebot.RevokeCertificate`.
 
 The HTTP triggers use anonymous trigger authorization so App Service Authentication can populate the user identity before the application code runs. A Functions host key alone does not replace the authenticated user requirement for the v5 dashboard and API.
 

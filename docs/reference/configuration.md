@@ -184,7 +184,7 @@ Issue and revoke operations can optionally require Microsoft Entra app roles.
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `Acmebot:AppRoleRequired` | `false` | When `true`, issue operations require `Acmebot.IssueCertificate` and revoke operations require `Acmebot.RevokeCertificate`. |
+| `Acmebot__RequireAppRoles` | `false` | When `true`, issue operations require `Acmebot.IssueCertificate` and revoke operations require `Acmebot.RevokeCertificate`. |
 
 This value is read as an environment variable by the authorization helper.
 
