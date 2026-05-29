@@ -465,7 +465,7 @@ resource functionAppDeploy 'Microsoft.Web/sites/extensions@2025-03-01' = {
   #disable-next-line BCP187
   properties: {
     packageUri: appPackageUri
-    remoteBuild: false
+    type: 'zip'
   }
 }
 

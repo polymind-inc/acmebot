@@ -1,11 +1,12 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "13231595133678368284"
+      "templateHash": "2442440675729594827"
     }
   },
   "parameters": {
@@ -20,8 +21,14 @@
   "variables": {
     "appPackageUri": "https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip"
   },
-  "resources": [
-    {
+  "resources": {
+    "functionApp": {
+      "existing": true,
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2025-03-01",
+      "name": "[parameters('functionAppName')]"
+    },
+    "functionAppRuntimeConfig": {
       "type": "Microsoft.Web/sites/config",
       "apiVersion": "2025-03-01",
       "name": "[format('{0}/{1}', parameters('functionAppName'), 'web')]",
@@ -29,24 +36,71 @@
         "netFrameworkVersion": "v10.0"
       }
     },
-    {
-      "type": "Microsoft.Web/sites/config",
-      "apiVersion": "2025-03-01",
-      "name": "[format('{0}/{1}', parameters('functionAppName'), 'appsettings')]",
-      "properties": "[union(list(format('{0}/config/appsettings', resourceId('Microsoft.Web/sites', parameters('functionAppName'))), '2025-03-01').properties, createObject('FUNCTIONS_EXTENSION_VERSION', '~4', 'FUNCTIONS_WORKER_RUNTIME', 'dotnet-isolated', 'WEBSITE_RUN_FROM_PACKAGE', '1'))]"
-    },
-    {
+    "functionAppDeploy": {
       "type": "Microsoft.Web/sites/extensions",
       "apiVersion": "2025-03-01",
       "name": "[format('{0}/{1}', parameters('functionAppName'), 'onedeploy')]",
       "properties": {
         "packageUri": "[variables('appPackageUri')]",
-        "remoteBuild": false
+        "type": "zip"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/sites/config', parameters('functionAppName'), 'appsettings')]",
-        "[resourceId('Microsoft.Web/sites/config', parameters('functionAppName'), 'web')]"
+        "functionAppAppSettings",
+        "functionAppRuntimeConfig"
       ]
+    },
+    "functionAppAppSettings": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('functionAppAppSettings-{0}', uniqueString('functionAppAppSettings', deployment().name))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "functionAppName": {
+            "value": "[parameters('functionAppName')]"
+          },
+          "appSettings": {
+            "value": "[union(toObject(filter(items(list(format('{0}/config/appsettings', resourceId('Microsoft.Web/sites', parameters('functionAppName'))), '2025-03-01').properties), lambda('setting', not(equals(lambdaVariables('setting').key, 'FUNCTIONS_INPROC_NET8_ENABLED')))), lambda('setting', lambdaVariables('setting').key), lambda('setting', lambdaVariables('setting').value)), createObject('FUNCTIONS_EXTENSION_VERSION', '~4', 'FUNCTIONS_WORKER_RUNTIME', 'dotnet-isolated', 'WEBSITE_RUN_FROM_PACKAGE', '1'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "18096985042760134925"
+            }
+          },
+          "parameters": {
+            "functionAppName": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Name of the existing Acmebot Function App to update."
+              }
+            },
+            "appSettings": {
+              "type": "object",
+              "metadata": {
+                "description": "Merged application settings to apply to the Function App."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/config",
+              "apiVersion": "2025-03-01",
+              "name": "[format('{0}/{1}', parameters('functionAppName'), 'appsettings')]",
+              "properties": "[parameters('appSettings')]"
+            }
+          ]
+        }
+      }
     }
-  ]
+  }
 }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "499901938734517665"
+      "templateHash": "10678533054684801357"
     }
   },
   "parameters": {
@@ -37,7 +37,7 @@
       "name": "[format('{0}/{1}', parameters('functionAppName'), 'onedeploy')]",
       "properties": {
         "packageUri": "[variables('appPackageUri')]",
-        "remoteBuild": false
+        "type": "zip"
       }
     }
   ],

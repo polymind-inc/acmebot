@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "11436136674992823003"
+      "templateHash": "12738268151428963457"
     }
   },
   "definitions": {
@@ -389,7 +389,7 @@
       "name": "[format('{0}/{1}', variables('functionAppName'), 'onedeploy')]",
       "properties": {
         "packageUri": "[parameters('appPackageUri')]",
-        "remoteBuild": false
+        "type": "zip"
       },
       "dependsOn": [
         "functionApp"
