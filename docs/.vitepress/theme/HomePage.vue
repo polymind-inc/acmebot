@@ -239,7 +239,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
         <p class="section-subtitle">One-click deployment to your Azure subscription</p>
         <div class="deploy-grid">
           <div class="deploy-card deploy-card-primary">
-            <div class="deploy-version">v5<span class="deploy-tag">Recommended</span></div>
+            <div class="deploy-version">v5<span class="deploy-tag">GA</span></div>
             <p>Production-ready deployment on Azure Functions Flex Consumption with built-in VNET integration support.</p>
             <ul class="deploy-features">
               <li>Flex Consumption plan</li>

@@ -1,6 +1,6 @@
 # Configuration
 
-Acmebot uses .NET configuration binding for the `Acmebot` section. In Azure App Service and Azure Functions app settings, nested settings are expressed with double underscores.
+Acmebot reads its settings from the `Acmebot` configuration section. In Azure App Service and Azure Functions app settings, nested settings are expressed with double underscores.
 
 Example:
 
@@ -25,7 +25,7 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | `Acmebot__PreferredChain` | Empty | Preferred issuer chain name when the ACME CA offers alternate chains. |
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Number of days before certificate expiry when scheduled renewal should run. Valid range is 0 to 365. |
-| `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. |
+| `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. Enable it when the validation zone is private or outbound DNS policy requires internal resolvers. |
 | `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, Route 53 web identity federation when `RoleArn` is set, and Google Cloud DNS workload identity federation when `KeyFile64` is empty. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
 
 ## Azure Environments
@@ -193,7 +193,7 @@ Issue and revoke operations can optionally require Microsoft Entra app roles.
 | --- | --- | --- |
 | `Acmebot__RequireAppRoles` | `false` | When `true`, issue operations require `Acmebot.IssueCertificate` and revoke operations require `Acmebot.RevokeCertificate`. |
 
-This value is read as an environment variable by the authorization helper.
+This value is read at startup, so restart the Function App after changing it.
 
 ## Platform Settings
 

@@ -4,14 +4,14 @@ Use this page when issuance, renewal, revocation, authentication, DNS validation
 
 ## First Checks
 
-Start with the smallest failing unit you can reproduce:
+Start with the smallest failing unit you can reproduce, and confirm the basics:
 
 - The Function App is running and reachable.
 - App Service Authentication is enabled and requiring sign-in.
 - The target Key Vault exists and the Function App identity can manage certificates.
 - The configured DNS provider can list the zone and edit TXT records.
 - Application Insights is connected and receiving Function telemetry.
-- The operation status URL returned by the dashboard or API has been checked.
+- You have checked the operation status URL returned by the dashboard or API.
 
 ## Where To Look
 
@@ -29,8 +29,8 @@ Typical causes:
 
 - The configured DNS provider does not control the public zone being validated.
 - The provider credential cannot create or delete `_acme-challenge` TXT records.
-- The provider can create the record, but propagation takes longer than expected.
-- The certificate request uses a private or internal DNS zone that the CA cannot resolve.
+- Propagation takes longer than the provider's configured delay.
+- The request uses a private or internal DNS zone the CA cannot resolve.
 - A delegated validation name is missing or points to the wrong zone.
 
 What to verify:
@@ -39,9 +39,9 @@ What to verify:
 - The requested name is under one of the configured zones.
 - `dnsProviderName` is set when multiple providers can match the request.
 - `dnsAlias` has the required CNAME or delegation in place.
-- A TXT record appears at `_acme-challenge.<name>` while the operation is running.
+- A TXT record appears at `_acme-challenge.<name>` while the operation runs.
 - `Acmebot__UseSystemNameServer=true` is used only when the validation design requires the platform resolver.
-- For Azure DNS, Azure Private DNS, Route 53 with `RoleArn`, or Google Cloud DNS workload identity federation, the selected identity has the provider permissions or trust relationship it needs. Provider-specific managed identity client IDs override `Acmebot__ManagedIdentityClientId`; when they are empty, verify the app-wide identity has the required access.
+- For Azure DNS, Azure Private DNS, Route 53 with `RoleArn`, or Google Cloud DNS workload identity federation, the selected identity has the required permissions or trust relationship. A provider-specific managed identity client ID overrides `Acmebot__ManagedIdentityClientId`; when it is empty, verify the app-wide identity has access.
 
 See [DNS Providers](./dns-providers) for provider-specific settings and propagation behavior.
 
@@ -49,72 +49,68 @@ See [DNS Providers](./dns-providers) for provider-specific settings and propagat
 
 Typical causes:
 
-- The Function App identity does not have certificate management permissions.
+- The Function App identity lacks certificate management permissions.
 - The vault permission model changed between Azure RBAC and access policies.
 - `Acmebot__VaultBaseUrl` points to the wrong vault.
-- A user-assigned managed identity should be used for Key Vault but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
+- A user-assigned managed identity should be used, but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
 
 What to verify:
 
 - The vault URL in app settings matches the intended Key Vault.
-- The Function App identity has a role such as `Key Vault Certificates Officer`, or equivalent certificate permissions through access policies.
+- The Function App identity has `Key Vault Certificates Officer`, or equivalent certificate permissions through access policies.
 - For TransIP, the identity can use the Key Vault key named by `Acmebot__TransIp__PrivateKeyName`.
-- Downstream services have their own Key Vault read permissions; Acmebot's identity does not grant them access automatically.
+- Downstream services have their own Key Vault read permissions; Acmebot's identity does not grant them access.
 
 ## Authentication Or Authorization Fails
 
 Typical symptoms:
 
-- The dashboard returns `401`.
-- API calls return `401 Unauthorized`.
+- The dashboard or an API call returns `401`.
 - A signed-in caller can list data but cannot issue or revoke certificates.
 
 What to verify:
 
 - App Service Authentication is configured for the Function App.
 - Requests reach the app with an authenticated principal.
-- Microsoft Entra ID is using the intended tenant and application registration.
-- If `Acmebot__RequireAppRoles=true`, the token contains `Acmebot.IssueCertificate` or `Acmebot.RevokeCertificate`.
+- Microsoft Entra ID uses the intended tenant and application registration.
+- When `Acmebot__RequireAppRoles=true`, the token contains `Acmebot.IssueCertificate` or `Acmebot.RevokeCertificate`.
 
-The HTTP triggers use anonymous trigger authorization so App Service Authentication can populate the user identity before the application code runs. A Functions host key alone does not replace the authenticated user requirement for the v5 dashboard and API.
-
-See [Security](../reference/security) for the authorization model.
+The HTTP triggers use anonymous trigger authorization so App Service Authentication can populate the user identity before application code runs. A Functions host key alone does not satisfy the authenticated-user requirement for the v5 dashboard and API. See [Security](../reference/security) for the authorization model.
 
 ## Renewal Does Not Run
 
 Typical causes:
 
-- The certificate was not issued by Acmebot or no longer has Acmebot metadata.
-- The certificate was issued against a different ACME endpoint than the currently configured endpoint.
+- The certificate was not issued by Acmebot, or no longer has Acmebot metadata.
+- The certificate was issued against a different ACME endpoint than the configured one.
 - The certificate is not inside the renewal window.
 - The timer host is stopped or the Function App is unhealthy.
 - DNS or Key Vault permissions changed after first issuance.
 
 What to verify:
 
-- The certificate is enabled and readable in Key Vault.
-- The certificate has Acmebot metadata tags.
+- The certificate is enabled and readable in Key Vault and has Acmebot metadata tags.
 - `Acmebot__Endpoint` matches the endpoint used when the certificate was issued.
 - `Acmebot__RenewBeforeExpiry` is set to the intended number of days.
 - Application Insights shows `RenewCertificates` timer activity.
-- The app is not relying on a local-time assumption; Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
+- No local-time assumption is in play; Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
 
 ## Operation Remains Pending
 
-Certificate operations are Durable Functions orchestrations. A pending operation can be normal while Acmebot waits for DNS propagation or ACME validation.
+Certificate operations are Durable Functions orchestrations, so a pending operation can be normal while Acmebot waits for DNS propagation or ACME validation.
 
 If it remains pending longer than expected:
 
 - Check Application Insights for dependency failures.
 - Confirm the Function App has not restarted repeatedly.
-- Check whether the DNS provider propagation delay is long for the selected provider.
+- Check whether the selected provider has a long propagation delay.
 - Poll the operation URL again before starting another operation for the same certificate.
 
 ## Certificate Issued But Endpoint Still Uses Old Certificate
 
 If Key Vault has the new certificate version, ACME issuance succeeded. Continue troubleshooting the consuming Azure service:
 
-- App Service: confirm the imported Key Vault certificate sync state and binding.
+- App Service: confirm the imported Key Vault certificate's sync state and binding.
 - Front Door: confirm the secret uses `Latest` rather than a pinned version.
 - Application Gateway: confirm it references a versionless Key Vault secret and can access Key Vault.
 - API Management, SignalR, Container Apps, and VM workloads: verify their service-specific import or sync behavior.
@@ -127,14 +123,14 @@ Typical causes:
 
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` is missing.
 - Sampling hides successful requests.
-- Log stream is connected to one instance while the app is scaled out.
+- The log stream is connected to one instance while the app is scaled out.
 - The deployment uses a different Log Analytics workspace than expected.
 
 What to verify:
 
 - Application Insights is connected to the Function App.
 - Exceptions and dependency telemetry are visible.
-- Live Metrics is used for near-real-time multi-instance checks.
+- Live Metrics is used for near-real-time, multi-instance checks.
 
 ## Triage Workflow
 
@@ -143,6 +139,6 @@ What to verify:
 3. Check Function logs and Application Insights for the failing invocation.
 4. Classify the failure domain: authentication, DNS, Key Vault, ACME CA, webhook, or downstream Azure service.
 5. Fix permissions or configuration first.
-6. Retry the operation and confirm cleanup of any temporary `_acme-challenge` records.
+6. Retry the operation and confirm any temporary `_acme-challenge` records are cleaned up.
 
 For routine operational behavior, see [Operations](./operations).

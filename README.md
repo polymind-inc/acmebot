@@ -4,7 +4,7 @@
 <p align="center">
   Automated ACME SSL/TLS certificate management built around Azure Key Vault
   <br>
-  (App Service / Container Apps / Application Gateway / Front Door / CDN / others)
+  (App Service / Container Apps / Application Gateway / Front Door / others)
 </p>
 <p align="center">
   <a href="https://github.com/polymind-inc/acmebot/actions/workflows/build.yml" rel="nofollow"><img src="https://github.com/polymind-inc/acmebot/workflows/Build/badge.svg" alt="Build" style="max-width: 100%;"></a>
@@ -42,6 +42,7 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
   - [Google Trust Services](https://pki.goog/) (Requires EAB Credentials)
   - [SSL.com](https://www.ssl.com/how-to/order-free-90-day-ssl-tls-certificates-with-acme/) (Requires EAB Credentials)
   - [Entrust](https://www.entrust.com/) (Requires EAB Credentials)
+  - [GlobalSign](https://www.globalsign.com/) (Requires EAB Credentials)
 - Certificates can be used with many Azure services
   - Azure App Service (Web Apps / Functions / Containers)
   - Azure Container Apps (Include custom DNS suffix)
@@ -53,7 +54,7 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 ## Deployment
 
-Deploy the latest **v5** release with a single click. The template provisions everything required — Function App ([Flex Consumption](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)), Storage, Application Insights, Log Analytics, and optionally a new Key Vault.
+Acmebot **v5 is now generally available**. Deploy the latest release with a single click — the template provisions everything required: Function App ([Flex Consumption](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)), Storage, Application Insights, Log Analytics, and optionally a new Key Vault.
 
 | Azure (Public) | Azure China | Azure Government |
 | :---: | :---: | :---: |

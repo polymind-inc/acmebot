@@ -47,11 +47,11 @@ Common EAB scenarios:
 | CA | EAB guidance |
 | --- | --- |
 | Let's Encrypt | Usually not required. |
-| Buypass | Usually not required. |
 | ZeroSSL | Required for ACME account registration. |
 | Google Trust Services | May be required depending on account setup. |
 | SSL.com | Typically required. |
 | Entrust | Required for an ACME-enabled Entrust account. |
+| GlobalSign Atlas | Required for an ACME-enabled Atlas account. |
 
 ## Preferred Chain
 
@@ -75,23 +75,23 @@ Acmebot validates advertised profiles before using them. If the profile is not a
 
 ## Staging and Production
 
-Use a staging endpoint first when available. Staging is useful for validating DNS permissions, dashboard authentication, webhook delivery, and Key Vault access without consuming production issuance limits.
+Use a staging endpoint first when one is available. Staging validates DNS permissions, dashboard authentication, webhook delivery, and Key Vault access without consuming production issuance limits.
 
-When moving to production:
+To move to production:
 
 1. Change `Acmebot__Endpoint` to the production directory URL.
 2. Restart the Function App.
 3. Issue a new certificate.
 
-Acmebot renews only certificates tagged for the currently configured endpoint, so staging certificates and production certificates are treated separately.
+Acmebot tags each certificate with the endpoint that issued it and renews only certificates for the currently configured endpoint, so staging and production certificates stay separate.
 
 ## Renewal Behavior
 
-During scheduled renewal, Acmebot checks each managed certificate in Key Vault. If the ACME directory supports renewal information, Acmebot uses the server-provided suggested renewal window. Otherwise, it renews when the certificate expires within `Acmebot__RenewBeforeExpiry` days.
+During scheduled renewal, Acmebot checks each managed certificate in Key Vault. When the ACME directory supports renewal information, it uses the server-provided renewal window; otherwise it renews when the certificate expires within `Acmebot__RenewBeforeExpiry` days. See [Operations](./operations) for the full renewal schedule.
 
 ## CA Selection Guidance
 
 - Use Let's Encrypt for a simple default path without EAB.
-- Use a commercial CA when your organization requires a specific trust provider, account workflow, or support model.
-- Use the CA's RSA or ECC endpoint consistently with the key type you plan to issue.
+- Use a commercial CA when you need a specific trust provider, account workflow, or support model.
+- Match the CA's RSA or ECC endpoint to the key type you plan to issue.
 - Keep EAB credentials in app settings and rotate them according to your CA's guidance.

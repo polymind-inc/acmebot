@@ -61,7 +61,7 @@ Accept: application/json
 }
 ```
 
-### CertificatePolicyItem
+### Request Fields
 
 | Property | Required | Description |
 | --- | --- | --- |
@@ -82,7 +82,7 @@ GET /api/certificates
 Accept: application/json
 ```
 
-Returns an array of `CertificateItem`.
+Returns an array of certificate objects.
 
 ```json
 [

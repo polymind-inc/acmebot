@@ -45,7 +45,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | TransIP DNS | `Acmebot__TransIp` | `CustomerName`, `PrivateKeyName` | 360 seconds |
 | UnitedDomains | `Acmebot__UnitedDomains` | `ApiKey` | 60 seconds |
 
-Propagation delay is the initial wait before Acmebot starts querying DNS for the expected TXT record. After that, Acmebot retries DNS checks for transient propagation delays.
+Propagation delay is the initial wait before Acmebot begins querying DNS for the expected TXT record. After that wait, Acmebot retries DNS checks until the record becomes visible.
 
 ## Akamai Edge DNS
 
@@ -114,62 +114,6 @@ Acmebot__Cloudflare__ApiToken=<api-token>
 ```
 
 Scope the token to the exact zones Acmebot manages when possible.
-
-## Amazon Route 53
-
-Route 53 can use either an AWS IAM role assumed with the Function App managed identity, or static AWS access key credentials. When `RoleArn` is set, Acmebot uses STS `AssumeRoleWithWebIdentity` and ignores `AccessKey` and `SecretKey`.
-
-| Option | Description |
-| --- | --- |
-| `RoleArn` | AWS IAM role ARN assumed with STS `AssumeRoleWithWebIdentity` using the selected Azure managed identity. |
-| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Route 53 web identity federation. Leave empty to use the app-wide managed identity. |
-| `AccessKey` | AWS access key ID used when `RoleArn` is empty. |
-| `SecretKey` | AWS secret access key paired with `AccessKey` when `RoleArn` is empty. |
-
-```text
-Acmebot__Route53__RoleArn=arn:aws:iam::123456789012:role/acmebot-route53
-Acmebot__Route53__ManagedIdentityClientId=
-```
-
-For static AWS credentials instead:
-
-```text
-Acmebot__Route53__AccessKey=<access-key>
-Acmebot__Route53__SecretKey=<secret-key>
-```
-
-Acmebot lists public hosted zones and creates TXT records in the matching hosted zone.
-
-The IAM role or access key needs these minimum permissions:
-
-- `route53:ListHostedZones`
-- `route53:ListResourceRecordSets`
-- `route53:ChangeResourceRecordSets`
-
-Example IAM policy scoped to one hosted zone:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowZoneRecordChanges",
-      "Effect": "Allow",
-      "Action": [
-        "route53:ChangeResourceRecordSets",
-        "route53:ListResourceRecordSets"
-      ],
-      "Resource": "arn:aws:route53:::hostedzone/YOUR_ZONE_ID"
-    },
-    {
-      "Sid": "AllowHostedZoneListing",
-      "Effect": "Allow",
-      "Action": "route53:ListHostedZones",
-      "Resource": "*"
-    }
-  ]
-}
-```
 
 ## Custom DNS
 
@@ -378,6 +322,62 @@ Acmebot__Regfish__ApiKey=<api-key>
 
 Regfish can return transient server errors when listing records for otherwise usable zones. Acmebot handles known empty-list cases, but persistent failures should be checked in Application Insights.
 
+## Amazon Route 53
+
+Route 53 can use either an AWS IAM role assumed with the Function App managed identity, or static AWS access key credentials. When `RoleArn` is set, Acmebot uses STS `AssumeRoleWithWebIdentity` and ignores `AccessKey` and `SecretKey`.
+
+| Option | Description |
+| --- | --- |
+| `RoleArn` | AWS IAM role ARN assumed with STS `AssumeRoleWithWebIdentity` using the selected Azure managed identity. |
+| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Route 53 web identity federation. Leave empty to use the app-wide managed identity. |
+| `AccessKey` | AWS access key ID used when `RoleArn` is empty. |
+| `SecretKey` | AWS secret access key paired with `AccessKey` when `RoleArn` is empty. |
+
+```text
+Acmebot__Route53__RoleArn=arn:aws:iam::123456789012:role/acmebot-route53
+Acmebot__Route53__ManagedIdentityClientId=
+```
+
+For static AWS credentials instead:
+
+```text
+Acmebot__Route53__AccessKey=<access-key>
+Acmebot__Route53__SecretKey=<secret-key>
+```
+
+Acmebot lists public hosted zones and creates TXT records in the matching hosted zone.
+
+The IAM role or access key needs these minimum permissions:
+
+- `route53:ListHostedZones`
+- `route53:ListResourceRecordSets`
+- `route53:ChangeResourceRecordSets`
+
+Example IAM policy scoped to one hosted zone:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowZoneRecordChanges",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets"
+      ],
+      "Resource": "arn:aws:route53:::hostedzone/YOUR_ZONE_ID"
+    },
+    {
+      "Sid": "AllowHostedZoneListing",
+      "Effect": "Allow",
+      "Action": "route53:ListHostedZones",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
 ## TransIP DNS
 
 TransIP uses a customer name and a private key stored as an Azure Key Vault key.
@@ -405,26 +405,6 @@ Use a UnitedDomains API key that can list zones and manage DNS records.
 ```text
 Acmebot__UnitedDomains__ApiKey=<api-key>
 ```
-
-## DNS Alias
-
-Advanced certificate requests can set `dnsAlias`. When this is set, Acmebot validates all requested names through:
-
-```text
-_acme-challenge.<dnsAlias>
-```
-
-Use this when your production zone is managed elsewhere but you delegate ACME validation to a zone Acmebot can edit. Ensure the required CNAME or delegation is in place before issuing.
-
-## DNS Resolver
-
-By default Acmebot verifies propagation with Google Public DNS. Set this to use the system DNS resolver instead:
-
-```text
-Acmebot__UseSystemNameServer=true
-```
-
-Use the system resolver when your validation zone is private or when outbound DNS policy requires internal resolvers.
 
 ## Troubleshooting
 

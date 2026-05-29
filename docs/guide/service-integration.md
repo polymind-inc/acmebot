@@ -2,32 +2,32 @@
 
 Acmebot stores issued certificates in Azure Key Vault. The consuming Azure service is responsible for importing, referencing, or syncing that certificate version into its own TLS configuration.
 
-Treat certificate issuance and service rollout as two connected workflows:
+Treat issuance and rollout as two connected workflows:
 
 1. Acmebot renews the certificate and creates a new Key Vault certificate version.
-2. The Azure service reads that version according to its own Key Vault integration behavior.
-3. You verify that the public endpoint is serving the renewed certificate.
+2. The Azure service picks up that version according to its own Key Vault integration.
+3. You confirm the public endpoint is serving the renewed certificate.
 
 ## Integration Principles
 
-- Keep the Key Vault certificate name stable so downstream references do not need to change on every renewal.
-- Prefer `Latest` or versionless Key Vault references when the consuming service supports automatic rotation.
-- Grant the consuming Azure service read access to the certificate or secret in Key Vault.
-- Confirm the certificate subject or SANs match the custom domain configured on the service.
-- Monitor both Acmebot renewal and the downstream service sync state.
+- Keep the Key Vault certificate name stable so downstream references survive each renewal.
+- Prefer `Latest` or versionless Key Vault references where the service supports automatic rotation.
+- Grant the consuming service read access to the certificate or secret in Key Vault.
+- Confirm the certificate subject or SANs match the service's custom domain.
+- Monitor both Acmebot renewal and the downstream service's sync state.
 - Test with a staging endpoint or low-risk domain before moving production traffic.
 
 ## Service Matrix
 
 | Azure service | Recommended pattern | Rotation behavior |
 | --- | --- | --- |
-| App Service, Azure Functions, Web App for Containers | Import the Key Vault certificate into App Service certificates, then bind it to a custom domain. | App Service automatically syncs newer Key Vault certificate versions, typically within 24 hours. |
+| App Service, Azure Functions, Web App for Containers | Import the Key Vault certificate into App Service certificates, then bind it to a custom domain. | App Service syncs newer Key Vault versions automatically, typically within 24 hours. |
 | Azure Container Apps | Import the certificate from Key Vault into the Container Apps environment and bind it to the custom domain. | Review Container Apps certificate limitations before choosing key type and curve. |
-| Application Gateway v2 | Reference a Key Vault certificate or secret for HTTPS listeners. | Use a versionless secret identifier so Application Gateway can pick up new versions automatically. |
-| Azure Front Door Standard/Premium | Add a Key Vault certificate as a Front Door secret and select `Latest` as the version. | Front Door can automatically deploy the newer version when the Key Vault certificate is renewed. |
+| Application Gateway v2 | Reference a Key Vault certificate or secret for HTTPS listeners. | Use a versionless secret identifier so new versions are picked up automatically. |
+| Azure Front Door Standard/Premium | Add the Key Vault certificate as a Front Door secret and select `Latest`. | Front Door deploys the newer version automatically when the certificate is renewed. |
 | API Management | Configure custom domains with Key Vault-backed certificates. | Keep the APIM identity authorized to read the Key Vault certificate. |
 | Azure SignalR Service | Configure a custom domain with a certificate stored in Key Vault. | Verify service-specific certificate sync after renewal. |
-| Virtual Machines | Use the Key Vault VM extension or your own provisioning workflow to install the certificate. | Your provisioning workflow controls rollout and reload timing. |
+| Virtual Machines | Use the Key Vault VM extension or your own provisioning workflow to install the certificate. | Your workflow controls rollout and reload timing. |
 
 ## App Service
 
@@ -41,32 +41,30 @@ Use App Service certificate import when the target is Azure App Service, Azure F
 
 Reference: [Import a certificate from Key Vault - Azure App Service](https://learn.microsoft.com/azure/app-service/configure-ssl-certificate#import-a-certificate-from-key-vault)
 
-If Key Vault shows a renewed certificate but App Service is still serving the old certificate, check the imported certificate status in App Service and confirm the App Service resource provider can still read the vault.
+If Key Vault shows a renewed certificate but App Service still serves the old one, check the imported certificate status in App Service and confirm the App Service resource provider can still read the vault.
 
 ## Azure Container Apps
 
-Container Apps can import a Key Vault certificate into the Container Apps environment. Use this when custom domains are served directly by Container Apps.
-
-Before selecting the key type, review the current Container Apps certificate limitations. If your organization standardizes on ECDSA certificates, validate that the selected curve is supported by Container Apps.
+Container Apps can import a Key Vault certificate into the environment for custom domains served directly by Container Apps. Before selecting the key type, review the current Container Apps certificate limitations; if you standardize on ECDSA certificates, confirm the curve is supported.
 
 Reference: [Import certificates from Azure Key Vault to Azure Container Apps](https://learn.microsoft.com/azure/container-apps/key-vault-certificates-manage)
 
 ## Application Gateway v2
 
-Application Gateway v2 supports TLS termination with Key Vault certificates. For automatic rotation, configure the listener with a Key Vault secret identifier that does not include a specific version.
+Application Gateway v2 supports TLS termination with Key Vault certificates. For automatic rotation, configure the listener with a Key Vault secret identifier that omits the version.
 
 Recommended checks:
 
 - Application Gateway uses the v2 SKU.
-- The certificate private key is exportable when required by the service.
+- The certificate private key is exportable when the service requires it.
 - The Application Gateway identity can read the Key Vault certificate or secret.
-- The Key Vault URI is versionless so newer versions can be used automatically.
+- The Key Vault URI is versionless so newer versions are used automatically.
 
 Reference: [TLS termination with Key Vault certificates](https://learn.microsoft.com/azure/application-gateway/key-vault-certs)
 
 ## Azure Front Door Standard/Premium
 
-For customer-managed certificates, create a Front Door secret from the Key Vault certificate and select `Latest` as the certificate version. This avoids updating the Front Door configuration every time Acmebot renews the certificate.
+For customer-managed certificates, create a Front Door secret from the Key Vault certificate and select `Latest`. This avoids reconfiguring Front Door on every renewal.
 
 Recommended checks:
 
@@ -79,7 +77,7 @@ Reference: [Configure HTTPS on an Azure Front Door custom domain](https://learn.
 
 ## API Management
 
-API Management custom domains can use certificates stored in Key Vault. This is useful when Acmebot is responsible for renewal and APIM owns the public gateway endpoint.
+API Management custom domains can use certificates stored in Key Vault, which fits when Acmebot owns renewal and APIM owns the public gateway endpoint.
 
 Recommended checks:
 
@@ -112,8 +110,8 @@ After Acmebot renews a certificate:
 
 - Confirm the Key Vault certificate has a new current version.
 - Confirm the consuming service can still access Key Vault.
-- Confirm the consuming service is configured for latest or versionless rotation when available.
-- Check the endpoint from outside Azure and verify the served certificate expiry date.
+- Confirm the consuming service is configured for latest or versionless rotation where available.
+- Check the endpoint from outside Azure and verify the served certificate's expiry date.
 - Keep an emergency manual sync or redeploy procedure for services that do not rotate immediately.
 
-If Key Vault is current but the public endpoint is not, the remaining issue is usually the consuming service configuration rather than ACME issuance.
+If Key Vault is current but the public endpoint is not, the remaining issue is usually the consuming service's configuration rather than ACME issuance.
