@@ -64,12 +64,13 @@ The v5 template creates the `acmebot-state` container.
 
 Azure resource access uses `ManagedIdentityCredential`. Acmebot is intended to run in Azure and does not fall back to developer credentials such as Azure CLI or Visual Studio credentials.
 
-By default, this uses the Function App system-assigned managed identity. `Acmebot__ManagedIdentityClientId` selects the app-wide user-assigned managed identity for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, and Route 53 web identity federation when `RoleArn` is set.
+By default, this uses the Function App system-assigned managed identity. `Acmebot__ManagedIdentityClientId` selects the app-wide user-assigned managed identity for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, Route 53 web identity federation when `RoleArn` is set, and Google Cloud DNS workload identity federation when `KeyFile64` is empty.
 
 Providers can select their own user-assigned managed identity through provider-specific settings:
 
 - `Acmebot__AzureDns__ManagedIdentityClientId`
 - `Acmebot__AzurePrivateDns__ManagedIdentityClientId`
+- `Acmebot__GoogleDns__ManagedIdentityClientId`
 - `Acmebot__Route53__ManagedIdentityClientId`
 
 When a provider-specific client ID is empty, that provider uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`. If the app-wide client ID is also empty, Azure SDK clients use the system-assigned managed identity. TransIP request signing uses the Key Vault identity because its private key is stored in Key Vault.

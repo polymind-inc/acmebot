@@ -41,7 +41,7 @@ What to verify:
 - `dnsAlias` has the required CNAME or delegation in place.
 - A TXT record appears at `_acme-challenge.<name>` while the operation is running.
 - `Acmebot__UseSystemNameServer=true` is used only when the validation design requires the platform resolver.
-- For Azure DNS, Azure Private DNS, or Route 53 with `RoleArn`, the selected identity has the provider permissions or trust relationship it needs. Provider-specific managed identity client IDs override `Acmebot__ManagedIdentityClientId`; when they are empty, verify the app-wide identity has the required access.
+- For Azure DNS, Azure Private DNS, Route 53 with `RoleArn`, or Google Cloud DNS workload identity federation, the selected identity has the provider permissions or trust relationship it needs. Provider-specific managed identity client IDs override `Acmebot__ManagedIdentityClientId`; when they are empty, verify the app-wide identity has the required access.
 
 See [DNS Providers](./dns-providers) for provider-specific settings and propagation behavior.
 

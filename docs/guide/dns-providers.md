@@ -36,7 +36,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | DNS Made Easy | `Acmebot__DnsMadeEasy` | `ApiKey`, `SecretKey` | 30 seconds |
 | Gandi LiveDNS | `Acmebot__GandiLiveDns` | `ApiKey` | 300 seconds |
 | GoDaddy | `Acmebot__GoDaddy` | `ApiKey`, `ApiSecret` | 600 seconds |
-| Google Cloud DNS | `Acmebot__GoogleDns` | `KeyFile64` | 60 seconds |
+| Google Cloud DNS | `Acmebot__GoogleDns` | `KeyFile64` or `ProjectId`, `PoolProvider`, `ServiceAccount` | 60 seconds |
 | IONOS DNS | `Acmebot__IonosDns` | `ApiKey` | 120 seconds |
 | OVH | `Acmebot__Ovh` | `ApplicationKey`, `ApplicationSecret`, `ConsumerKey` | 60 seconds |
 | PowerDNS | `Acmebot__PowerDns` | `Endpoint`, `ApiKey` | 30 seconds |
@@ -265,11 +265,17 @@ Some GoDaddy accounts are not entitled to production API access even when creden
 
 ## Google Cloud DNS
 
-Google Cloud DNS uses a base64-encoded service account JSON key file.
+Google Cloud DNS can use either a base64-encoded service account JSON key file, or Google Cloud workload identity federation with the Function App managed identity. When `KeyFile64` is set, Acmebot uses the service account key path.
 
 | Option | Description |
 | --- | --- |
 | `KeyFile64` | Base64-encoded Google service account key JSON. The service account must have Cloud DNS read/write permissions for the target project and zones. |
+| `ProjectId` | Google Cloud project ID. Required for workload identity federation. Optional with `KeyFile64` to override the project ID from the key file. |
+| `PoolProvider` | Workload identity provider resource name without the leading `//iam.googleapis.com/` prefix, for example `projects/123456789/locations/global/workloadIdentityPools/acmebot/providers/azure`. |
+| `ServiceAccount` | Google service account email or unique ID that Acmebot impersonates for Cloud DNS operations. |
+| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Google Cloud DNS workload identity federation. Leave empty to use the app-wide managed identity. |
+
+For a service account key:
 
 ```text
 Acmebot__GoogleDns__KeyFile64=<base64-encoded-service-account-json>
@@ -277,13 +283,32 @@ Acmebot__GoogleDns__KeyFile64=<base64-encoded-service-account-json>
 
 Acmebot decodes the value at startup and creates a Google DNS client with the `ndev.clouddns.readwrite` scope.
 
-Setup checklist:
+Service account key setup checklist:
 
 1. Create a Google service account in the project that owns the managed zone.
 2. Grant Cloud DNS permissions that allow managed zone listing and DNS record changes.
 3. Download a JSON key file for the service account.
 4. Base64-encode the full JSON file contents.
 5. Store the encoded value in `Acmebot__GoogleDns__KeyFile64`.
+
+For workload identity federation:
+
+```text
+Acmebot__GoogleDns__ProjectId=<gcp-project-id>
+Acmebot__GoogleDns__PoolProvider=projects/123456789/locations/global/workloadIdentityPools/acmebot/providers/azure
+Acmebot__GoogleDns__ServiceAccount=acmebot-dns@<gcp-project-id>.iam.gserviceaccount.com
+Acmebot__GoogleDns__ManagedIdentityClientId=
+```
+
+Workload identity federation setup checklist:
+
+1. Configure a Google workload identity pool provider that trusts the Function App managed identity token.
+2. Allow the workload identity principal to impersonate the Google service account.
+3. Grant the Google service account Cloud DNS permissions that allow managed zone listing and DNS record changes.
+4. Set `PoolProvider` to the provider resource name without `//iam.googleapis.com/`; Acmebot adds that prefix when building the Google STS audience.
+5. Leave `ManagedIdentityClientId` empty to use `Acmebot__ManagedIdentityClientId`, or set it to a user-assigned managed identity client ID assigned to the Function App.
+
+Acmebot requests the Azure managed identity token for `https://management.azure.com/` and uses that token as the subject token for Google STS.
 
 The OAuth scope used by Acmebot is:
 

@@ -26,7 +26,7 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Number of days before certificate expiry when scheduled renewal should run. Valid range is 0 to 365. |
 | `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. |
-| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, and Route 53 web identity federation when `RoleArn` is set. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
+| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, Route 53 web identity federation when `RoleArn` is set, and Google Cloud DNS workload identity federation when `KeyFile64` is empty. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
 
 ## Azure Environments
 
@@ -123,8 +123,12 @@ Confirm the account is entitled to GoDaddy production API access if zone listing
 | Setting | Description |
 | --- | --- |
 | `Acmebot__GoogleDns__KeyFile64` | Base64-encoded Google service account key JSON. The service account must have Cloud DNS read/write permissions for the target project and zones. |
+| `Acmebot__GoogleDns__ProjectId` | Google Cloud project ID. Required for workload identity federation. Optional with `KeyFile64` to override the project ID from the key file. |
+| `Acmebot__GoogleDns__PoolProvider` | Workload identity provider resource name without the leading `//iam.googleapis.com/` prefix. |
+| `Acmebot__GoogleDns__ServiceAccount` | Google service account email or unique ID that Acmebot impersonates for Cloud DNS operations. |
+| `Acmebot__GoogleDns__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used to obtain the subject token for Google Cloud DNS workload identity federation. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
 
-Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private managed zones.
+Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private managed zones. When `KeyFile64` is set, service account key authentication is used. Otherwise, all of `ProjectId`, `PoolProvider`, and `ServiceAccount` must be set for workload identity federation.
 
 ### IONOS DNS
 

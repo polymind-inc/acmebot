@@ -433,7 +433,7 @@
                   },
                   {
                     "label": "Google Cloud DNS",
-                    "description": "Use Google Cloud DNS with a base64-encoded service account key file.",
+                    "description": "Use Google Cloud DNS with a service account key file or workload identity federation.",
                     "value": "GoogleDns"
                   },
                   {
@@ -878,6 +878,27 @@
               "label": "Google Cloud DNS",
               "elements": [
                 {
+                  "name": "credentialType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Credential type",
+                  "toolTip": "Choose how Acmebot authenticates to Google Cloud DNS.",
+                  "defaultValue": "workloadIdentity",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "Workload identity federation",
+                        "value": "workloadIdentity"
+                      },
+                      {
+                        "label": "Service account key",
+                        "value": "keyFile64"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
                   "name": "keyFile64",
                   "type": "Microsoft.Common.PasswordBox",
                   "label": {
@@ -891,7 +912,55 @@
                   "options": {
                     "hideConfirmation": true
                   },
-                  "visible": true
+                  "visible": "[if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'keyFile64'), true, false)]"
+                },
+                {
+                  "name": "projectId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Project ID",
+                  "placeholder": "my-gcp-project",
+                  "defaultValue": "",
+                  "toolTip": "Google Cloud project ID that contains the Cloud DNS managed zones.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": "[if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), true, false)]"
+                },
+                {
+                  "name": "poolProvider",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Workload identity provider",
+                  "placeholder": "projects/123456789/locations/global/workloadIdentityPools/acmebot/providers/azure",
+                  "defaultValue": "",
+                  "toolTip": "Google workload identity provider resource name without the leading //iam.googleapis.com/ prefix.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": "[if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), true, false)]"
+                },
+                {
+                  "name": "serviceAccount",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Service account",
+                  "placeholder": "acmebot-dns@my-gcp-project.iam.gserviceaccount.com",
+                  "defaultValue": "",
+                  "toolTip": "Google service account that Acmebot impersonates for Cloud DNS operations.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": "[if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), true, false)]"
+                },
+                {
+                  "name": "managedIdentityClientId",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Managed identity client ID",
+                  "placeholder": "Leave empty to use the app-wide identity",
+                  "defaultValue": "",
+                  "toolTip": "Optional client ID of a user-assigned managed identity assigned to the Function App for Google Cloud DNS workload identity federation.",
+                  "constraints": {
+                    "required": false
+                  },
+                  "visible": "[if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), true, false)]"
                 }
               ],
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), true, false)]"
@@ -1342,7 +1411,11 @@
             "apiSecret": "[if(equals(steps('dnsProviderStep').providerType, 'GoDaddy'), steps('dnsProviderStep').goDaddySection.apiSecret, '')]"
           },
           "googleDns": {
-            "keyFile64": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), steps('dnsProviderStep').googleDnsSection.keyFile64, '')]"
+            "keyFile64": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'keyFile64'), steps('dnsProviderStep').googleDnsSection.keyFile64, ''), '')]",
+            "projectId": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), steps('dnsProviderStep').googleDnsSection.projectId, ''), '')]",
+            "poolProvider": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), steps('dnsProviderStep').googleDnsSection.poolProvider, ''), '')]",
+            "serviceAccount": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), steps('dnsProviderStep').googleDnsSection.serviceAccount, ''), '')]",
+            "managedIdentityClientId": "[if(equals(steps('dnsProviderStep').providerType, 'GoogleDns'), if(equals(steps('dnsProviderStep').googleDnsSection.credentialType, 'workloadIdentity'), steps('dnsProviderStep').googleDnsSection.managedIdentityClientId, ''), '')]"
           },
           "ionosDns": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'IonosDns'), steps('dnsProviderStep').ionosDnsSection.apiKey, '')]"

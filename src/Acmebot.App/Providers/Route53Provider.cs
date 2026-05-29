@@ -98,9 +98,11 @@ public class Route53Provider(Route53Options options, TokenCredential tokenCreden
 
     private sealed class ManagedIdentityWebIdentityCredentials(string roleArn, TokenCredential tokenCredential) : RefreshingAWSCredentials
     {
+        private const string Audience = "https://management.azure.com/";
+
         protected override async Task<CredentialsRefreshState> GenerateNewCredentialsAsync()
         {
-            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(["https://management.azure.com/"]), CancellationToken.None);
+            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([Audience]), CancellationToken.None);
 
             using var securityTokenServiceClient = new AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials(), RegionEndpoint.USEast1);
 

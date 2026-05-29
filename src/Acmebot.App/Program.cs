@@ -77,7 +77,7 @@ builder.Services.AddSingleton<TokenCredential>(provider =>
     var environment = provider.GetRequiredService<AzureEnvironment>();
     var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
 
-    var managedIdentityId = string.IsNullOrEmpty(options.ManagedIdentityClientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(options.ManagedIdentityClientId);
+    var managedIdentityId = string.IsNullOrWhiteSpace(options.ManagedIdentityClientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(options.ManagedIdentityClientId);
 
     return new ManagedIdentityCredential(new ManagedIdentityCredentialOptions(managedIdentityId)
     {
@@ -163,7 +163,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.DnsMadeEasy, o => new DnsMadeEasyProvider(o));
     dnsProviders.TryAdd(options.GandiLiveDns, o => new GandiLiveDnsProvider(o));
     dnsProviders.TryAdd(options.GoDaddy, o => new GoDaddyProvider(o));
-    dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(o));
+    dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(o, ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.IonosDns, o => new IonosDnsProvider(o));
     dnsProviders.TryAdd(options.Ovh, o => new OvhProvider(o));
     dnsProviders.TryAdd(options.PowerDns, o => new PowerDnsProvider(o));
@@ -187,7 +187,7 @@ static bool HasAzureFilesContentShare(IConfiguration configuration)
 
 static TokenCredential ResolveCredential(AzureEnvironment environment, TokenCredential tokenCredential, string? managedIdentityClientId)
 {
-    if (string.IsNullOrEmpty(managedIdentityClientId))
+    if (string.IsNullOrWhiteSpace(managedIdentityClientId))
     {
         return tokenCredential;
     }

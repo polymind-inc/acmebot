@@ -2,6 +2,8 @@
 
 using Acmebot.App.Options;
 
+using Azure.Core;
+
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Dns.v1;
 using Google.Apis.Dns.v1.Data;
@@ -11,21 +13,42 @@ namespace Acmebot.App.Providers;
 
 public class GoogleDnsProvider : IDnsProvider
 {
-    public GoogleDnsProvider(GoogleDnsOptions options)
+    public GoogleDnsProvider(GoogleDnsOptions options, TokenCredential tokenCredential)
     {
-        var serviceAccount = CredentialFactory.FromJson<ServiceAccountCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
+        GoogleCredential? credential;
 
-        _projectId = serviceAccount.ProjectId;
-        _credential = serviceAccount.ToGoogleCredential().CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
+        if (!string.IsNullOrWhiteSpace(options.KeyFile64))
+        {
+            var serviceAccount = CredentialFactory.FromJson<ServiceAccountCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
+
+            _projectId = string.IsNullOrWhiteSpace(options.ProjectId) ? serviceAccount.ProjectId : options.ProjectId;
+            credential = serviceAccount.ToGoogleCredential();
+        }
+        else if (!string.IsNullOrWhiteSpace(options.PoolProvider) && !string.IsNullOrWhiteSpace(options.ServiceAccount) && !string.IsNullOrWhiteSpace(options.ProjectId))
+        {
+            var initializer = new ProgrammaticExternalAccountCredential.Initializer("https://sts.googleapis.com/v1/token",
+                                                                                    $"//iam.googleapis.com/{options.PoolProvider}",
+                                                                                    "urn:ietf:params:oauth:token-type:jwt",
+                                                                                    new ManagedIdentitySubjectTokenProvider(tokenCredential))
+            {
+                ServiceAccountImpersonationUrl = $"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{options.ServiceAccount}:generateAccessToken"
+            };
+
+            _projectId = options.ProjectId;
+            credential = new ProgrammaticExternalAccountCredential(initializer).ToGoogleCredential();
+        }
+        else
+        {
+            throw new InvalidOperationException("Google Cloud DNS requires either KeyFile64 or all of ProjectId, PoolProvider, and ServiceAccount to be configured.");
+        }
 
         _dnsService = new DnsService(new BaseClientService.Initializer
         {
-            HttpClientInitializer = _credential
+            HttpClientInitializer = credential.CreateScoped(DnsService.Scope.NdevClouddnsReadwrite)
         });
     }
 
     private readonly string _projectId;
-    private readonly GoogleCredential _credential;
     private readonly DnsService _dnsService;
 
     public string Name => "Google Cloud DNS";
@@ -95,5 +118,17 @@ public class GoogleDnsProvider : IDnsProvider
         var change = new Change { Deletions = txtRecords.Rrsets };
 
         await _dnsService.Changes.Create(change, _projectId, zone.Id).ExecuteAsync(cancellationToken);
+    }
+
+    private sealed class ManagedIdentitySubjectTokenProvider(TokenCredential tokenCredential) : ProgrammaticExternalAccountCredential.ISubjectTokenProvider
+    {
+        private const string Audience = "https://management.azure.com/";
+
+        public async Task<string> GetSubjectTokenAsync(ProgrammaticExternalAccountCredential caller, CancellationToken cancellationToken)
+        {
+            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([Audience]), cancellationToken);
+
+            return token.Token;
+        }
     }
 }

@@ -23,6 +23,7 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
     <PackageReference Include="DnsClient" Version="1.8.0" />
     <PackageReference Include="Functions.Worker.Extensions.HttpApi" Version="3.0.5" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.74.0" />
     <PackageReference Include="Google.Apis.Dns.v1" Version="1.74.0.4128" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.16.5" />

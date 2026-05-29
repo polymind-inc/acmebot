@@ -235,6 +235,22 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
     name: 'Acmebot__GoogleDns__KeyFile64'
     value: googleDnsProvider.?keyFile64 ?? ''
   }
+  {
+    name: 'Acmebot__GoogleDns__ProjectId'
+    value: googleDnsProvider.?projectId ?? ''
+  }
+  {
+    name: 'Acmebot__GoogleDns__PoolProvider'
+    value: googleDnsProvider.?poolProvider ?? ''
+  }
+  {
+    name: 'Acmebot__GoogleDns__ServiceAccount'
+    value: googleDnsProvider.?serviceAccount ?? ''
+  }
+  {
+    name: 'Acmebot__GoogleDns__ManagedIdentityClientId'
+    value: googleDnsProvider.?managedIdentityClientId ?? ''
+  }
 ] : dnsProviderType == 'IonosDns' ? [
   {
     name: 'Acmebot__IonosDns__ApiKey'
