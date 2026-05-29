@@ -102,7 +102,7 @@ public class Route53Provider(Route53Options options, TokenCredential tokenCreden
         {
             var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(["https://management.azure.com/"]), CancellationToken.None);
 
-            using var securityTokenServiceClient = new AmazonSecurityTokenServiceClient(RegionEndpoint.USEast1);
+            using var securityTokenServiceClient = new AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials(), RegionEndpoint.USEast1);
 
             var request = new AssumeRoleWithWebIdentityRequest
             {
