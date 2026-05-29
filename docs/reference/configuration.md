@@ -26,7 +26,7 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Number of days before certificate expiry when scheduled renewal should run. Valid range is 0 to 365. |
 | `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. |
-| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, and Azure DNS providers that do not override it. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
+| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, and Route 53 web identity federation when `RoleArn` is set. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
 
 ## Azure Environments
 
@@ -159,11 +159,12 @@ Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private man
 
 | Setting | Description |
 | --- | --- |
-| `Acmebot__Route53__AccessKey` | AWS access key ID used by the Route 53 client. |
-| `Acmebot__Route53__SecretKey` | AWS secret access key paired with `AccessKey`. |
-| `Acmebot__Route53__Region` | AWS region name used to construct the SDK client. `us-east-1` is a common value for Route 53. |
+| `Acmebot__Route53__RoleArn` | AWS IAM role ARN assumed with STS `AssumeRoleWithWebIdentity` using the selected Azure managed identity. When set, `AccessKey` and `SecretKey` are not used. |
+| `Acmebot__Route53__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used to obtain the web identity token for Route 53. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
+| `Acmebot__Route53__AccessKey` | AWS access key ID used by the Route 53 client when `RoleArn` is empty. |
+| `Acmebot__Route53__SecretKey` | AWS secret access key paired with `AccessKey` when `RoleArn` is empty. |
 
-The credential needs permission to list hosted zones, list record sets, and change record sets in the target hosted zone.
+The AWS role or access key credentials need permission to list hosted zones, list record sets, and change record sets in the target hosted zone.
 
 ### TransIP DNS
 

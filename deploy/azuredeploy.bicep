@@ -164,16 +164,16 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
   }
 ] : dnsProviderType == 'Route53' ? [
   {
+    name: 'Acmebot__Route53__RoleArn'
+    value: route53DnsProvider.?roleArn ?? ''
+  }
+  {
     name: 'Acmebot__Route53__AccessKey'
     value: route53DnsProvider.?accessKey ?? ''
   }
   {
     name: 'Acmebot__Route53__SecretKey'
     value: route53DnsProvider.?secretKey ?? ''
-  }
-  {
-    name: 'Acmebot__Route53__Region'
-    value: route53DnsProvider.?region ?? 'us-east-1'
   }
 ] : dnsProviderType == 'AzureDns' ? [
   {

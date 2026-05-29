@@ -393,7 +393,7 @@
                   },
                   {
                     "label": "Amazon Route 53",
-                    "description": "Use Amazon Route 53 with an AWS access key, secret key, and region.",
+                    "description": "Use Amazon Route 53 with AWS access keys or an IAM role assumed by managed identity.",
                     "value": "Route53"
                   },
                   {
@@ -597,6 +597,45 @@
               "label": "Amazon Route 53",
               "elements": [
                 {
+                  "name": "credentialType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Credential type",
+                  "toolTip": "Choose how Acmebot authenticates to Amazon Route 53.",
+                  "defaultValue": "roleArn",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "IAM role with managed identity",
+                        "value": "roleArn"
+                      },
+                      {
+                        "label": "AWS access key",
+                        "value": "accessKey"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "roleArn",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Role ARN",
+                  "placeholder": "arn:aws:iam::123456789012:role/acmebot-route53",
+                  "defaultValue": "",
+                  "toolTip": "AWS IAM role ARN assumed through STS AssumeRoleWithWebIdentity using the Function App managed identity.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+",
+                        "message": "Enter a valid AWS IAM role ARN."
+                      }
+                    ]
+                  },
+                  "visible": "[if(equals(steps('dnsProviderStep').route53Section.credentialType, 'roleArn'), true, false)]"
+                },
+                {
                   "name": "accessKey",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Access key ID",
@@ -606,7 +645,7 @@
                   "constraints": {
                     "required": true
                   },
-                  "visible": true
+                  "visible": "[if(equals(steps('dnsProviderStep').route53Section.credentialType, 'accessKey'), true, false)]"
                 },
                 {
                   "name": "secretKey",
@@ -622,25 +661,7 @@
                   "options": {
                     "hideConfirmation": true
                   },
-                  "visible": true
-                },
-                {
-                  "name": "region",
-                  "type": "Microsoft.Common.TextBox",
-                  "label": "Region",
-                  "placeholder": "us-east-1",
-                  "defaultValue": "us-east-1",
-                  "toolTip": "AWS region used by the Route 53 client.",
-                  "constraints": {
-                    "required": true,
-                    "validations": [
-                      {
-                        "regex": "^[a-z]{2}-[a-z]+-[0-9]+$",
-                        "message": "Enter a valid AWS region name."
-                      }
-                    ]
-                  },
-                  "visible": true
+                  "visible": "[if(equals(steps('dnsProviderStep').route53Section.credentialType, 'accessKey'), true, false)]"
                 }
               ],
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), true, false)]"
@@ -1290,9 +1311,9 @@
             "accessToken": "[if(equals(steps('dnsProviderStep').providerType, 'Akamai'), steps('dnsProviderStep').akamaiSection.accessToken, '')]"
           },
           "route53": {
-            "accessKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.accessKey, '')]",
-            "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.secretKey, '')]",
-            "region": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), steps('dnsProviderStep').route53Section.region, '')]"
+            "roleArn": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), if(equals(steps('dnsProviderStep').route53Section.credentialType, 'roleArn'), steps('dnsProviderStep').route53Section.roleArn, ''), '')]",
+            "accessKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), if(equals(steps('dnsProviderStep').route53Section.credentialType, 'accessKey'), steps('dnsProviderStep').route53Section.accessKey, ''), '')]",
+            "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'Route53'), if(equals(steps('dnsProviderStep').route53Section.credentialType, 'accessKey'), steps('dnsProviderStep').route53Section.secretKey, ''), '')]"
           },
           "azureDns": {
             "subscriptionId": "[if(equals(steps('dnsProviderStep').providerType, 'AzureDns'), steps('dnsProviderStep').azureDnsSection.subscriptionId, '')]"

@@ -41,7 +41,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | OVH | `Acmebot__Ovh` | `ApplicationKey`, `ApplicationSecret`, `ConsumerKey` | 60 seconds |
 | PowerDNS | `Acmebot__PowerDns` | `Endpoint`, `ApiKey` | 30 seconds |
 | Regfish | `Acmebot__Regfish` | `ApiKey` | 30 seconds |
-| Amazon Route 53 | `Acmebot__Route53` | `AccessKey`, `SecretKey`, `Region` | 10 seconds |
+| Amazon Route 53 | `Acmebot__Route53` | `RoleArn` or `AccessKey`, `SecretKey` | 10 seconds |
 | TransIP DNS | `Acmebot__TransIp` | `CustomerName`, `PrivateKeyName` | 360 seconds |
 | UnitedDomains | `Acmebot__UnitedDomains` | `ApiKey` | 60 seconds |
 
@@ -117,23 +117,30 @@ Scope the token to the exact zones Acmebot manages when possible.
 
 ## Amazon Route 53
 
-Route 53 uses access key credentials and a region value.
+Route 53 can use either an AWS IAM role assumed with the Function App managed identity, or static AWS access key credentials. When `RoleArn` is set, Acmebot uses STS `AssumeRoleWithWebIdentity` and ignores `AccessKey` and `SecretKey`.
 
 | Option | Description |
 | --- | --- |
-| `AccessKey` | AWS access key ID used by the Route 53 client. |
-| `SecretKey` | AWS secret access key paired with `AccessKey`. |
-| `Region` | AWS region name used to construct the SDK client. `us-east-1` is a common value for Route 53. |
+| `RoleArn` | AWS IAM role ARN assumed with STS `AssumeRoleWithWebIdentity` using the selected Azure managed identity. |
+| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Route 53 web identity federation. Leave empty to use the app-wide managed identity. |
+| `AccessKey` | AWS access key ID used when `RoleArn` is empty. |
+| `SecretKey` | AWS secret access key paired with `AccessKey` when `RoleArn` is empty. |
+
+```text
+Acmebot__Route53__RoleArn=arn:aws:iam::123456789012:role/acmebot-route53
+Acmebot__Route53__ManagedIdentityClientId=
+```
+
+For static AWS credentials instead:
 
 ```text
 Acmebot__Route53__AccessKey=<access-key>
 Acmebot__Route53__SecretKey=<secret-key>
-Acmebot__Route53__Region=us-east-1
 ```
 
 Acmebot lists public hosted zones and creates TXT records in the matching hosted zone.
 
-Minimum IAM permissions:
+The IAM role or access key needs these minimum permissions:
 
 - `route53:ListHostedZones`
 - `route53:ListResourceRecordSets`

@@ -4,12 +4,16 @@ using Amazon;
 using Amazon.Route53;
 using Amazon.Route53.Model;
 using Amazon.Runtime;
+using Amazon.SecurityToken;
+using Amazon.SecurityToken.Model;
+
+using Azure.Core;
 
 namespace Acmebot.App.Providers;
 
-public class Route53Provider(Route53Options options) : IDnsProvider
+public class Route53Provider(Route53Options options, TokenCredential tokenCredential) : IDnsProvider
 {
-    private readonly AmazonRoute53Client _amazonRoute53Client = new(new BasicAWSCredentials(options.AccessKey, options.SecretKey), RegionEndpoint.GetBySystemName(options.Region));
+    private readonly AmazonRoute53Client _amazonRoute53Client = CreateClient(options, tokenCredential);
 
     public string Name => "Amazon Route 53";
 
@@ -80,5 +84,40 @@ public class Route53Provider(Route53Options options) : IDnsProvider
         var request = new ChangeResourceRecordSetsRequest(zone.Id, new ChangeBatch(changes));
 
         await _amazonRoute53Client.ChangeResourceRecordSetsAsync(request, cancellationToken);
+    }
+
+    private static AmazonRoute53Client CreateClient(Route53Options options, TokenCredential tokenCredential)
+    {
+        if (!string.IsNullOrWhiteSpace(options.RoleArn))
+        {
+            return new AmazonRoute53Client(new ManagedIdentityWebIdentityCredentials(options.RoleArn, tokenCredential), RegionEndpoint.USEast1);
+        }
+
+        return new AmazonRoute53Client(new BasicAWSCredentials(options.AccessKey, options.SecretKey), RegionEndpoint.USEast1);
+    }
+
+    private sealed class ManagedIdentityWebIdentityCredentials(string roleArn, TokenCredential tokenCredential) : RefreshingAWSCredentials
+    {
+        protected override async Task<CredentialsRefreshState> GenerateNewCredentialsAsync()
+        {
+            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(["https://management.azure.com/"]), CancellationToken.None);
+
+            using var securityTokenServiceClient = new AmazonSecurityTokenServiceClient(RegionEndpoint.USEast1);
+
+            var request = new AssumeRoleWithWebIdentityRequest
+            {
+                RoleArn = roleArn,
+                RoleSessionName = "acmebot",
+                WebIdentityToken = token.Token
+            };
+
+            var response = await securityTokenServiceClient.AssumeRoleWithWebIdentityAsync(request);
+
+            var credentials = response.Credentials;
+
+            var immutableCredentials = new ImmutableCredentials(credentials.AccessKeyId, credentials.SecretAccessKey, credentials.SessionToken);
+
+            return new CredentialsRefreshState(immutableCredentials, credentials.Expiration ?? DateTime.MinValue);
+        }
     }
 }

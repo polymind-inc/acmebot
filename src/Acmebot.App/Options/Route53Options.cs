@@ -2,7 +2,8 @@
 
 public class Route53Options
 {
-    public required string AccessKey { get; set; }
-    public required string SecretKey { get; set; }
-    public required string Region { get; set; }
+    public string? RoleArn { get; set; }
+    public string? ManagedIdentityClientId { get; set; }
+    public string? AccessKey { get; set; }
+    public string? SecretKey { get; set; }
 }

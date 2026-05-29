@@ -55,9 +55,9 @@ builder.Services.AddSingleton<AppRoleService>();
 
 builder.Services.AddSingleton(provider =>
 {
-    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>();
+    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
 
-    var lookupClientOptions = options.Value.UseSystemNameServer ? new LookupClientOptions() : new LookupClientOptions(NameServer.GooglePublicDns, NameServer.GooglePublicDns2);
+    var lookupClientOptions = options.UseSystemNameServer ? new LookupClientOptions() : new LookupClientOptions(NameServer.GooglePublicDns, NameServer.GooglePublicDns2);
 
     lookupClientOptions.UseCache = false;
     lookupClientOptions.UseRandomNameServer = true;
@@ -67,29 +67,30 @@ builder.Services.AddSingleton(provider =>
 
 builder.Services.AddSingleton(provider =>
 {
-    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>();
+    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
 
-    return AzureEnvironment.Get(options.Value.Environment);
+    return AzureEnvironment.Get(options.Environment);
 });
 
 builder.Services.AddSingleton<TokenCredential>(provider =>
 {
     var environment = provider.GetRequiredService<AzureEnvironment>();
-    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>();
+    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
 
-    return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    var managedIdentityId = string.IsNullOrEmpty(options.ManagedIdentityClientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(options.ManagedIdentityClientId);
+
+    return new ManagedIdentityCredential(new ManagedIdentityCredentialOptions(managedIdentityId)
     {
-        AuthorityHost = environment.AuthorityHost,
-        ManagedIdentityClientId = options.Value.ManagedIdentityClientId
+        AuthorityHost = environment.AuthorityHost
     });
 });
 
 builder.Services.AddSingleton(provider =>
 {
-    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>();
+    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
     var credential = provider.GetRequiredService<TokenCredential>();
 
-    return new CertificateClient(new Uri(options.Value.VaultBaseUrl), credential);
+    return new CertificateClient(new Uri(options.VaultBaseUrl), credential);
 });
 
 builder.Services.AddSingleton(provider =>
@@ -143,8 +144,8 @@ builder.Services.AddSingleton<IWebhookPayloadBuilder>(provider =>
 builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 {
     var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
-    var credential = provider.GetRequiredService<TokenCredential>();
     var environment = provider.GetRequiredService<AzureEnvironment>();
+    var tokenCredential = provider.GetRequiredService<TokenCredential>();
 
     var dnsProviders = new List<IDnsProvider>();
 
@@ -152,11 +153,11 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.AzureDns, o => new AzureDnsProvider(
         o,
         environment,
-        ResolveCredential(environment, credential, o.ManagedIdentityClientId)));
+        ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.AzurePrivateDns, o => new AzurePrivateDnsProvider(
         o,
         environment,
-        ResolveCredential(environment, credential, o.ManagedIdentityClientId)));
+        ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.Cloudflare, o => new CloudflareProvider(o));
     dnsProviders.TryAdd(options.CustomDns, o => new CustomDnsProvider(o));
     dnsProviders.TryAdd(options.DnsMadeEasy, o => new DnsMadeEasyProvider(o));
@@ -167,8 +168,8 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.Ovh, o => new OvhProvider(o));
     dnsProviders.TryAdd(options.PowerDns, o => new PowerDnsProvider(o));
     dnsProviders.TryAdd(options.Regfish, o => new RegfishProvider(o));
-    dnsProviders.TryAdd(options.Route53, o => new Route53Provider(o));
-    dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, credential));
+    dnsProviders.TryAdd(options.Route53, o => new Route53Provider(o, ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
+    dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, tokenCredential));
     dnsProviders.TryAdd(options.UnitedDomains, o => new UnitedDomainsProvider(o));
 
     if (dnsProviders.Count == 0)
@@ -182,19 +183,19 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 builder.Build().Run();
 
 static bool HasAzureFilesContentShare(IConfiguration configuration)
-    => !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"])
-       || !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTSHARE"]);
+    => !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"]) || !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTSHARE"]);
 
-static TokenCredential ResolveCredential(AzureEnvironment environment, TokenCredential defaultCredential, string? managedIdentityClientId)
+static TokenCredential ResolveCredential(AzureEnvironment environment, TokenCredential tokenCredential, string? managedIdentityClientId)
 {
     if (string.IsNullOrEmpty(managedIdentityClientId))
     {
-        return defaultCredential;
+        return tokenCredential;
     }
 
-    return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    var managedIdentityId = ManagedIdentityId.FromUserAssignedClientId(managedIdentityClientId);
+
+    return new ManagedIdentityCredential(new ManagedIdentityCredentialOptions(managedIdentityId)
     {
-        AuthorityHost = environment.AuthorityHost,
-        ManagedIdentityClientId = managedIdentityClientId
+        AuthorityHost = environment.AuthorityHost
     });
 }
