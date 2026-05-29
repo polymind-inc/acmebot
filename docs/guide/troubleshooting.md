@@ -41,6 +41,7 @@ What to verify:
 - `dnsAlias` has the required CNAME or delegation in place.
 - A TXT record appears at `_acme-challenge.<name>` while the operation is running.
 - `Acmebot__UseSystemNameServer=true` is used only when the validation design requires the platform resolver.
+- For Azure DNS or Azure Private DNS, the selected identity has zone permissions. Provider-specific managed identity client IDs override `Acmebot__ManagedIdentityClientId`; when they are empty, verify the app-wide identity has DNS permissions.
 
 See [DNS Providers](./dns-providers) for provider-specific settings and propagation behavior.
 
@@ -51,7 +52,7 @@ Typical causes:
 - The Function App identity does not have certificate management permissions.
 - The vault permission model changed between Azure RBAC and access policies.
 - `Acmebot__VaultBaseUrl` points to the wrong vault.
-- A user-assigned managed identity is configured but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
+- A user-assigned managed identity should be used for Key Vault but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
 
 What to verify:
 

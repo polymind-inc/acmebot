@@ -67,14 +67,16 @@ Acmebot__Akamai__AccessToken=<access-token>
 
 ## Azure DNS
 
-Azure DNS uses the Function App managed identity.
+Azure DNS uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to override it.
 
 | Option | Description |
 | --- | --- |
 | `SubscriptionId` | Azure subscription ID that contains the public DNS zones Acmebot manages. This can differ from the Function App subscription. |
+| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Azure DNS. Leave empty to use the app-wide managed identity. |
 
 ```text
 Acmebot__AzureDns__SubscriptionId=<subscription-id>
+Acmebot__AzureDns__ManagedIdentityClientId=<user-assigned-client-id>
 ```
 
 Assign the identity a role that can list DNS zones and manage TXT records, such as `DNS Zone Contributor`, on the DNS zone or a tightly scoped resource group.
@@ -83,14 +85,16 @@ If the DNS zone is in a different subscription than the Function App, set `Subsc
 
 ## Azure Private DNS
 
-Azure Private DNS also uses the Function App managed identity.
+Azure Private DNS also uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to override it.
 
 | Option | Description |
 | --- | --- |
 | `SubscriptionId` | Azure subscription ID that contains the private DNS zones Acmebot manages. |
+| `ManagedIdentityClientId` | Optional client ID of a user-assigned managed identity assigned to the Function App for Azure Private DNS. Leave empty to use the app-wide managed identity. |
 
 ```text
 Acmebot__AzurePrivateDns__SubscriptionId=<subscription-id>
+Acmebot__AzurePrivateDns__ManagedIdentityClientId=<user-assigned-client-id>
 ```
 
 Assign `Private DNS Zone Contributor` on the private DNS zone or a tightly scoped resource group.
@@ -356,7 +360,7 @@ Acmebot__TransIp__CustomerName=<customer-name>
 Acmebot__TransIp__PrivateKeyName=<key-name>
 ```
 
-The Function App managed identity must be allowed to use the Key Vault key for signing.
+The app-wide managed identity must be allowed to use the Key Vault key for signing.
 
 ## UnitedDomains
 

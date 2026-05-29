@@ -27,8 +27,6 @@ using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-const string AcmeStateContainerName = "acmebot-state";
-
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication()
@@ -96,10 +94,12 @@ builder.Services.AddSingleton(provider =>
 
 builder.Services.AddSingleton(provider =>
 {
+    const string acmeStateContainerName = "acmebot-state";
+
     var configuration = provider.GetRequiredService<IConfiguration>();
     var connectionString = configuration["AzureWebJobsStorage"] ?? throw new InvalidOperationException("AzureWebJobsStorage is not configured.");
 
-    return new BlobContainerClient(connectionString, AcmeStateContainerName);
+    return new BlobContainerClient(connectionString, acmeStateContainerName);
 });
 
 builder.Services.AddSingleton<BlobAcmeStateStore>();
@@ -108,9 +108,7 @@ builder.Services.AddSingleton<IAcmeStateStore>(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
 
-    return HasAzureFilesContentShare(configuration) || !IsRunningOnAzure(configuration)
-        ? provider.GetRequiredService<FileSystemAcmeStateStore>()
-        : provider.GetRequiredService<BlobAcmeStateStore>();
+    return HasAzureFilesContentShare(configuration) ? provider.GetRequiredService<FileSystemAcmeStateStore>() : provider.GetRequiredService<BlobAcmeStateStore>();
 });
 builder.Services.AddSingleton<AcmeClientFactory>();
 
@@ -145,14 +143,20 @@ builder.Services.AddSingleton<IWebhookPayloadBuilder>(provider =>
 builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 {
     var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
-    var environment = provider.GetRequiredService<AzureEnvironment>();
     var credential = provider.GetRequiredService<TokenCredential>();
+    var environment = provider.GetRequiredService<AzureEnvironment>();
 
     var dnsProviders = new List<IDnsProvider>();
 
     dnsProviders.TryAdd(options.Akamai, o => new AkamaiEdgeDnsProvider(o));
-    dnsProviders.TryAdd(options.AzureDns, o => new AzureDnsProvider(o, environment, credential));
-    dnsProviders.TryAdd(options.AzurePrivateDns, o => new AzurePrivateDnsProvider(o, environment, credential));
+    dnsProviders.TryAdd(options.AzureDns, o => new AzureDnsProvider(
+        o,
+        environment,
+        ResolveCredential(environment, credential, o.ManagedIdentityClientId)));
+    dnsProviders.TryAdd(options.AzurePrivateDns, o => new AzurePrivateDnsProvider(
+        o,
+        environment,
+        ResolveCredential(environment, credential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.Cloudflare, o => new CloudflareProvider(o));
     dnsProviders.TryAdd(options.CustomDns, o => new CustomDnsProvider(o));
     dnsProviders.TryAdd(options.DnsMadeEasy, o => new DnsMadeEasyProvider(o));
@@ -181,6 +185,16 @@ static bool HasAzureFilesContentShare(IConfiguration configuration)
     => !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"])
        || !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTSHARE"]);
 
-static bool IsRunningOnAzure(IConfiguration configuration)
-    => !string.IsNullOrEmpty(configuration["WEBSITE_SITE_NAME"])
-       || !string.IsNullOrEmpty(configuration["WEBSITE_INSTANCE_ID"]);
+static TokenCredential ResolveCredential(AzureEnvironment environment, TokenCredential defaultCredential, string? managedIdentityClientId)
+{
+    if (string.IsNullOrEmpty(managedIdentityClientId))
+    {
+        return defaultCredential;
+    }
+
+    return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    {
+        AuthorityHost = environment.AuthorityHost,
+        ManagedIdentityClientId = managedIdentityClientId
+    });
+}

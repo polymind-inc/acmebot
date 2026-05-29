@@ -55,8 +55,8 @@ Acmebot uses `IAcmeStateStore` for ACME account state.
 
 | Environment | Store |
 | --- | --- |
-| Azure without Azure Files content share | Blob storage container `acmebot-state`. |
-| Local development or Azure Files content share deployments | File system under `%HOME%/data/.acmebot/<endpoint-host>/`. |
+| Without Azure Files content share | Blob storage container `acmebot-state`. |
+| With Azure Files content share | File system under `%HOME%/data/.acmebot/<endpoint-host>/`. |
 
 The v5 template creates the `acmebot-state` container.
 
@@ -64,13 +64,14 @@ The v5 template creates the `acmebot-state` container.
 
 Azure resource access uses `DefaultAzureCredential`.
 
-In Azure, this normally resolves to the Function App managed identity. If `Acmebot__ManagedIdentityClientId` is set, Azure SDK clients use that user-assigned managed identity.
+In Azure, this normally resolves to the Function App system-assigned managed identity. `Acmebot__ManagedIdentityClientId` selects the app-wide user-assigned managed identity for Key Vault certificate operations, Key Vault keys, and Azure DNS providers that do not override it.
 
-The same identity is used for:
+Azure DNS providers can select their own user-assigned managed identity through provider-specific settings:
 
-- Key Vault certificate operations.
-- Azure DNS and Azure Private DNS provider operations.
-- TransIP request signing with Key Vault keys.
+- `Acmebot__AzureDns__ManagedIdentityClientId`
+- `Acmebot__AzurePrivateDns__ManagedIdentityClientId`
+
+When a provider-specific client ID is empty, that provider uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`. If the app-wide client ID is also empty, Azure SDK clients use the system-assigned managed identity. TransIP request signing uses the Key Vault identity because its private key is stored in Key Vault.
 
 ## Key Vault Metadata
 

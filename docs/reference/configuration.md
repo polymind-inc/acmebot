@@ -26,7 +26,7 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Number of days before certificate expiry when scheduled renewal should run. Valid range is 0 to 365. |
 | `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. |
-| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for a user-assigned managed identity. |
+| `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, and Azure DNS providers that do not override it. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
 
 ## Azure Environments
 
@@ -67,17 +67,19 @@ Provider credentials are secrets. Use scoped provider tokens where possible, and
 
 | Setting | Description |
 | --- | --- |
-| `Acmebot__AzureDns__SubscriptionId` | Azure subscription ID containing the public DNS zones Acmebot manages. The Function App managed identity must have zone read and TXT record write/delete access in this subscription. |
+| `Acmebot__AzureDns__SubscriptionId` | Azure subscription ID containing the public DNS zones Acmebot manages. The selected identity must have zone read and TXT record write/delete access in this subscription. |
+| `Acmebot__AzureDns__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used for Azure DNS. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
 
-Azure DNS uses the Function App managed identity.
+Azure DNS uses the app-wide managed identity by default and this setting overrides it.
 
 ### Azure Private DNS
 
 | Setting | Description |
 | --- | --- |
-| `Acmebot__AzurePrivateDns__SubscriptionId` | Azure subscription ID containing the private DNS zones Acmebot manages. The Function App managed identity must have private zone read and TXT record write/delete access in this subscription. |
+| `Acmebot__AzurePrivateDns__SubscriptionId` | Azure subscription ID containing the private DNS zones Acmebot manages. The selected identity must have private zone read and TXT record write/delete access in this subscription. |
+| `Acmebot__AzurePrivateDns__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used for Azure Private DNS. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
 
-Azure Private DNS uses the Function App managed identity.
+Azure Private DNS uses the app-wide managed identity by default and this setting overrides it.
 
 ### Cloudflare
 
@@ -208,6 +210,7 @@ Acmebot__Contacts=mailto:admin@example.com
 Acmebot__VaultBaseUrl=https://my-vault.vault.azure.net/
 Acmebot__Environment=AzureCloud
 Acmebot__AzureDns__SubscriptionId=00000000-0000-0000-0000-000000000000
+Acmebot__AzureDns__ManagedIdentityClientId=
 Acmebot__RenewBeforeExpiry=30
 Acmebot__Webhook=https://example.com/webhook
 ```

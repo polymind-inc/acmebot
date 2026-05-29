@@ -30,7 +30,7 @@ Before changing the app:
 1. Confirm the existing v4 deployment is healthy.
 2. Record the Function App name and resource group.
 3. Export the current app settings and store the file securely because it may include DNS provider credentials.
-4. Confirm the Function App managed identity still has Key Vault and DNS provider permissions.
+4. Confirm the configured managed identities still have Key Vault and DNS provider permissions.
 5. Keep the dashboard authentication configuration in place.
 
 You can export the current app settings with Azure CLI:

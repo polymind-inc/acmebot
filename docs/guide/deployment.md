@@ -41,7 +41,7 @@ The Function App can use either:
 - A system-assigned managed identity, which is simplest for a single deployment.
 - A user-assigned managed identity, useful when you want a stable identity across redeployments or multiple apps.
 
-When using a user-assigned identity, Acmebot sets `Acmebot__ManagedIdentityClientId` so Azure SDK clients choose that identity.
+When using a user-assigned identity, Acmebot sets `Acmebot__ManagedIdentityClientId` as the app-wide identity.
 
 ### Key Vault
 
@@ -117,7 +117,7 @@ Use Terraform when you need repeatable deployments, custom network or authentica
 
 - Use a staging ACME endpoint for the first validation when possible.
 - Scope DNS provider credentials to the smallest practical set of zones.
-- Use a user-assigned identity if you need stable identity across app recreation.
+- Use a user-assigned identity if you need stable app-wide identity across app recreation.
 - Confirm Key Vault RBAC and DNS RBAC after deployment.
 - Enable dashboard authentication before using the app.
 - Configure webhook notifications if certificate operations should alert an operations channel.
