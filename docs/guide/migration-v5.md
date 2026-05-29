@@ -44,7 +44,7 @@ az functionapp config appsettings list \
 
 ## Automatic Migration
 
-The automatic migration uses the ARM template in `deploy/migrate`. The template asks for the existing Function App, preserves current app settings, switches `WEBSITE_RUN_FROM_PACKAGE` to `1`, applies the v5 worker and .NET site runtime settings, and deploys the latest v5 package.
+The automatic migration uses the ARM template in `deploy/migrate`. The template asks for the existing Function App, preserves current app settings, switches `WEBSITE_RUN_FROM_PACKAGE` to `1`, applies the v5 worker and .NET site runtime settings, and deploys the latest package from GitHub Releases.
 
 <div class="deploy-buttons">
   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2FuiFormDefinition.json">Azure Public</a>
