@@ -5,6 +5,7 @@ targetScope = 'resourceGroup'
 param functionAppName string
 
 @description('Merged application settings to apply to the Function App.')
+@secure()
 param appSettings object
 
 resource functionApp 'Microsoft.Web/sites@2025-03-01' existing = {

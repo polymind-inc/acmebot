@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "2442440675729594827"
+      "templateHash": "18020216459641093548"
     }
   },
   "parameters": {
@@ -73,7 +73,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "18096985042760134925"
+              "templateHash": "16877996648624795941"
             }
           },
           "parameters": {
@@ -85,7 +85,7 @@
               }
             },
             "appSettings": {
-              "type": "object",
+              "type": "secureObject",
               "metadata": {
                 "description": "Merged application settings to apply to the Function App."
               }
