@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      dependencies:
+      nuget:
         patterns:
           - "*"
     ignore:
@@ -23,7 +23,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      dependencies:
+      client-app:
         patterns:
           - "*"
     ignore:
@@ -36,7 +36,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      dependencies:
+      docs:
         patterns:
           - "*"
     ignore:
@@ -49,6 +49,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      dependencies:
+      github-actions:
         patterns:
           - "*"
