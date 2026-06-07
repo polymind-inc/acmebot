@@ -4,7 +4,7 @@ This walkthrough deploys a first Acmebot v5 environment and issues a certificate
 
 ## Prerequisites
 
-- An Azure subscription where you can create Function App, Storage, monitoring, and Key Vault resources.
+- An Azure Public subscription where you can create Function App, Storage, monitoring, and Key Vault resources.
 - Permission to create role assignments, which the template needs when it configures Key Vault access.
 - A DNS zone hosted by a supported provider.
 - Credentials or managed identity access that can create and delete TXT records in that zone.
@@ -29,7 +29,7 @@ If your CA requires external account binding, select the EAB credential type dur
 
 ## 2. Deploy Acmebot
 
-Open [Deployment](./deployment) and choose the Azure cloud that matches your tenant. During deployment:
+Open [Deployment](./deployment) and deploy to Azure Public. During deployment:
 
 1. Select the subscription, resource group, and region.
 2. Choose a resource naming mode.

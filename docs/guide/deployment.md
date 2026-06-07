@@ -1,13 +1,11 @@
 # Deployment
 
-Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage.
+Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template supports Azure Public only because Flex Consumption is not available in Azure China or Azure Government.
 
 ## Deploy to Azure
 
 <div class="deploy-buttons">
   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json">Azure Public</a>
-  <a class="secondary" href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json">Azure China</a>
-  <a class="secondary" href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json">Azure Government</a>
 </div>
 
 ## Template Inputs
@@ -72,7 +70,7 @@ The template writes the required Acmebot settings automatically:
 Acmebot__Endpoint=<acme-directory-url>
 Acmebot__Contacts=<contact-email>
 Acmebot__VaultBaseUrl=<key-vault-url>
-Acmebot__Environment=<AzureCloud|AzureChinaCloud|AzureUSGovernment>
+Acmebot__Environment=AzureCloud
 ```
 
 It also writes the selected DNS provider and managed identity settings. For the full list, see [Configuration](../reference/configuration).

@@ -236,20 +236,19 @@ function scrollToSection(event: MouseEvent, selector: string) {
     <section id="deploy" class="section section-alt">
       <div class="container">
         <h2 class="section-title">Deploy to Azure</h2>
-        <p class="section-subtitle">One-click deployment to your Azure subscription</p>
+        <p class="section-subtitle">One-click deployment to your Azure Public subscription</p>
         <div class="deploy-grid">
           <div class="deploy-card deploy-card-primary">
-            <div class="deploy-version">v5<span class="deploy-tag">GA</span></div>
-            <p>Production-ready deployment on Azure Functions Flex Consumption with built-in VNET integration support.</p>
+            <h3 class="deploy-version">Acmebot v5 <span class="deploy-tag">GA</span></h3>
+            <p>Production-ready setup for automated certificate management with secure storage, monitoring, and private network support.</p>
             <ul class="deploy-features">
-              <li>Flex Consumption plan</li>
-              <li>Built-in VNET integration</li>
-              <li>.NET 10 runtime</li>
+              <li>Automated renewals</li>
+              <li>Secure Key Vault storage</li>
+              <li>Private network support</li>
+              <li>Monitoring included</li>
             </ul>
             <div class="deploy-buttons">
               <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" class="btn btn-primary btn-deploy">Azure Public</a>
-              <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" class="btn btn-outline btn-deploy">Azure China</a>
-              <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy_ui.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" class="btn btn-outline btn-deploy">Azure Government</a>
             </div>
           </div>
         </div>
@@ -791,14 +790,15 @@ function scrollToSection(event: MouseEvent, selector: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 32px;
-  max-width: 760px;
+  max-width: 640px;
   margin: 0 auto 32px;
 }
 
 .deploy-card {
-  padding: 36px;
+  padding: 40px 32px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
+  text-align: center;
 }
 
 .deploy-card-primary {
@@ -808,9 +808,10 @@ function scrollToSection(event: MouseEvent, selector: string) {
 .deploy-version {
   font-size: 1.5rem;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
@@ -826,36 +827,47 @@ function scrollToSection(event: MouseEvent, selector: string) {
 .deploy-card > p {
   font-size: 0.9rem;
   color: var(--text-secondary);
-  margin-bottom: 20px;
+  max-width: 520px;
+  margin: 0 auto 20px;
 }
 
 .deploy-features {
   list-style: none;
-  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  max-width: 440px;
+  margin: 0 auto 28px;
 }
 
 .deploy-features li {
-  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  text-align: left;
 }
 
 .deploy-features li::before {
   content: "\2713";
+  flex: 0 0 auto;
   color: var(--success);
   font-weight: 700;
-  margin-right: 8px;
 }
 
 .deploy-buttons {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 
 .btn-deploy {
   padding: 10px 20px;
   font-size: 0.85rem;
+  min-width: 148px;
 }
 
 .deploy-alt {
@@ -1134,6 +1146,11 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
   .ca-grid {
     grid-template-columns: 1fr;
+  }
+
+  .deploy-features {
+    grid-template-columns: 1fr;
+    max-width: 260px;
   }
 
   .deploy-buttons {
