@@ -97,10 +97,40 @@ builder.Services.AddSingleton(provider =>
 {
     const string acmeStateContainerName = "acmebot-state";
 
+    var environment = provider.GetRequiredService<AzureEnvironment>();
     var configuration = provider.GetRequiredService<IConfiguration>();
-    var connectionString = configuration["AzureWebJobsStorage"] ?? throw new InvalidOperationException("AzureWebJobsStorage is not configured.");
 
-    return new BlobContainerClient(connectionString, acmeStateContainerName);
+    var connectionString = configuration["AzureWebJobsStorage"];
+
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        return new BlobContainerClient(connectionString, acmeStateContainerName);
+    }
+
+    var blobServiceUri = configuration["AzureWebJobsStorage__blobServiceUri"];
+
+    if (string.IsNullOrWhiteSpace(blobServiceUri))
+    {
+        var accountName = configuration["AzureWebJobsStorage__accountName"];
+
+        if (string.IsNullOrWhiteSpace(accountName))
+        {
+            throw new InvalidOperationException("AzureWebJobsStorage, AzureWebJobsStorage__blobServiceUri, or AzureWebJobsStorage__accountName is required.");
+        }
+
+        blobServiceUri = $"https://{accountName}.blob.core.windows.net";
+    }
+
+    var clientId = configuration["AzureWebJobsStorage__clientId"];
+
+    var managedIdentityId = string.IsNullOrWhiteSpace(clientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(clientId);
+
+    var credential = new ManagedIdentityCredential(new ManagedIdentityCredentialOptions(managedIdentityId)
+    {
+        AuthorityHost = environment.AuthorityHost
+    });
+
+    return new BlobContainerClient(new Uri($"{blobServiceUri}/{acmeStateContainerName}"), credential);
 });
 
 builder.Services.AddSingleton<BlobAcmeStateStore>();
@@ -181,6 +211,8 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
 });
 
 builder.Build().Run();
+
+return;
 
 static bool HasAzureFilesContentShare(IConfiguration configuration)
     => !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"]) || !string.IsNullOrEmpty(configuration["WEBSITE_CONTENTSHARE"]);
