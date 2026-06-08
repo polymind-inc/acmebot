@@ -27,7 +27,7 @@ public partial class CertificateIssuanceOrchestrator
             certificatePolicyItem.DnsProviderName = await context.CallDns01PreconditionAsync(certificatePolicyItem);
 
             // 新しく ACME Order を作成する (ARI で更新扱いにする場合は既存証明書の Certificate ID を replaces に指定)
-            var orderDetails = await context.CallOrderAsync((certificatePolicyItem.DnsNames, /*certificatePolicyItem.CertificateId*/ null));
+            var orderDetails = await context.CallOrderAsync((certificatePolicyItem.DnsNames, certificatePolicyItem.CertificateId));
 
             // 既に確認済みの場合は Challenge をスキップする
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)

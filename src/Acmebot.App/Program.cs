@@ -130,7 +130,7 @@ builder.Services.AddSingleton(provider =>
         AuthorityHost = environment.AuthorityHost
     });
 
-return new BlobContainerClient(new Uri(new Uri(blobServiceUri.TrimEnd('/') + "/"), acmeStateContainerName), credential);
+    return new BlobContainerClient(new Uri(new Uri(blobServiceUri.TrimEnd('/') + "/"), acmeStateContainerName), credential);
 });
 
 builder.Services.AddSingleton<BlobAcmeStateStore>();
