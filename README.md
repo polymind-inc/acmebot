@@ -38,11 +38,10 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 - Automated certificate renewal
 - Support for ACME v2 compliant Certification Authorities
   - [Let's Encrypt](https://letsencrypt.org/)
-  - [ZeroSSL](https://zerossl.com/features/acme/) (Requires EAB Credentials)
+  - [GlobalSign](https://www.globalsign.com/) (Requires EAB Credentials)
   - [Google Trust Services](https://pki.goog/) (Requires EAB Credentials)
   - [SSL.com](https://www.ssl.com/how-to/order-free-90-day-ssl-tls-certificates-with-acme/) (Requires EAB Credentials)
-  - [Entrust](https://www.entrust.com/) (Requires EAB Credentials)
-  - [GlobalSign](https://www.globalsign.com/) (Requires EAB Credentials)
+  - [ZeroSSL](https://zerossl.com/features/acme/) (Requires EAB Credentials)
 - Certificates can be used with many Azure services
   - Azure App Service (Web Apps / Functions / Containers)
   - Azure Container Apps (Include custom DNS suffix)

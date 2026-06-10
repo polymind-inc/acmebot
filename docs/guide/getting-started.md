@@ -13,17 +13,16 @@ This walkthrough deploys a first Acmebot v5 environment and issues a certificate
 
 ## 1. Choose an ACME Endpoint
 
-For a first test, use a staging endpoint if your certificate authority offers one. For production, the deployment form includes these known endpoints:
+For a first test, use a staging endpoint if your certificate authority offers one. For production, the deployment form includes these verified endpoints:
 
 | CA | Endpoint |
 | --- | --- |
 | Let's Encrypt | `https://acme-v02.api.letsencrypt.org/directory` |
-| ZeroSSL | `https://acme.zerossl.com/v2/DV90` |
+| GlobalSign | `https://emea.acme.atlas.globalsign.com/directory` |
 | Google Trust Services | `https://dv.acme-v02.api.pki.goog/directory` |
-| SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` |
 | SSL.com ECC | `https://acme.ssl.com/sslcom-dv-ecc` |
-| Entrust | `https://acme.entrust.net/acme2/directory` |
-| GlobalSign Atlas | `https://emea.acme.atlas.globalsign.com/directory` |
+| SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` |
+| ZeroSSL | `https://acme.zerossl.com/v2/DV90` |
 
 If your CA requires external account binding, select the EAB credential type during deployment. See [Certificate Authorities](./certificate-authorities) for details.
 

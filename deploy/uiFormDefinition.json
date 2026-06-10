@@ -188,8 +188,8 @@
                   "constraints": {
                     "allowedValues": [
                       {
-                        "label": "Known endpoint (recommended)",
-                        "value": "known"
+                        "label": "Verified endpoint (recommended)",
+                        "value": "verified"
                       },
                       {
                         "label": "Custom",
@@ -201,9 +201,9 @@
                   "visible": true
                 },
                 {
-                  "name": "knownEndpoint",
+                  "name": "verifiedEndpoint",
                   "type": "Microsoft.Common.DropDown",
-                  "label": "Known ACME endpoint",
+                  "label": "Verified ACME endpoint",
                   "placeholder": "ACME endpoint",
                   "defaultValue": "",
                   "multiLine": true,
@@ -216,9 +216,9 @@
                         "value": "https://acme-v02.api.letsencrypt.org/directory"
                       },
                       {
-                        "label": "ZeroSSL",
-                        "description": "ZeroSSL ACME endpoint for 90-day DV certificates. EAB credentials are required.",
-                        "value": "https://acme.zerossl.com/v2/DV90"
+                        "label": "GlobalSign",
+                        "description": "GlobalSign ACME endpoint for accounts enabled for certificate automation.",
+                        "value": "https://emea.acme.atlas.globalsign.com/directory"
                       },
                       {
                         "label": "Google Trust Services",
@@ -226,29 +226,24 @@
                         "value": "https://dv.acme-v02.api.pki.goog/directory"
                       },
                       {
-                        "label": "SSL.com (RSA)",
-                        "description": "SSL.com ACME endpoint for DV certificates using RSA certificate keys.",
-                        "value": "https://acme.ssl.com/sslcom-dv-rsa"
-                      },
-                      {
                         "label": "SSL.com (ECC)",
                         "description": "SSL.com ACME endpoint for DV certificates using ECC certificate keys.",
                         "value": "https://acme.ssl.com/sslcom-dv-ecc"
                       },
                       {
-                        "label": "Entrust",
-                        "description": "Entrust ACME endpoint for accounts enabled for Entrust certificate automation.",
-                        "value": "https://acme.entrust.net/acme2/directory"
+                        "label": "SSL.com (RSA)",
+                        "description": "SSL.com ACME endpoint for DV certificates using RSA certificate keys.",
+                        "value": "https://acme.ssl.com/sslcom-dv-rsa"
                       },
                       {
-                        "label": "Global Sign",
-                        "description": "GlobalSign Atlas ACME endpoint for accounts enabled for certificate automation.",
-                        "value": "https://emea.acme.atlas.globalsign.com/directory"
+                        "label": "ZeroSSL",
+                        "description": "ZeroSSL ACME endpoint for 90-day DV certificates. EAB credentials are required.",
+                        "value": "https://acme.zerossl.com/v2/DV90"
                       }
                     ],
                     "required": true
                   },
-                  "visible": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'known'), true, false)]"
+                  "visible": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), true, false)]"
                 },
                 {
                   "name": "customEndpoint",
@@ -1362,7 +1357,7 @@
           "logAnalyticsWorkspaceName": "[if(equals(steps('loggingStep').createNew, 'create'), if(equals(steps('basics').namingRule, 'custom'), steps('loggingStep').logAnalyticsWorkspaceName, concat('log-', steps('basics').appPrefix)), '')]"
         },
         "acme": {
-          "endpoint": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'known'), steps('acmeStep').endpointSection.knownEndpoint, steps('acmeStep').endpointSection.customEndpoint)]",
+          "endpoint": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), steps('acmeStep').endpointSection.verifiedEndpoint, steps('acmeStep').endpointSection.customEndpoint)]",
           "contacts": "[steps('acmeStep').credentialSection.mailAddress]",
           "externalAccountBinding": {
             "enabled": "[equals(steps('acmeStep').credentialSection.credentialType, 'eab')]",

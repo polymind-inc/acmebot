@@ -2,17 +2,16 @@
 
 Acmebot works with ACME v2 certificate authorities. Configure the ACME directory endpoint with `Acmebot__Endpoint`.
 
-## Known Endpoints
+## Verified Endpoints
 
 | CA | Endpoint | Notes |
 | --- | --- | --- |
-| Let's Encrypt | `https://acme-v02.api.letsencrypt.org/directory` | No EAB required. |
-| ZeroSSL | `https://acme.zerossl.com/v2/DV90` | EAB credentials are required. |
-| Google Trust Services | `https://dv.acme-v02.api.pki.goog/directory` | EAB may be required depending on your account setup. |
-| SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` | EAB credentials are typically required. |
-| SSL.com ECC | `https://acme.ssl.com/sslcom-dv-ecc` | Use when issuing ECC certificates through SSL.com. |
-| Entrust | `https://acme.entrust.net/acme2/directory` | Requires an Entrust ACME-enabled account. |
-| GlobalSign Atlas | `https://emea.acme.atlas.globalsign.com/directory` | Requires an Atlas ACME-enabled account. |
+| Let's Encrypt | `https://acme-v02.api.letsencrypt.org/directory` | No EAB required. See the [Let's Encrypt documentation](https://letsencrypt.org/docs/) to get started. |
+| GlobalSign | `https://emea.acme.atlas.globalsign.com/directory` | Requires a GlobalSign account with ACME enabled. See the [GlobalSign ACME documentation](https://docs.globalsign.com/solutions/services/clm/acme) for account setup. |
+| Google Trust Services | `https://dv.acme-v02.api.pki.goog/directory` | EAB credentials are required. See the [Google Public CA documentation](https://cloud.google.com/certificate-manager/docs/public-ca-tutorial) for account setup. |
+| SSL.com ECC | `https://acme.ssl.com/sslcom-dv-ecc` | Use when issuing ECC certificates through SSL.com. EAB credentials are typically required. |
+| SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` | EAB credentials are typically required. See the [SSL.com ACME guide](https://www.ssl.com/guide/ssl-tls-certificate-issuance-and-revocation-with-acme/) for credential setup. |
+| ZeroSSL | `https://acme.zerossl.com/v2/DV90` | EAB credentials are required. See the [ZeroSSL ACME documentation](https://zerossl.com/documentation/acme) for credential setup. |
 
 You can also enter a custom ACME directory endpoint in the deployment form.
 
@@ -47,11 +46,10 @@ Common EAB scenarios:
 | CA | EAB guidance |
 | --- | --- |
 | Let's Encrypt | Usually not required. |
-| ZeroSSL | Required for ACME account registration. |
-| Google Trust Services | May be required depending on account setup. |
+| GlobalSign | Required for an ACME-enabled GlobalSign account. |
+| Google Trust Services | Required for ACME account registration. |
 | SSL.com | Typically required. |
-| Entrust | Required for an ACME-enabled Entrust account. |
-| GlobalSign Atlas | Required for an ACME-enabled Atlas account. |
+| ZeroSSL | Required for ACME account registration. |
 
 ## Preferred Chain
 

@@ -35,7 +35,7 @@ Acmebot validates with DNS-01 only. This supports wildcard certificates and work
 
 ### Certificate Authorities
 
-Acmebot works with any ACME v2 directory endpoint. The deployment form offers common endpoints such as Let's Encrypt, ZeroSSL, Google Trust Services, SSL.com, Entrust, and GlobalSign, and also accepts a custom ACME directory URL.
+Acmebot works with any ACME v2 directory endpoint. The deployment form offers common endpoints such as Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, and ZeroSSL, and also accepts a custom ACME directory URL.
 
 ### Dashboard
 

@@ -82,7 +82,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>
             </div>
             <h3>Multiple CAs</h3>
-            <p>Support for Let's Encrypt, ZeroSSL, Google Trust Services, SSL.com, Entrust, and more ACME v2 CAs.</p>
+            <p>Support for Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, ZeroSSL, and more ACME v2 CAs.</p>
           </div>
         </div>
       </div>
@@ -210,9 +210,9 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <p>The most widely used free CA. No additional credentials required.</p>
           </div>
           <div class="ca-card">
-            <strong>ZeroSSL</strong>
+            <strong>GlobalSign</strong>
             <span class="ca-badge">EAB</span>
-            <p>Free SSL certificates with ACME support and REST API.</p>
+            <p>GlobalSign ACME support for automated certificate issuance.</p>
           </div>
           <div class="ca-card">
             <strong>Google Trust Services</strong>
@@ -225,9 +225,9 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <p>Commercial CA offering free 90-day certificates via ACME.</p>
           </div>
           <div class="ca-card">
-            <strong>Entrust</strong>
+            <strong>ZeroSSL</strong>
             <span class="ca-badge">EAB</span>
-            <p>Enterprise-grade certificates with ACME automation support.</p>
+            <p>Free SSL certificates with ACME support and REST API.</p>
           </div>
         </div>
       </div>
