@@ -212,32 +212,32 @@
                     "allowedValues": [
                       {
                         "label": "Let's Encrypt",
-                        "description": "Let's Encrypt ACME v2 production endpoint for publicly trusted certificates.",
+                        "description": "Let's Encrypt ACME endpoint for publicly trusted certificates.",
                         "value": "https://acme-v02.api.letsencrypt.org/directory"
                       },
                       {
                         "label": "GlobalSign",
-                        "description": "GlobalSign ACME endpoint for accounts enabled for certificate automation.",
+                        "description": "GlobalSign ACME endpoint for publicly trusted certificates.",
                         "value": "https://emea.acme.atlas.globalsign.com/directory"
                       },
                       {
                         "label": "Google Trust Services",
-                        "description": "Google Trust Services ACME endpoint for public TLS certificates.",
+                        "description": "Google Trust Services ACME endpoint for publicly trusted certificates.",
                         "value": "https://dv.acme-v02.api.pki.goog/directory"
                       },
                       {
                         "label": "SSL.com (ECC)",
-                        "description": "SSL.com ACME endpoint for DV certificates using ECC certificate keys.",
+                        "description": "SSL.com ACME endpoint for DV certificates using ECC keys.",
                         "value": "https://acme.ssl.com/sslcom-dv-ecc"
                       },
                       {
                         "label": "SSL.com (RSA)",
-                        "description": "SSL.com ACME endpoint for DV certificates using RSA certificate keys.",
+                        "description": "SSL.com ACME endpoint for DV certificates using RSA keys.",
                         "value": "https://acme.ssl.com/sslcom-dv-rsa"
                       },
                       {
                         "label": "ZeroSSL",
-                        "description": "ZeroSSL ACME endpoint for 90-day DV certificates. EAB credentials are required.",
+                        "description": "ZeroSSL ACME endpoint for 90-day DV certificates.",
                         "value": "https://acme.zerossl.com/v2/DV90"
                       }
                     ],
@@ -296,7 +296,24 @@
                     ],
                     "required": true
                   },
-                  "visible": true
+                  "visible": "[equals(steps('acmeStep').endpointSection.endpointType, 'custom')]"
+                },
+                {
+                  "name": "requiredCredentialType",
+                  "type": "Microsoft.Common.OptionsGroup",
+                  "label": "Credential type",
+                  "toolTip": "This credential type is fixed because the selected certificate authority requires external account binding.",
+                  "defaultValue": "External Account Binding (EAB)",
+                  "constraints": {
+                    "allowedValues": [
+                      {
+                        "label": "External Account Binding (EAB)",
+                        "value": "eab"
+                      }
+                    ],
+                    "required": true
+                  },
+                  "visible": "[and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90')))]"
                 }
               ],
               "visible": true
@@ -361,7 +378,7 @@
                   "visible": true
                 }
               ],
-              "visible": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), true, false)]"
+              "visible": "[or(and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90'))), equals(coalesce(steps('acmeStep').credentialSection.credentialType, ''), 'eab'))]"
             }
           ]
         },
@@ -1360,10 +1377,10 @@
           "endpoint": "[if(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), steps('acmeStep').endpointSection.verifiedEndpoint, steps('acmeStep').endpointSection.customEndpoint)]",
           "contacts": "[steps('acmeStep').credentialSection.mailAddress]",
           "externalAccountBinding": {
-            "enabled": "[equals(steps('acmeStep').credentialSection.credentialType, 'eab')]",
-            "keyId": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.keyId, '')]",
-            "hmacKey": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.hmacKey, '')]",
-            "algorithm": "[if(equals(steps('acmeStep').credentialSection.credentialType, 'eab'), steps('acmeStep').eabSection.algorithm, 'HS256')]"
+            "enabled": "[or(and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90'))), equals(coalesce(steps('acmeStep').credentialSection.credentialType, ''), 'eab'))]",
+            "keyId": "[if(or(and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90'))), equals(coalesce(steps('acmeStep').credentialSection.credentialType, ''), 'eab')), steps('acmeStep').eabSection.keyId, '')]",
+            "hmacKey": "[if(or(and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90'))), equals(coalesce(steps('acmeStep').credentialSection.credentialType, ''), 'eab')), steps('acmeStep').eabSection.hmacKey, '')]",
+            "algorithm": "[if(or(and(equals(steps('acmeStep').endpointSection.endpointType, 'verified'), or(equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://emea.acme.atlas.globalsign.com/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://dv.acme-v02.api.pki.goog/directory'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-ecc'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.ssl.com/sslcom-dv-rsa'), equals(coalesce(steps('acmeStep').endpointSection.verifiedEndpoint, ''), 'https://acme.zerossl.com/v2/DV90'))), equals(coalesce(steps('acmeStep').credentialSection.credentialType, ''), 'eab')), steps('acmeStep').eabSection.algorithm, 'HS256')]"
           }
         },
         "dnsProvider": {

@@ -24,7 +24,7 @@ For a first test, use a staging endpoint if your certificate authority offers on
 | SSL.com RSA | `https://acme.ssl.com/sslcom-dv-rsa` |
 | ZeroSSL | `https://acme.zerossl.com/v2/DV90` |
 
-If your CA requires external account binding, select the EAB credential type during deployment. See [Certificate Authorities](./certificate-authorities) for details.
+If a verified CA requires external account binding, the deployment form fixes the credential type to EAB. For custom endpoints, select EAB when your CA requires it. See [Certificate Authorities](./certificate-authorities) for details.
 
 ## 2. Deploy Acmebot
 
