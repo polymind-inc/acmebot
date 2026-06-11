@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Acmebot.Acme.Internal;
 using Acmebot.Acme.Models;
@@ -18,7 +19,11 @@ public sealed class AcmeClient : IDisposable
     private const string JoseMediaType = "application/jose+json";
     private const string PemCertificateChainMediaType = "application/pem-certificate-chain";
 
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = AcmeJsonSerializerContext.Default.Options;
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
+    {
+        TypeInfoResolver = AcmeJsonSerializerContext.Default,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     private readonly HttpClient _httpClient;
     private readonly Uri _directoryUrl;
