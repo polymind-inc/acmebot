@@ -71,6 +71,7 @@ public sealed class AcmeClientTests
 
         var accountRequest = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         using var payload = accountRequest.GetPayloadJson();
+        using var protectedHeader = accountRequest.GetProtectedHeaderJson();
         var contact = payload.RootElement.GetProperty("contact");
 
         Assert.Equal("mailto:admin@example.com", Assert.Single(contact.EnumerateArray()).GetString());
@@ -80,6 +81,10 @@ public sealed class AcmeClientTests
         Assert.False(string.IsNullOrWhiteSpace(externalAccountBinding.GetProperty("protected").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(externalAccountBinding.GetProperty("payload").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(externalAccountBinding.GetProperty("signature").GetString()));
+
+        // Outer JWS protected header must have jwk but NOT kid (RFC 8555 §7.3.4)
+        Assert.True(protectedHeader.RootElement.TryGetProperty("jwk", out _), "Outer JWS must contain jwk for new account creation");
+        Assert.False(protectedHeader.RootElement.TryGetProperty("kid", out _), "Outer JWS must not contain kid for new account creation");
     }
 
     [Fact]

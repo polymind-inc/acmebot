@@ -18,10 +18,7 @@ public sealed class AcmeClient : IDisposable
     private const string JoseMediaType = "application/jose+json";
     private const string PemCertificateChainMediaType = "application/pem-certificate-chain";
 
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
-    {
-        TypeInfoResolver = AcmeJsonSerializerContext.Default
-    };
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = AcmeJsonSerializerContext.Default.Options;
 
     private readonly HttpClient _httpClient;
     private readonly Uri _directoryUrl;
