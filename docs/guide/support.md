@@ -31,7 +31,7 @@ Scope, response expectations, and terms are arranged directly with Polymind Inc.
 
 ## How It Works
 
-1. Submit an inquiry through the [Polymind Acmebot support page](https://polymind.jp/acmebot) or email [support@polymind.jp](mailto:support@polymind.jp).
+1. Submit an inquiry through the [Polymind Acmebot support page](https://polymind.jp/acmebot).
 2. Polymind reviews the environment, issue details, and support scope.
 3. If substantial investigation is required, Polymind proposes an appropriate support engagement.
 
@@ -40,7 +40,6 @@ Scope, response expectations, and terms are arranged directly with Polymind Inc.
 Please include enough context to understand the environment and failure mode:
 
 - Acmebot version.
-- Company name and contact email address.
 - Azure hosting plan.
 - DNS provider and certificate authority.
 - Target Azure service that consumes the certificate.

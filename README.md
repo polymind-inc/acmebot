@@ -80,7 +80,7 @@ Commercial support is optional and intended for organizations running Acmebot in
 
 Acmebot remains fully open source and free to use under the Apache License 2.0. Community questions and bug reports continue to be handled through GitHub Discussions and Issues.
 
-To discuss commercial support, visit the [Polymind Acmebot support page](https://polymind.jp/acmebot), email [support@polymind.jp](mailto:support@polymind.jp), or see the [Support guide](https://acmebot.dev/guide/support.html).
+To discuss commercial support, visit the [Polymind Acmebot support page](https://polymind.jp/acmebot) or see the [Support guide](https://acmebot.dev/guide/support.html).
 
 ## Community
 
