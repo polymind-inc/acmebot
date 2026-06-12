@@ -1,6 +1,6 @@
 # Support
 
-Acmebot is an open source project released under the Apache License 2.0. Community support remains available through GitHub, and commercial support for Acmebot v5 is now available from Polymind Inc.
+Acmebot is an open source project released under the Apache License 2.0. Community support remains available through GitHub, and optional commercial support for Acmebot v5 is available from Polymind Inc.
 
 ## Community Support
 
@@ -14,7 +14,7 @@ Community support is best effort and does not include guaranteed response times.
 
 ## Commercial Support
 
-Commercial support for Acmebot v5 is available from [Polymind Inc.](https://github.com/polymind-inc) for organizations running Acmebot in production or planning a production rollout.
+Commercial support for Acmebot v5 is available from [Polymind Inc.](https://polymind.jp/acmebot) for organizations running Acmebot in production or planning a production rollout.
 
 Support engagements can cover:
 
@@ -24,16 +24,48 @@ Support engagements can cover:
 - DNS provider and ACME certificate authority configuration.
 - Troubleshooting issuance, renewal, and operational issues.
 - Operational guidance for monitoring, upgrades, and incident response.
+- Architecture guidance for production deployments.
+- DNS provider integration consulting.
 
 Scope, response expectations, and terms are arranged directly with Polymind Inc.
+
+## How It Works
+
+1. Submit an inquiry through the [Polymind Acmebot support page](https://polymind.jp/acmebot) or email [support@polymind.jp](mailto:support@polymind.jp).
+2. Polymind reviews the environment, issue details, and support scope.
+3. If substantial investigation is required, Polymind proposes an appropriate support engagement.
 
 ## Before Requesting Help
 
 Please include enough context to understand the environment and failure mode:
 
 - Acmebot version.
-- Azure region and hosting plan.
+- Company name and contact email address.
+- Azure hosting plan.
 - DNS provider and certificate authority.
 - Target Azure service that consumes the certificate.
-- Relevant error messages from the dashboard, operation status, or Application Insights.
+- Description of the issue and relevant error messages from the dashboard, operation status, or Application Insights.
 - Whether the issue happens during deployment, issuance, renewal, revocation, or downstream service sync.
+- Related GitHub issue URL, log snippets, or screenshot URLs when available.
+
+## FAQ
+
+### Is Acmebot still open source?
+
+Yes. Acmebot remains licensed under the Apache License 2.0.
+
+### Is commercial support required?
+
+No. Commercial support is entirely optional.
+
+### Do you provide SLA-backed support?
+
+Not by default. Engagements are handled individually.
+
+### Do you provide 24x7 support?
+
+Not by default.
+
+### Do you provide managed hosting?
+
+No.
