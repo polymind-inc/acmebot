@@ -348,7 +348,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <div class="footer-col">
               <h4>Support</h4>
               <a href="https://github.com/sponsors/shibayan">Sponsor</a>
-              <a href="https://github.com/polymind-inc">Commercial Support</a>
+              <a href="/guide/support.html">Commercial Support</a>
             </div>
           </div>
         </div>

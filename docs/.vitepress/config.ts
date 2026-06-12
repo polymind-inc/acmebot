@@ -29,7 +29,8 @@ const guideSidebar = [
       { text: "Dashboard", link: "/guide/dashboard" },
       { text: "Operations", link: "/guide/operations" },
       { text: "Troubleshooting", link: "/guide/troubleshooting" },
-      { text: "FAQ", link: "/guide/faq" }
+      { text: "FAQ", link: "/guide/faq" },
+      { text: "Support", link: "/guide/support" }
     ]
   },
   {
@@ -65,6 +66,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/" },
       { text: "Reference", link: "/reference/configuration" },
       { text: "Deploy", link: "/guide/deployment" },
+      { text: "Support", link: "/guide/support" },
       { text: "GitHub", link: "https://github.com/polymind-inc/acmebot" }
     ],
     sidebar: {

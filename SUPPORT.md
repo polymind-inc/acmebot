@@ -14,4 +14,10 @@
 
 ## Commercial Support
 
-Commercial support is planned to be offered by Polymind Inc. See the project README for the current status.
+Commercial support for Acmebot v5 is available from [Polymind Inc.](https://github.com/polymind-inc).
+
+Commercial support is intended for organizations running Acmebot in production and can cover deployment planning, v4-to-v5 migration, Azure and DNS provider configuration, troubleshooting, and operational guidance.
+
+Acmebot remains fully open source and free to use under the Apache License 2.0. Community support continues through GitHub Discussions and Issues.
+
+See the [Support guide](docs/guide/support.md) for details.

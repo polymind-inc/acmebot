@@ -55,6 +55,7 @@ The dashboard is a same-origin web app served by the Function App. It calls the 
 | Connect renewed certificates to Azure services | [Azure Service Integration](./service-integration) |
 | Diagnose failed issuance, renewal, or service sync | [Troubleshooting](./troubleshooting) |
 | Answer common deployment and operations questions | [FAQ](./faq) |
+| Get community or commercial support | [Support](./support) |
 | Review every app setting | [Configuration Reference](../reference/configuration) |
 | Integrate with the HTTP endpoints | [HTTP API Reference](../reference/api) |
 
