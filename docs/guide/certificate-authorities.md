@@ -17,13 +17,13 @@ You can also enter a custom ACME directory endpoint in the deployment form.
 
 ## Contact Email
 
-Set one or more account contacts:
+Set the account contact email address:
 
 ```text
-Acmebot__Contacts=mailto:admin@example.com
+Acmebot__Contacts=admin@example.com
 ```
 
-The value is passed to the ACME new-account request. Use a monitored address because some CAs send expiration or account notices there.
+Enter the email address without the `mailto:` scheme. Acmebot adds it when calling the ACME API. Use a monitored address because some CAs send expiration or account notices there.
 
 ## External Account Binding
 

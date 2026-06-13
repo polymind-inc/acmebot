@@ -13,7 +13,7 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | Setting | Description |
 | --- | --- |
 | `Acmebot__Endpoint` | ACME directory endpoint. |
-| `Acmebot__Contacts` | ACME account contacts, such as `mailto:admin@example.com`. |
+| `Acmebot__Contacts` | ACME account contact email address, such as `admin@example.com`. Acmebot adds the `mailto:` scheme when calling the ACME API. |
 | `Acmebot__VaultBaseUrl` | Key Vault URL where certificates are stored. |
 | `Acmebot__Environment` | Azure cloud name. Defaults to `AzureCloud`. |
 
@@ -211,7 +211,7 @@ Do not remove these settings from deployed Function Apps.
 
 ```text
 Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
-Acmebot__Contacts=mailto:admin@example.com
+Acmebot__Contacts=admin@example.com
 Acmebot__VaultBaseUrl=https://my-vault.vault.azure.net/
 Acmebot__Environment=AzureCloud
 Acmebot__AzureDns__SubscriptionId=00000000-0000-0000-0000-000000000000
