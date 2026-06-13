@@ -1,6 +1,6 @@
 # Certificate Authorities
 
-Acmebot works with ACME v2 certificate authorities. Configure the ACME directory endpoint with `Acmebot__Endpoint`.
+Acmebot works with ACME v2 certificate authorities (CAs). Configure the ACME directory endpoint with `Acmebot__Endpoint`.
 
 ## Verified Endpoints
 
@@ -45,7 +45,7 @@ Common EAB scenarios:
 
 | CA | EAB guidance |
 | --- | --- |
-| Let's Encrypt | Usually not required. |
+| Let's Encrypt | Not required for standard public ACME accounts. |
 | GlobalSign | Required for an ACME-enabled GlobalSign account. |
 | Google Trust Services | Required for ACME account registration. |
 | SSL.com | Typically required. |
@@ -89,7 +89,7 @@ During scheduled renewal, Acmebot checks each managed certificate in Key Vault. 
 
 ## CA Selection Guidance
 
-- Use Let's Encrypt for a simple default path without EAB.
-- Use a commercial CA when you need a specific trust provider, account workflow, or support model.
+- Use Let's Encrypt when you want a default path without EAB.
+- Use a commercial CA when you need a specific trust provider, account workflow, compliance requirement, or support model.
 - Match the CA's RSA or ECC endpoint to the key type you plan to issue.
 - Keep EAB credentials in app settings and rotate them according to your CA's guidance.

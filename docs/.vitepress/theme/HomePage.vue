@@ -13,9 +13,9 @@ function scrollToSection(event: MouseEvent, selector: string) {
   <div class="landing-page">
     <section class="hero">
       <div class="container">
-        <div class="hero-badge">v5 Generally Available</div>
-        <h1 class="hero-title">Automated SSL/TLS Certificate Management<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
-        <p class="hero-description">Securely manage ACME certificates with Azure Key Vault.<br class="hide-mobile"> Issue, renew, and deploy certificates across your Azure services with production-ready automation.</p>
+        <div class="hero-badge">Acmebot v5 &mdash; Production Ready</div>
+        <h1 class="hero-title">Automated TLS certificates<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
+        <p class="hero-description">Acmebot issues and renews ACME certificates with DNS-01 validation, stores private keys in Azure Key Vault, and gives your team one dashboard, API, and CLI.</p>
         <div class="hero-actions">
           <a href="#deploy" class="btn btn-primary" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
           <a href="/guide/getting-started.html" class="btn btn-outline">Get Started</a>
@@ -23,15 +23,15 @@ function scrollToSection(event: MouseEvent, selector: string) {
         <div class="hero-stats">
           <div class="hero-stat">
             <span class="hero-stat-value">5+</span>
-            <span class="hero-stat-label">Certificate Authorities</span>
+            <span class="hero-stat-label">Verified ACME CAs</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat-value">12+</span>
-            <span class="hero-stat-label">DNS Providers</span>
+            <span class="hero-stat-value">15+</span>
+            <span class="hero-stat-label">DNS provider integrations</span>
           </div>
           <div class="hero-stat">
             <span class="hero-stat-value">7+</span>
-            <span class="hero-stat-label">Azure Services</span>
+            <span class="hero-stat-label">Azure service integrations</span>
           </div>
         </div>
       </div>
@@ -39,50 +39,50 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section id="features" class="section">
       <div class="container">
-        <h2 class="section-title">Why Acmebot?</h2>
-        <p class="section-subtitle">Everything you need for automated certificate management on Azure</p>
+        <h2 class="section-title">Why teams choose Acmebot</h2>
+        <p class="section-subtitle">Reduce expiry risk, retire one-off renewal scripts, and keep certificate work inside Azure-native security and monitoring.</p>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
             </div>
-            <h3>Secure by Design</h3>
-            <p>Certificates are stored in Azure Key Vault with managed identity authentication. No secrets to manage.</p>
+            <h3>Keep private keys in Key Vault</h3>
+            <p>Key Vault generates or reuses the private key, and Acmebot merges the ACME-issued chain back into the same certificate.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></svg>
             </div>
-            <h3>Fully Automated</h3>
-            <p>Automatic certificate issuance and renewal. Set it up once and forget about certificate expiration.</p>
+            <h3>Make renewal predictable</h3>
+            <p>The daily renewal job finds managed certificates, respects ACME renewal windows when available, and renews before expiry.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8m-4-4v4" /></svg>
             </div>
-            <h3>Dashboard</h3>
-            <p>Dedicated web-based dashboard for certificate management. View status, issue and revoke certificates with ease.</p>
+            <h3>Replace one-off scripts</h3>
+            <p>Use the dashboard for daily work, the HTTP API for integrations, and the CLI for repeatable automation.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
             </div>
-            <h3>Multi-Domain Support</h3>
-            <p>Issue certificates for Zone Apex, Wildcard and SANs. Manage multiple domains from a single deployment.</p>
+            <h3>Issue apex, wildcard, and SAN names</h3>
+            <p>Cover zone apex, wildcard, and multi-SAN certificates across multiple DNS zones and providers from one deployment.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
             </div>
-            <h3>Webhook Notifications</h3>
-            <p>Get notified via Slack, Microsoft Teams, or custom webhooks when certificates are issued or renewed.</p>
+            <h3>Route results to your team</h3>
+            <p>Send operation results to Slack, Microsoft Teams, Logic Apps, Power Automate, or your own webhook endpoint.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>
             </div>
-            <h3>Multiple CAs</h3>
-            <p>Support for Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, ZeroSSL, and more ACME v2 CAs.</p>
+            <h3>Use the CA your policy requires</h3>
+            <p>Start with Let's Encrypt, or use GlobalSign, Google Trust Services, SSL.com, ZeroSSL, or a custom ACME v2 endpoint.</p>
           </div>
         </div>
       </div>
@@ -90,29 +90,29 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section class="section section-alt">
       <div class="container">
-        <h2 class="section-title">What's New in v5</h2>
-        <p class="section-subtitle">Production-ready on Azure Functions Flex Consumption for modern cloud workloads</p>
+        <h2 class="section-title">Designed for production rollout</h2>
+        <p class="section-subtitle">v5 focuses on making adoption safer for existing deployments and easier to operate after the first certificate is issued.</p>
         <div class="v5-grid">
+          <div class="v5-card">
+            <div class="v5-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>
+            </div>
+            <h3>Preserve what already works</h3>
+            <p>Migrate from v4 while keeping existing Key Vault certificates, DNS provider settings, managed identity, and monitoring resources.</p>
+          </div>
           <div class="v5-card">
             <div class="v5-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
             </div>
-            <h3>Flex Consumption</h3>
-            <p>Built on Azure Functions Flex Consumption for cost-effective, event-driven scaling in production environments.</p>
+            <h3>Use one operation model</h3>
+            <p>Issue, renew, revoke, and track operations through the same model whether you use the dashboard, HTTP API, or CLI.</p>
           </div>
           <div class="v5-card">
             <div class="v5-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             </div>
-            <h3>Built-in VNET Integration</h3>
-            <p>Native virtual network integration support for secure private connectivity to internal Azure resources.</p>
-          </div>
-          <div class="v5-card">
-            <div class="v5-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>
-            </div>
-            <h3>.NET 10</h3>
-            <p>Runs on .NET 10 for the latest platform improvements, performance updates, and long-term maintainability.</p>
+            <h3>Keep access and visibility clear</h3>
+            <p>Protect the dashboard with authentication and app roles, scope Azure access with managed identity, and monitor with telemetry and webhooks.</p>
           </div>
         </div>
       </div>
@@ -120,8 +120,8 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section id="services" class="section">
       <div class="container">
-        <h2 class="section-title">Supported Azure Services</h2>
-        <p class="section-subtitle">Deploy certificates across your entire Azure infrastructure</p>
+        <h2 class="section-title">Bring renewed certificates to Azure services</h2>
+        <p class="section-subtitle">Acmebot owns issuance and renewal; each Azure service consumes the current Key Vault certificate through its supported pattern.</p>
         <div class="services-grid">
           <div class="service-card">
             <div class="service-icon">
@@ -178,8 +178,8 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section id="providers" class="section section-alt">
       <div class="container">
-        <h2 class="section-title">DNS Providers</h2>
-        <p class="section-subtitle">Automatic DNS-01 challenge validation with built-in integrations and custom extensibility</p>
+        <h2 class="section-title">DNS providers</h2>
+        <p class="section-subtitle">Use the DNS provider you already run, or connect Acmebot to your own DNS automation API.</p>
         <div class="providers-grid">
           <div class="provider-card">Azure DNS</div>
           <div class="provider-card">Azure Private DNS</div>
@@ -195,39 +195,39 @@ function scrollToSection(event: MouseEvent, selector: string) {
           <div class="provider-card">PowerDNS</div>
           <div class="provider-card">Custom DNS</div>
         </div>
-        <p class="providers-note">Need another provider? Custom DNS support lets you integrate virtually any DNS service through Azure Functions.</p>
+        <p class="providers-note">Need another provider? The Custom DNS provider can connect Acmebot to your own DNS automation API.</p>
       </div>
     </section>
 
     <section class="section">
       <div class="container">
-        <h2 class="section-title">Certificate Authorities</h2>
-        <p class="section-subtitle">Includes first-class support for popular ACME v2 Certificate Authorities</p>
+        <h2 class="section-title">Certificate authorities</h2>
+        <p class="section-subtitle">Use a verified ACME v2 endpoint, choose a CA with EAB, or point Acmebot at your own ACME directory URL.</p>
         <div class="ca-grid">
           <div class="ca-card">
             <strong>Let's Encrypt</strong>
             <span class="ca-badge ca-free">Free</span>
-            <p>The most widely used free CA. No additional credentials required.</p>
+            <p>Common default for public certificates. No external account binding credentials are required.</p>
           </div>
           <div class="ca-card">
             <strong>GlobalSign</strong>
             <span class="ca-badge">EAB</span>
-            <p>GlobalSign ACME support for automated certificate issuance.</p>
+            <p>Commercial CA option for automated certificate issuance through ACME.</p>
           </div>
           <div class="ca-card">
             <strong>Google Trust Services</strong>
             <span class="ca-badge">EAB</span>
-            <p>Google's public Certificate Authority for trusted certificates.</p>
+            <p>Google public CA endpoint for ACME-issued certificates.</p>
           </div>
           <div class="ca-card">
             <strong>SSL.com</strong>
             <span class="ca-badge">EAB</span>
-            <p>Commercial CA offering free 90-day certificates via ACME.</p>
+            <p>Commercial CA endpoint for 90-day certificates through ACME.</p>
           </div>
           <div class="ca-card">
             <strong>ZeroSSL</strong>
             <span class="ca-badge">EAB</span>
-            <p>Free SSL certificates with ACME support and REST API.</p>
+            <p>ACME CA option for teams that already use ZeroSSL accounts.</p>
           </div>
         </div>
       </div>
@@ -236,16 +236,16 @@ function scrollToSection(event: MouseEvent, selector: string) {
     <section id="deploy" class="section section-alt">
       <div class="container">
         <h2 class="section-title">Deploy to Azure</h2>
-        <p class="section-subtitle">One-click deployment to your Azure Public subscription</p>
+        <p class="section-subtitle">Start with the Azure Public template, then connect DNS permissions and dashboard authentication for your environment.</p>
         <div class="deploy-grid">
           <div class="deploy-card deploy-card-primary">
             <h3 class="deploy-version">Acmebot v5 <span class="deploy-tag">GA</span></h3>
-            <p>Production-ready setup for automated certificate management with secure storage, monitoring, and private network support.</p>
+            <p>Provision the Function App, storage, monitoring resources, application settings, and optional Key Vault for a new Acmebot environment.</p>
             <ul class="deploy-features">
-              <li>Automated renewals</li>
-              <li>Secure Key Vault storage</li>
+              <li>Scheduled renewals</li>
+              <li>Key Vault storage</li>
               <li>Private network support</li>
-              <li>Monitoring included</li>
+              <li>Azure Monitor telemetry</li>
             </ul>
             <div class="deploy-buttons">
               <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" class="btn btn-primary btn-deploy">Azure Public</a>
@@ -253,30 +253,30 @@ function scrollToSection(event: MouseEvent, selector: string) {
           </div>
         </div>
         <div class="deploy-alt">
-          <p>Also available on <a href="https://registry.terraform.io/modules/polymind-inc/acmebot/azurerm/latest">Terraform Registry</a></p>
+          <p>Also available from the <a href="https://registry.terraform.io/modules/polymind-inc/acmebot/azurerm/latest">Terraform Registry</a></p>
         </div>
       </div>
     </section>
 
     <section class="section">
       <div class="container">
-        <h2 class="section-title">Get Started in Minutes</h2>
-        <p class="section-subtitle">Three simple steps to automated certificate management</p>
+        <h2 class="section-title">From deployment to first certificate</h2>
+        <p class="section-subtitle">A small amount of Azure setup gives your team an automated certificate path it can keep using.</p>
         <div class="steps-grid">
           <div class="step-card">
             <div class="step-number">1</div>
             <h3>Deploy</h3>
-            <p>Choose the v5 Deploy to Azure option and configure your deployment with the Azure Portal wizard.</p>
+            <p>Deploy the v5 template and choose the ACME endpoint, managed identity, Key Vault, and monitoring settings.</p>
           </div>
           <div class="step-card">
             <div class="step-number">2</div>
             <h3>Configure DNS</h3>
-            <p>Grant the managed identity access to your DNS zone for automatic DNS-01 challenge validation.</p>
+            <p>Grant the selected identity or provider credential permission to create and delete DNS-01 TXT records.</p>
           </div>
           <div class="step-card">
             <div class="step-number">3</div>
             <h3>Issue Certificates</h3>
-            <p>Use the built-in dashboard to issue your first certificate. Renewals happen automatically.</p>
+            <p>Use the dashboard to issue a certificate, confirm the Key Vault version, and let scheduled renewals take over.</p>
           </div>
         </div>
         <div class="steps-cta">
@@ -288,7 +288,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
     <section class="section section-alt">
       <div class="container">
         <h2 class="section-title">Sponsors</h2>
-        <p class="section-subtitle">Thank you for your support of our development</p>
+        <p class="section-subtitle">Thank you to the organizations and individuals who support Acmebot development.</p>
         <div class="sponsors-grid">
           <a href="https://zenarchitects.co.jp" class="sponsor-card">
             <img src="/images/zenarchitects.png" alt="ZEN Architects" loading="lazy">
@@ -303,23 +303,23 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section class="section">
       <div class="container">
-        <h2 class="section-title">Open Source</h2>
-        <p class="section-subtitle">Apache License 2.0 &mdash; free to use, forever</p>
+        <h2 class="section-title">Open source</h2>
+        <p class="section-subtitle">Apache License 2.0 &mdash; open source and free to use.</p>
         <div class="community-grid">
           <a href="https://github.com/polymind-inc/acmebot" class="community-card">
             <svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>
             <strong>GitHub</strong>
-            <p>Source code, issues, and contributions</p>
+            <p>Source code, issues, releases, and contributions</p>
           </a>
           <a href="/guide/" class="community-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" /><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>
             <strong>Documentation</strong>
-            <p>Setup guides and configuration reference</p>
+            <p>Deployment guides, operations guidance, and reference material</p>
           </a>
           <a href="https://github.com/polymind-inc/acmebot/discussions" class="community-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
             <strong>Discussions</strong>
-            <p>Questions, ideas, and community support</p>
+            <p>Usage questions, design discussions, and community support</p>
           </a>
         </div>
       </div>
@@ -330,7 +330,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
         <div class="footer-content">
           <div class="footer-brand">
             <strong>Acmebot</strong>
-            <p>Automated ACME SSL/TLS certificate management for Microsoft Azure</p>
+            <p>ACME SSL/TLS certificate automation for Azure platform teams</p>
           </div>
           <div class="footer-links">
             <div class="footer-col">
@@ -450,7 +450,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
 }
 
 .hero {
-  padding: 96px 0;
+  padding: 44px 0 24px;
   text-align: center;
   background: linear-gradient(180deg, #f0f6ff 0%, #ffffff 100%);
 }
@@ -463,7 +463,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   font-size: 0.85rem;
   font-weight: 600;
   border-radius: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .hero-title {
@@ -471,7 +471,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
@@ -489,14 +489,14 @@ function scrollToSection(event: MouseEvent, selector: string) {
   color: var(--text-secondary);
   line-height: 1.7;
   max-width: 640px;
-  margin: 0 auto 40px;
+  margin: 0 auto 32px;
 }
 
 .hero-actions {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-bottom: 64px;
+  margin-bottom: 28px;
 }
 
 .hero-stats {
@@ -598,19 +598,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
 .feature-card {
   padding: 32px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.feature-card:hover,
-.v5-card:hover,
-.service-card:hover,
-.step-card:hover,
-.community-card:hover,
-.sponsor-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
+  border-radius: var(--radius-lg);}
 
 .feature-icon {
   width: 48px;
@@ -649,9 +637,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   padding: 32px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  text-align: center;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
+  text-align: center;}
 
 .v5-icon {
   width: 56px;
@@ -684,9 +670,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   text-align: center;
   padding: 28px 20px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  transition: box-shadow 0.2s, transform 0.2s;
-  width: calc(25% - 15px);
+  border-radius: var(--radius-lg);  width: calc(25% - 15px);
   min-width: 200px;
 }
 
@@ -891,9 +875,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   text-align: center;
   padding: 32px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
+  border-radius: var(--radius-lg);}
 
 .step-number {
   width: 48px;
@@ -927,9 +909,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   justify-content: center;
   padding: 24px 40px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
+  border-radius: var(--radius-lg);}
 
 .sponsor-card img {
   max-height: 48px;
@@ -960,9 +940,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   padding: 32px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
+  color: var(--text-primary);}
 
 .community-card:hover {
   color: var(--text-primary);
@@ -1062,7 +1040,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   }
 
   .hero {
-    padding: 72px 0 64px;
+    padding: 56px 0 48px;
   }
 
   .hero-title {
@@ -1120,17 +1098,38 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
 @media (max-width: 640px) {
   .hero-title {
-    font-size: 1.75rem;
+    font-size: 1.65rem;
+  }
+
+  .hero-description {
+    font-size: 0.98rem;
+    line-height: 1.55;
   }
 
   .hero-actions {
     flex-direction: column;
     align-items: center;
+    margin-bottom: 32px;
   }
 
   .hero-stats {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .hero-stat {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .hero-stat-value {
+    font-size: 1.5rem;
+  }
+
+  .hero-stat-label {
+    font-size: 0.72rem;
+    line-height: 1.3;
   }
 
   .service-card {

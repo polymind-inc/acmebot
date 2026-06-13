@@ -48,7 +48,7 @@ const guideSidebar = [
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
-  description: "Automated ACME SSL/TLS certificate management for Microsoft Azure.",
+  description: "ACME SSL/TLS certificate automation for Azure platform teams.",
   lastUpdated: true,
   srcExclude: ["README.md"],
   head: [
@@ -56,8 +56,8 @@ export default defineConfig({
     ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
     ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
     ["link", { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" }],
-    ["meta", { property: "og:title", content: "Acmebot for Microsoft Azure" }],
-    ["meta", { property: "og:description", content: "Automated ACME SSL/TLS certificate management built around Azure Key Vault." }],
+    ["meta", { property: "og:title", content: "Acmebot — Automated TLS certificates for Microsoft Azure" }],
+    ["meta", { property: "og:description", content: "ACME SSL/TLS certificate automation for Azure platform teams, built around DNS-01 validation and Azure Key Vault." }],
     ["meta", { property: "og:image", content: "https://acmebot.dev/images/ogp.png" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }]

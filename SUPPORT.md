@@ -8,15 +8,15 @@
 
 ## Before Opening an Issue
 
-- Check the README and project wiki.
+- Check the README and documentation site.
 - Search existing issues and discussions.
 - Include enough detail to reproduce the problem, including the target Azure service and certificate scenario.
 
 ## Commercial Support
 
-Commercial support for Acmebot v5 is available from [Polymind Inc.](https://polymind.jp/acmebot).
+Commercial support for Acmebot v5 is available from [Polymind Inc.](https://polymind.jp/acmebot) for organizations running Acmebot in production or planning a production rollout.
 
-Commercial support is optional and intended for organizations running Acmebot in production. It can cover deployment planning, v4-to-v5 migration, Azure and DNS provider configuration, troubleshooting, and operational guidance.
+Commercial support is optional. It can cover deployment planning, v4-to-v5 migration, Azure and DNS provider configuration, troubleshooting, and operational guidance.
 
 Acmebot remains fully open source and free to use under the Apache License 2.0. Community support continues through GitHub Discussions and Issues.
 

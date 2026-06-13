@@ -14,11 +14,11 @@ If a certificate request does not specify `dnsProviderName`, Acmebot can infer t
 
 External DNS provider credentials are Function App app settings. Treat every API key, secret, token, and private key reference as production secret material.
 
-Recommended practice:
+Recommended practices:
 
 - Use provider API tokens instead of account-wide credentials when the provider supports scoped tokens.
 - Scope credentials to the exact zones Acmebot manages.
-- Store secret values in Key Vault and use App Service Key Vault references when your operations model allows it.
+- Store secret values in Key Vault and use App Service Key Vault references when your operations model supports it.
 - Restart the Function App after rotating provider credentials.
 - Load DNS zones from the dashboard after rotation to confirm the new credential works before revoking the old one.
 
@@ -67,7 +67,7 @@ Acmebot__Akamai__AccessToken=<access-token>
 
 ## Azure DNS
 
-Azure DNS uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to override it.
+Azure DNS uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to use a provider-specific identity.
 
 | Option | Description |
 | --- | --- |
@@ -85,7 +85,7 @@ If the DNS zone is in a different subscription than the Function App, set `Subsc
 
 ## Azure Private DNS
 
-Azure Private DNS also uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to override it.
+Azure Private DNS also uses the app-wide managed identity by default. For manual app setting configuration, set `ManagedIdentityClientId` to use a provider-specific identity.
 
 | Option | Description |
 | --- | --- |
@@ -113,11 +113,11 @@ Use a Cloudflare API token that can read zones and edit DNS records for the targ
 Acmebot__Cloudflare__ApiToken=<api-token>
 ```
 
-Scope the token to the exact zones Acmebot manages when possible.
+Scope the token to the exact zones Acmebot manages.
 
 ## Custom DNS
 
-Use Custom DNS when your DNS platform is not directly supported or when you want to front an internal DNS automation service.
+Use Custom DNS when your DNS platform is not directly supported or when you want Acmebot to call an internal DNS automation service.
 
 | Option | Description |
 | --- | --- |
@@ -203,13 +203,13 @@ Acmebot__GoDaddy__ApiKey=<api-key>
 Acmebot__GoDaddy__ApiSecret=<api-secret>
 ```
 
-GoDaddy propagation can be slower than many other providers, so Acmebot waits 600 seconds before DNS verification.
+GoDaddy propagation can be slower than many other providers, so Acmebot waits 600 seconds before DNS verification starts.
 
-Some GoDaddy accounts are not entitled to production API access even when credentials can be created. If zone listing or record updates fail despite correct-looking settings, confirm API availability for the account with GoDaddy.
+Some GoDaddy accounts are not entitled to production API access even when credentials can be created. If zone listing or record updates fail despite valid-looking settings, confirm API availability for the account with GoDaddy.
 
 ## Google Cloud DNS
 
-Google Cloud DNS can use either a base64-encoded service account JSON key file, or Google Cloud workload identity federation with the Function App managed identity. When `KeyFile64` is set, Acmebot uses the service account key path.
+Google Cloud DNS can use either a base64-encoded service account JSON key file or Google Cloud workload identity federation with the Function App managed identity. When `KeyFile64` is set, Acmebot uses the service account key path.
 
 | Option | Description |
 | --- | --- |
@@ -294,7 +294,7 @@ Acmebot refreshes the OVH zone after record mutations so changes are published.
 
 ## PowerDNS
 
-Use PowerDNS when you operate an authoritative PowerDNS server with the HTTP API enabled.
+Use PowerDNS when you operate an authoritative PowerDNS server with its HTTP API enabled.
 
 | Option | Description |
 | --- | --- |
@@ -320,11 +320,11 @@ Use a Regfish API key that can list DNS zones and manage DNS records.
 Acmebot__Regfish__ApiKey=<api-key>
 ```
 
-Regfish can return transient server errors when listing records for otherwise usable zones. Acmebot handles known empty-list cases, but persistent failures should be checked in Application Insights.
+Regfish can return transient server errors when listing records for otherwise usable zones. Acmebot handles known empty-list cases, but persistent failures should be investigated in Application Insights.
 
 ## Amazon Route 53
 
-Route 53 can use either an AWS IAM role assumed with the Function App managed identity, or static AWS access key credentials. When `RoleArn` is set, Acmebot uses STS `AssumeRoleWithWebIdentity` and ignores `AccessKey` and `SecretKey`.
+Route 53 can use either an AWS IAM role assumed with the Function App managed identity or static AWS access key credentials. When `RoleArn` is set, Acmebot uses STS `AssumeRoleWithWebIdentity` and ignores `AccessKey` and `SecretKey`.
 
 | Option | Description |
 | --- | --- |
@@ -347,7 +347,7 @@ Acmebot__Route53__SecretKey=<secret-key>
 
 Acmebot lists public hosted zones and creates TXT records in the matching hosted zone.
 
-The IAM role or access key needs these minimum permissions:
+The IAM role or access key requires these minimum permissions:
 
 - `route53:ListHostedZones`
 - `route53:ListResourceRecordSets`
@@ -413,5 +413,5 @@ Acmebot__UnitedDomains__ApiKey=<api-key>
 | No DNS zones appear in the dashboard | Verify provider credentials and that the provider can list zones. |
 | `No DNS zone was found` | Confirm the requested DNS name is under a configured zone or use `dnsAlias`. |
 | Delegated name server error | Confirm the authoritative NS records match the provider's zone name servers. |
-| TXT record not found | Increase provider propagation delay, check resolver choice, and verify the record exists at `_acme-challenge`. |
+| TXT record not found | Increase provider propagation delay, check resolver choice, and verify the expected `_acme-challenge` record exists. |
 | Multiple providers match | Select the provider explicitly in the dashboard. |

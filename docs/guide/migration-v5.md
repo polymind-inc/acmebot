@@ -1,8 +1,8 @@
 # Migrating from v4 to v5
 
-Acmebot v5 moves the app from the .NET in-process worker to the .NET isolated worker. Existing certificates, Key Vault, DNS provider settings, managed identity, and monitoring resources can stay in place.
+Acmebot v5 moves the application from the .NET in-process worker to the .NET isolated worker. Existing certificates, Key Vault, DNS provider settings, managed identity, and monitoring resources can stay in place.
 
-Use the automatic migration unless you need to make the same changes manually through your own deployment pipeline.
+Use the automatic migration unless your environment requires the same changes to be applied through an internal deployment pipeline.
 
 ## What the Migration Changes
 
@@ -17,7 +17,7 @@ The in-place migration updates only the existing Function App worker setting, .N
 
 v5 does not store the package URL in `WEBSITE_RUN_FROM_PACKAGE`. The v5 GitHub Release asset URL is used only as the deployment source for the ARM template or `az webapp deploy`.
 
-The migration preserves the existing app settings. Do not remove `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING` or `WEBSITE_CONTENTSHARE` during an in-place migration; when those settings exist, v5 continues to use the existing Azure Files content share for ACME account state.
+The migration preserves existing app settings. Do not remove `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING` or `WEBSITE_CONTENTSHARE` during an in-place migration; when those settings exist, v5 continues to use the existing Azure Files content share for ACME account state.
 
 The migration template does not recreate the Function App, App Service plan, Storage account, Key Vault, Application Insights, or Log Analytics workspace. To move to the new v5 default architecture on Flex Consumption, deploy a new v5 environment instead of using the in-place migration.
 
@@ -74,7 +74,7 @@ az deployment group create \
 
 ## Manual Migration
 
-Manual migration is useful when you need to apply the same changes through an internal deployment process.
+Manual migration is useful when the same changes must be applied through an internal deployment process.
 
 1. Stop the Function App.
 2. Preserve all existing Acmebot, DNS provider, Key Vault, Storage, Application Insights, authentication, and webhook settings.

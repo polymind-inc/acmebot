@@ -32,15 +32,15 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 
 | Value | Cloud |
 | --- | --- |
-| `AzureCloud` | Azure Public |
+| `AzureCloud` | Azure public cloud |
 | `AzureChinaCloud` | Azure China |
 | `AzureUSGovernment` | Azure Government |
 
-The selected environment controls Azure Resource Manager and identity authority hosts. The standard Flex Consumption deployment template supports Azure Public only because Flex Consumption is not available in Azure China or Azure Government.
+The selected environment controls Azure Resource Manager and identity authority hosts. The standard Flex Consumption deployment template supports the Azure public cloud only because Flex Consumption is not available in Azure China or Azure Government.
 
 ## External Account Binding
 
-Configure these settings before first ACME account registration when the selected CA requires EAB.
+Configure these settings before the first ACME account registration when the selected CA requires EAB.
 
 | Setting | Default | Description |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ Provider credentials are secrets. Use scoped provider tokens where possible, and
 | `Acmebot__AzureDns__SubscriptionId` | Azure subscription ID containing the public DNS zones Acmebot manages. The selected identity must have zone read and TXT record write/delete access in this subscription. |
 | `Acmebot__AzureDns__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used for Azure DNS. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
 
-Azure DNS uses the app-wide managed identity by default and this setting overrides it.
+Azure DNS uses the app-wide managed identity by default. This setting selects a provider-specific identity.
 
 ### Azure Private DNS
 
@@ -79,7 +79,7 @@ Azure DNS uses the app-wide managed identity by default and this setting overrid
 | `Acmebot__AzurePrivateDns__SubscriptionId` | Azure subscription ID containing the private DNS zones Acmebot manages. The selected identity must have private zone read and TXT record write/delete access in this subscription. |
 | `Acmebot__AzurePrivateDns__ManagedIdentityClientId` | Optional client ID for a user-assigned managed identity used for Azure Private DNS. When empty, Acmebot uses the app-wide managed identity from `Acmebot__ManagedIdentityClientId`, or the system-assigned managed identity if the app-wide client ID is empty. The user-assigned identity must be assigned to the Function App. |
 
-Azure Private DNS uses the app-wide managed identity by default and this setting overrides it.
+Azure Private DNS uses the app-wide managed identity by default. This setting selects a provider-specific identity.
 
 ### Cloudflare
 
@@ -168,7 +168,7 @@ Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private man
 | `Acmebot__Route53__AccessKey` | AWS access key ID used by the Route 53 client when `RoleArn` is empty. |
 | `Acmebot__Route53__SecretKey` | AWS secret access key paired with `AccessKey` when `RoleArn` is empty. |
 
-The AWS role or access key credentials need permission to list hosted zones, list record sets, and change record sets in the target hosted zone.
+The AWS role or access key credentials require permission to list hosted zones, list record sets, and change record sets in the target hosted zone.
 
 ### TransIP DNS
 

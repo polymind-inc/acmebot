@@ -1,15 +1,15 @@
 # Getting Started
 
-This walkthrough deploys a first Acmebot v5 environment and issues a certificate into Azure Key Vault.
+This walkthrough deploys a new Acmebot v5 environment and issues a certificate into Azure Key Vault.
 
 ## Prerequisites
 
-- An Azure Public subscription where you can create Function App, Storage, monitoring, and Key Vault resources.
+- An Azure public cloud subscription where you can create Function App, Storage, monitoring, and Key Vault resources.
 - Permission to create role assignments, which the template needs when it configures Key Vault access.
 - A DNS zone hosted by a supported provider.
 - Credentials or managed identity access that can create and delete TXT records in that zone.
 - A contact email address for the ACME account.
-- A Microsoft Entra ID or App Service Authentication configuration for dashboard access.
+- A plan for App Service Authentication, typically with Microsoft Entra ID, for dashboard access.
 
 ## 1. Choose an ACME Endpoint
 
@@ -28,7 +28,7 @@ If a verified CA requires external account binding, the deployment form fixes th
 
 ## 2. Deploy Acmebot
 
-Open [Deployment](./deployment) and deploy to Azure Public. During deployment:
+Open [Deployment](./deployment) and start the Azure Public deployment template. During deployment:
 
 1. Select the subscription, resource group, and region.
 2. Choose a resource naming mode.
@@ -38,7 +38,7 @@ Open [Deployment](./deployment) and deploy to Azure Public. During deployment:
 6. Create a new Key Vault or select an existing one.
 7. Create a new Log Analytics workspace or select an existing one.
 
-The template creates the Function App, Flex Consumption plan, Storage account, Application Insights component, and required app settings.
+The template creates the Function App, Flex Consumption plan, Storage account, Application Insights resource, and required app settings.
 
 ## 3. Grant DNS Access
 
@@ -48,7 +48,7 @@ The template configures Key Vault access for the Function App identity, but DNS 
 - **Azure Private DNS**: assign `Private DNS Zone Contributor` on the private zone or resource group.
 - **External providers**: use credentials scoped to the hosted zones Acmebot should manage, and prefer least-privilege API tokens when the provider supports them.
 
-When possible, store provider secrets in Key Vault and reference them from Function App settings with App Service Key Vault references. App configuration stays readable while the secret value moves under Key Vault access control.
+When possible, store provider secrets in Key Vault and reference them from Function App settings with App Service Key Vault references. The app setting remains readable while the secret value moves under Key Vault access control.
 
 ## 4. Enable Dashboard Authentication
 
@@ -90,5 +90,5 @@ See [Operations](./operations) for monitoring and troubleshooting guidance.
 - Review CA-specific notes in [Certificate Authorities](./certificate-authorities).
 - Learn dashboard operations in [Dashboard](./dashboard).
 - Connect certificates to Azure services in [Azure Service Integration](./service-integration).
-- Keep [Troubleshooting](./troubleshooting) nearby for first-issuance validation.
+- Use [Troubleshooting](./troubleshooting) during first-issuance validation.
 - Review every app setting in [Configuration](../reference/configuration).

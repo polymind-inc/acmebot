@@ -1,6 +1,6 @@
 # Dashboard
 
-The dashboard is the primary interface for Acmebot. The Function App serves it and it calls the same-origin `/api/*` endpoints.
+The dashboard is the primary interface for Acmebot. The Function App serves the dashboard, and the dashboard calls the same-origin `/api/*` endpoints.
 
 ## Access
 
@@ -20,7 +20,7 @@ Only certificates with Acmebot metadata for the current endpoint are selected fo
 
 The dashboard lists zones from all configured DNS providers. A provider that fails to list zones is dropped from the result, so check Application Insights if an expected provider is missing.
 
-Load the zone list before issuing your first certificate. It confirms that DNS credentials, managed identity permissions, and network access all work.
+Load the zone list before issuing your first certificate. This confirms that DNS credentials, managed identity permissions, and network access are configured correctly.
 
 ## Issue a Certificate
 
@@ -28,7 +28,7 @@ Load the zone list before issuing your first certificate. It confirms that DNS c
 2. Enter the record name under that zone.
 3. Review the resulting DNS name.
 4. Choose key options.
-5. Optionally set advanced options.
+5. Set advanced options if required.
 6. Submit the request and wait for the operation overlay to complete.
 
 Leave the record name empty for the zone apex, or use `*` as the leftmost label for a wildcard certificate.
@@ -50,7 +50,7 @@ Certificate names can contain letters, numbers, and hyphens. If omitted, Acmebot
 
 ### DNS Alias
 
-Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then validates through `_acme-challenge.<dnsAlias>`. This is useful when you delegate validation to a separate zone; ensure the required CNAME or delegation exists before submitting.
+Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then validates through `_acme-challenge.<dnsAlias>`. This is useful when you delegate validation to a separate zone; confirm the required CNAME or delegation exists before submitting.
 
 ### Tags
 
@@ -64,7 +64,7 @@ Scheduled renewals run daily and add a random delay of up to 600 seconds before 
 
 ## Revoke a Certificate
 
-Revocation sends the certificate to the configured ACME CA's revoke endpoint. It does not delete the Key Vault certificate. After revocation, decide whether to delete, disable, or replace the certificate version according to your operational policy.
+Revocation sends the certificate to the configured ACME certificate authority's revoke endpoint. It does not delete the Key Vault certificate. After revocation, decide whether to delete, disable, or replace the certificate version according to your operational policy.
 
 ## Operation Status
 

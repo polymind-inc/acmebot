@@ -37,7 +37,7 @@ Scope, response expectations, and terms are arranged directly with Polymind Inc.
 
 ## Before Requesting Help
 
-Please include enough context to understand the environment and failure mode:
+Include enough context to understand the environment and failure mode:
 
 - Acmebot version.
 - Azure hosting plan.

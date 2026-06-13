@@ -37,7 +37,7 @@ Listing certificates and DNS zones still requires authentication.
 
 ## Managed Identity
 
-Use managed identity for Azure resource access and cross-cloud federation. By default, Acmebot uses the app-wide managed identity. Azure DNS, Azure Private DNS, Route 53 web identity federation, and Google Cloud DNS workload identity federation can override it with provider-specific user-assigned managed identity client IDs. If no client ID is configured, Azure SDK clients use the Function App system-assigned managed identity.
+Use managed identity for Azure resource access and cross-cloud federation. By default, Acmebot uses the app-wide managed identity. Azure DNS, Azure Private DNS, Route 53 web identity federation, and Google Cloud DNS workload identity federation can use provider-specific user-assigned managed identity client IDs. If no client ID is configured, Azure SDK clients use the Function App system-assigned managed identity.
 
 Recommended scopes:
 
@@ -60,7 +60,7 @@ Recommendations:
 - Use provider API tokens instead of account-wide credentials when available.
 - Scope tokens to the zones Acmebot manages.
 - Grant only zone read and DNS record edit permissions.
-- Use App Service Key Vault references for secret values when possible.
+- Use App Service Key Vault references for secret values when your operations model supports it.
 - Rotate credentials regularly.
 - Restart the Function App after updating credentials.
 

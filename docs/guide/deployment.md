@@ -1,6 +1,6 @@
 # Deployment
 
-Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template supports Azure Public only because Flex Consumption is not available in Azure China or Azure Government.
+Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template supports the Azure public cloud only because Flex Consumption is not available in Azure China or Azure Government.
 
 ## Deploy to Azure
 
@@ -12,7 +12,7 @@ Acmebot v5 is generally available and is the current release for new deployments
 
 ### Basics
 
-The Basics step selects the subscription, resource group, region, and resource names. The prefixed naming mode generates names such as `func-<prefix>`, `plan-<prefix>`, `kv-<prefix>`, `appi-<prefix>`, and `log-<prefix>`. Use custom names to match an existing naming standard; the template validates Azure naming rules before deployment.
+The Basics step selects the subscription, resource group, region, and resource names. The prefixed naming mode generates names such as `func-<prefix>`, `plan-<prefix>`, `kv-<prefix>`, `appi-<prefix>`, and `log-<prefix>`. Use custom names when you need to match an existing naming standard; the template validates Azure naming rules before deployment.
 
 ### ACME
 
@@ -28,8 +28,8 @@ Choose exactly one provider in the deployment form; you can add more later by se
 
 The Function App can use either:
 
-- A system-assigned managed identity, which is simplest for a single deployment.
-- A user-assigned managed identity, useful for a stable identity across redeployments or multiple apps.
+- A system-assigned managed identity for a single deployment.
+- A user-assigned managed identity for a stable identity across redeployments or multiple apps.
 
 For a user-assigned identity, Acmebot sets `Acmebot__ManagedIdentityClientId` as the app-wide identity.
 
@@ -45,7 +45,7 @@ For an existing vault, confirm that:
 
 ### Monitoring
 
-The template creates Application Insights and can create or reuse a Log Analytics workspace. Application Insights receives Function execution telemetry and outbound HTTP instrumentation through OpenTelemetry.
+The template creates Application Insights and can create or reuse a Log Analytics workspace. Application Insights receives function execution telemetry and outbound HTTP dependency telemetry through OpenTelemetry.
 
 ## Provisioned Resources
 
@@ -58,7 +58,7 @@ The standard deployment creates:
 | Storage account | Stores Functions runtime data, deployment package data, and Acmebot state. |
 | Blob container `acmebot-state` | Stores ACME account and nonce state when running in Azure. |
 | Blob deployment container | Stores the package used by Flex Consumption deployment. |
-| Application Insights | Collects runtime telemetry. |
+| Application Insights | Collects runtime and dependency telemetry. |
 | Log Analytics workspace | Backs the Application Insights resource. |
 | Key Vault | Stores certificates when you choose to create a new vault. |
 
@@ -73,7 +73,7 @@ Acmebot__VaultBaseUrl=<key-vault-url>
 Acmebot__Environment=AzureCloud
 ```
 
-It also writes the selected DNS provider and managed identity settings. For the full list, see [Configuration](../reference/configuration).
+It also writes the selected DNS provider and managed identity settings. For the complete list, see [Configuration](../reference/configuration).
 
 ## Post-Deployment Steps
 

@@ -10,9 +10,9 @@ Acmebot is an Azure Functions application that coordinates ACME certificate orde
 | HTTP API | Authenticated endpoints for certificate and DNS operations. |
 | Durable Functions | Long-running issuance, renewal, and revocation orchestration. |
 | DNS providers | Create and delete DNS-01 TXT records. |
-| ACME client | Talks to the configured ACME directory. |
+| ACME client | Communicates with the configured ACME directory. |
 | Key Vault certificate client | Creates certificate operations and merges issued certificate chains. |
-| Acme state store | Stores ACME account and client state. |
+| ACME state store | Stores ACME account and client state. |
 | Webhook invoker | Sends operation notifications. |
 
 ## Issuance Flow
@@ -35,7 +35,7 @@ DNS records are always cleaned up after challenge processing, even when an opera
 
 ## Renewal Flow
 
-The scheduled renewal timer runs daily and starts a renewal orchestrator.
+The scheduled renewal timer runs daily and starts the renewal orchestrator.
 
 The orchestrator:
 
@@ -58,7 +58,7 @@ Acmebot keeps ACME account state in one of two locations, depending on the envir
 | Without Azure Files content share | Blob storage container `acmebot-state`. |
 | With Azure Files content share | File system under `%HOME%/data/.acmebot/<endpoint-host>/`. |
 
-The v5 template creates the `acmebot-state` container.
+The v5 deployment template creates the `acmebot-state` container.
 
 ## Identity
 

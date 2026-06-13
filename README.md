@@ -2,7 +2,7 @@
   Acmebot for Microsoft Azure
 </h1>
 <p align="center">
-  Automated ACME SSL/TLS certificate management built around Azure Key Vault
+  ACME SSL/TLS certificate automation for Azure platform teams, built around DNS-01 validation and Azure Key Vault
   <br>
   (App Service / Container Apps / Application Gateway / Front Door / others)
 </p>
@@ -21,20 +21,20 @@
 
 ## Motivation
 
-Acmebot was created to address the following requirements:
+Acmebot helps Azure platform and operations teams automate ACME certificate issuance and renewal without building a dedicated certificate pipeline. It uses DNS-01 validation, stores private keys and issued certificates in Azure Key Vault, and exposes a dashboard and HTTP API for day-to-day operations.
 
-- Securely store SSL/TLS certificates with Azure Key Vault
-- Centralize management of large numbers of certificates with a single Key Vault
-- Easy to deploy and configure solution
-- Highly reliable implementation
-- Easy to monitor (Application Insights, Webhook)
+Acmebot is designed for teams that need to:
 
-Acmebot uses Azure Key Vault to provide secure and centralized management of ACME certificates.
+- Store SSL/TLS certificates securely in Azure Key Vault
+- Centralize certificates for multiple Azure services and domains
+- Automate issuance and renewal with predictable operational behavior
+- Monitor certificate operations through Application Insights and webhooks
+- Keep DNS provider credentials and Azure access scoped to the resources Acmebot manages
 
 ## Feature Support
 
-- Issue certificates for Zone Apex, Wildcard and SANs (multiple domains)
-- Dedicated dashboard for easy certificate management
+- Issue certificates for zone apex names, wildcards, and SANs (multiple domains)
+- Dedicated dashboard for certificate management
 - Automated certificate renewal
 - Support for ACME v2 compliant Certification Authorities
   - [Let's Encrypt](https://letsencrypt.org/)
@@ -53,9 +53,9 @@ Acmebot uses Azure Key Vault to provide secure and centralized management of ACM
 
 ## Deployment
 
-Acmebot **v5 is now generally available**. Deploy the latest release with a single click — the template provisions everything required: Function App ([Flex Consumption](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)), Storage, Application Insights, Log Analytics, and optionally a new Key Vault.
+Acmebot **v5 is generally available**. Deploy the latest release with a single click. The template provisions the required Function App ([Flex Consumption](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)), Storage, Application Insights, Log Analytics, and optionally a new Key Vault.
 
-The v5 deployment template supports Azure Public only because Flex Consumption is not available in Azure China or Azure Government.
+The v5 deployment template supports the Azure public cloud only because Flex Consumption is not available in Azure China or Azure Government.
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a>
 

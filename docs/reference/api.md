@@ -1,8 +1,8 @@
 # HTTP API
 
-The dashboard uses these same-origin HTTP endpoints. They are useful for understanding the integration surface and operation lifecycle.
+The dashboard uses these same-origin HTTP endpoints. They define the integration surface and operation lifecycle.
 
-All endpoints expect authenticated requests. Issue and revoke operations may also require app roles when `Acmebot__RequireAppRoles=true`.
+All endpoints expect authenticated requests. Issue, renew, and revoke operations may also require app roles when `Acmebot__RequireAppRoles=true`.
 
 ## Authentication
 
@@ -13,7 +13,7 @@ Authorization: Bearer <access-token>
 Accept: application/json
 ```
 
-The Function triggers use anonymous trigger authorization internally, but the application code rejects requests without an authenticated user. A Functions host key by itself does not satisfy the dashboard or API authentication checks.
+The HTTP triggers use anonymous trigger authorization internally, but the application code rejects requests without an authenticated user. A Functions host key by itself does not satisfy the dashboard or API authentication checks.
 
 When app role enforcement is enabled, issue and renew operations require `Acmebot.IssueCertificate`, and revoke operations require `Acmebot.RevokeCertificate`.
 
@@ -24,7 +24,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 | `GET` | `/api/certificates` | List certificates from Key Vault. |
 | `POST` | `/api/certificates` | Start certificate issuance. |
 | `POST` | `/api/certificates/{certificateName}/renew` | Start manual renewal. |
-| `POST` | `/api/certificates/{certificateName}/revoke` | Revoke a certificate through the ACME CA. |
+| `POST` | `/api/certificates/{certificateName}/revoke` | Revoke a certificate through the ACME certificate authority. |
 | `GET` | `/api/dns-zones` | List DNS zones from configured providers. |
 | `GET` | `/api/operations/{instanceId}` | Poll an issuance or renewal operation. |
 

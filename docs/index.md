@@ -2,9 +2,9 @@
 layout: page
 pageClass: landing-shell
 footer: false
-title: Acmebot for Microsoft Azure
-titleTemplate: Automated ACME SSL/TLS Certificate Management
-description: Automated ACME SSL/TLS certificate management built around Azure Key Vault.
+title: Acmebot
+titleTemplate: Automated TLS certificates for Microsoft Azure
+description: ACME SSL/TLS certificate automation for Azure platform teams, built around DNS-01 validation and Azure Key Vault.
 ---
 
 <HomePage />

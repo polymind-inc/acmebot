@@ -16,7 +16,7 @@ Yes. Deploy Acmebot against the existing vault and grant the Function App identi
 
 ## Can multiple Azure services use the same certificate?
 
-Yes. Acmebot stores the certificate in Key Vault, and any number of services can consume it from there. Each consuming service still needs its own Key Vault access and TLS binding. See [Azure Service Integration](./service-integration).
+Yes. Acmebot stores the certificate in Key Vault, and multiple services can consume it from there. Each consuming service still needs its own Key Vault access and TLS binding. See [Azure Service Integration](./service-integration).
 
 ## How do I remove a certificate from Acmebot management?
 
@@ -44,7 +44,7 @@ Azure Private DNS is supported as a provider, but public ACME certificate author
 
 ## How should I store DNS provider secrets?
 
-Provider credentials are Function App app settings, so treat them as secrets. When possible, store the value in Key Vault and reference it with an App Service Key Vault reference, and scope provider tokens to the smallest set of zones Acmebot needs. See [Security](../reference/security) for the full guidance.
+Provider credentials are Function App app settings, so treat them as secrets. When possible, store each value in Key Vault and reference it with an App Service Key Vault reference. Scope provider tokens to the smallest set of zones Acmebot needs. See [Security](../reference/security) for the full guidance.
 
 ## How much does Acmebot cost to run?
 

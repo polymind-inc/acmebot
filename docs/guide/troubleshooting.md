@@ -13,7 +13,7 @@ Start with the smallest failing unit you can reproduce, and confirm the basics:
 - Application Insights is connected and receiving Function telemetry.
 - You have checked the operation status URL returned by the dashboard or API.
 
-## Where To Look
+## Where to Look
 
 | Signal | Use it for |
 | --- | --- |
@@ -31,7 +31,7 @@ Typical causes:
 - The provider credential cannot create or delete `_acme-challenge` TXT records.
 - Propagation takes longer than the provider's configured delay.
 - The request uses a private or internal DNS zone the CA cannot resolve.
-- A delegated validation name is missing or points to the wrong zone.
+- A delegated validation name is missing or points to the incorrect zone.
 
 What to verify:
 
@@ -51,8 +51,8 @@ Typical causes:
 
 - The Function App identity lacks certificate management permissions.
 - The vault permission model changed between Azure RBAC and access policies.
-- `Acmebot__VaultBaseUrl` points to the wrong vault.
-- A user-assigned managed identity should be used, but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
+- `Acmebot__VaultBaseUrl` points to the incorrect vault.
+- A user-assigned managed identity is intended, but `Acmebot__ManagedIdentityClientId` is missing or incorrect.
 
 What to verify:
 
@@ -61,7 +61,7 @@ What to verify:
 - For TransIP, the identity can use the Key Vault key named by `Acmebot__TransIp__PrivateKeyName`.
 - Downstream services have their own Key Vault read permissions; Acmebot's identity does not grant them access.
 
-## Authentication Or Authorization Fails
+## Authentication or Authorization Fails
 
 Typical symptoms:
 
@@ -97,7 +97,7 @@ What to verify:
 - `Acmebot__Endpoint` matches the endpoint used when the certificate was issued.
 - `Acmebot__RenewBeforeExpiry` is set to the intended remaining lifetime percentage.
 - Application Insights shows `RenewCertificates` timer activity.
-- No local-time assumption is in play; Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
+- No local-time assumption is being applied; Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
 
 ## Operation Remains Pending
 
@@ -134,7 +134,7 @@ What to verify:
 
 - Application Insights is connected to the Function App.
 - Exceptions and dependency telemetry are visible.
-- Live Metrics is used for near-real-time, multi-instance checks.
+- Use Live Metrics for near-real-time, multi-instance checks.
 
 ## Triage Workflow
 

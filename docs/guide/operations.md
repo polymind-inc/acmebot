@@ -1,6 +1,6 @@
 # Operations
 
-This page covers day-to-day operation after Acmebot is deployed.
+This page covers day-to-day operation after Acmebot has been deployed.
 
 ## Scheduled Renewal
 
@@ -9,7 +9,7 @@ The `RenewCertificates` timer runs once per day. It lists Key Vault certificates
 - Are tagged as issued by Acmebot.
 - Match the currently configured ACME endpoint.
 - Are inside the ACME renewal information window, when renewal information is available for the certificate.
-- Or have no more than `Acmebot__RenewBeforeExpiry` percent of their lifetime remaining when renewal information is unavailable for the certificate.
+- Have no more than `Acmebot__RenewBeforeExpiry` percent of their lifetime remaining when renewal information is unavailable for the certificate.
 
 The default fallback renewal threshold is 30% of the certificate lifetime:
 
@@ -21,7 +21,7 @@ For example, a 90-day certificate is renewed when about 27 days remain. Use a la
 
 ## Renewal Jitter
 
-Before processing due certificates, the renewal orchestrator waits a random delay of up to 600 seconds. This prevents many deployments from starting renewal at exactly the same time.
+Before processing due certificates, the renewal orchestrator waits for a random delay of up to 600 seconds. This reduces simultaneous renewal starts across deployments.
 
 ## Durable Functions History
 
@@ -74,12 +74,12 @@ For Azure DNS and Key Vault, rotate by updating RBAC assignments or switching to
 
 The most frequent operational issues are:
 
-- **Dashboard returns 401** — App Service Authentication is not configured or not requiring sign-in.
-- **DNS zones do not load** — provider app settings or permissions are wrong; for Azure DNS, the managed identity lacks DNS access in the zone subscription.
-- **Name server precondition fails** — the domain is not delegated to the provider's name servers.
-- **TXT record is not found** — propagation is slow, or an internal resolver is needed (`Acmebot__UseSystemNameServer=true`).
-- **ACME order becomes invalid** — review the ACME problem details; persistent configuration errors need a new operation after the DNS issue is fixed.
-- **Certificate is not renewed** — the certificate lacks Acmebot metadata, was issued for a different endpoint, is outside the renewal window, or is not readable by the Function App identity.
-- **Endpoint still serves the old certificate** — the certificate is current in Key Vault but the consuming Azure service has not synced it.
+- **Dashboard returns 401**: App Service Authentication is not configured or does not require sign-in.
+- **DNS zones do not load**: provider app settings or permissions are invalid; for Azure DNS, the managed identity may lack DNS access in the zone subscription.
+- **Name server precondition fails**: the domain is not delegated to the provider's name servers.
+- **TXT record is not found**: propagation is slow, or the validation design requires an internal resolver (`Acmebot__UseSystemNameServer=true`).
+- **ACME order becomes invalid**: review the ACME problem details; persistent configuration errors require a new operation after the DNS issue is fixed.
+- **Certificate is not renewed**: the certificate lacks Acmebot metadata, was issued for a different endpoint, is outside the renewal window, or is not readable by the Function App identity.
+- **Endpoint still serves the old certificate**: the certificate is current in Key Vault, but the consuming Azure service has not synced it.
 
 See [Troubleshooting](./troubleshooting) for the full decision tree, and [Azure Service Integration](./service-integration) for downstream sync behavior.

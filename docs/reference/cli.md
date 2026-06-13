@@ -35,7 +35,7 @@ When App Service Authentication uses a custom Microsoft Entra application ID URI
 acmebot config set --endpoint https://my-acmebot.azurewebsites.net --audience api://<application-client-id>
 ```
 
-Then use short commands:
+Then run commands without repeating endpoint options:
 
 ```bash
 acmebot certificate list
@@ -191,7 +191,7 @@ Pass only the operation instance ID returned by `certificate issue --no-wait` or
 
 ## Output
 
-Use table output for humans:
+Use table output for interactive use:
 
 ```bash
 acmebot certificate list

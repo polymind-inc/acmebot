@@ -1,12 +1,12 @@
 # Azure Service Integration
 
-Acmebot stores issued certificates in Azure Key Vault. The consuming Azure service is responsible for importing, referencing, or syncing that certificate version into its own TLS configuration.
+Acmebot stores issued certificates in Azure Key Vault. Each consuming Azure service is responsible for importing, referencing, or syncing the current certificate version into its own TLS configuration.
 
 Treat issuance and rollout as two connected workflows:
 
 1. Acmebot renews the certificate and creates a new Key Vault certificate version.
 2. The Azure service picks up that version according to its own Key Vault integration.
-3. You confirm the public endpoint is serving the renewed certificate.
+3. You confirm the public TLS endpoint is serving the renewed certificate.
 
 ## Integration Principles
 
@@ -25,7 +25,7 @@ Treat issuance and rollout as two connected workflows:
 | Azure Container Apps | Import the certificate from Key Vault into the Container Apps environment and bind it to the custom domain. | Review Container Apps certificate limitations before choosing key type and curve. |
 | Application Gateway v2 | Reference a Key Vault certificate or secret for HTTPS listeners. | Use a versionless secret identifier so new versions are picked up automatically. |
 | Azure Front Door Standard/Premium | Add the Key Vault certificate as a Front Door secret and select `Latest`. | Front Door deploys the newer version automatically when the certificate is renewed. |
-| API Management | Configure custom domains with Key Vault-backed certificates. | Keep the APIM identity authorized to read the Key Vault certificate. |
+| API Management | Configure custom domains with Key Vault-backed certificates. | Keep the API Management identity authorized to read the Key Vault certificate. |
 | Azure SignalR Service | Configure a custom domain with a certificate stored in Key Vault. | Verify service-specific certificate sync after renewal. |
 | Virtual Machines | Use the Key Vault VM extension or your own provisioning workflow to install the certificate. | Your workflow controls rollout and reload timing. |
 
@@ -77,11 +77,11 @@ Reference: [Configure HTTPS on an Azure Front Door custom domain](https://learn.
 
 ## API Management
 
-API Management custom domains can use certificates stored in Key Vault, which fits when Acmebot owns renewal and APIM owns the public gateway endpoint.
+API Management custom domains can use certificates stored in Key Vault. This pattern fits environments where Acmebot owns renewal and API Management owns the public gateway endpoint.
 
 Recommended checks:
 
-- APIM has a managed identity enabled.
+- API Management has a managed identity enabled.
 - The identity can read the Key Vault certificate.
 - The custom domain is configured to use the Key Vault certificate.
 - Gateway endpoints are verified after renewal.
@@ -114,4 +114,4 @@ After Acmebot renews a certificate:
 - Check the endpoint from outside Azure and verify the served certificate's expiry date.
 - Keep an emergency manual sync or redeploy procedure for services that do not rotate immediately.
 
-If Key Vault is current but the public endpoint is not, the remaining issue is usually the consuming service's configuration rather than ACME issuance.
+If Key Vault is current but the public TLS endpoint is not, the remaining issue is usually the consuming service's configuration rather than ACME issuance.

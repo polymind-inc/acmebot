@@ -1,17 +1,17 @@
 # Guide
 
-Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure. It runs as an Azure Functions app, proves domain ownership with DNS-01 challenges, and stores the issued certificates in Azure Key Vault.
+Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure. It runs as an Azure Functions app, proves domain ownership with DNS-01 challenges, and stores private keys and issued certificates in Azure Key Vault.
 
-Use this guide to deploy Acmebot, connect a DNS provider, issue certificates from the dashboard, and operate renewals safely over time.
+Use this guide to deploy Acmebot, connect DNS providers, issue certificates from the dashboard, and operate scheduled renewals over time.
 
 ## What Acmebot Does
 
-- Registers and maintains an ACME account for the configured certificate authority.
+- Registers and maintains an ACME account for the configured certificate authority (CA).
 - Creates ACME orders for zone apex, wildcard, and multi-domain certificates.
 - Adds and removes DNS-01 TXT records through one or more configured DNS providers.
 - Requests certificates in Key Vault and merges the issued chain back into the same Key Vault certificate.
 - Tags managed certificates so scheduled renewals can find them later.
-- Sends optional webhook notifications for successful and failed operations.
+- Sends webhook notifications for successful and failed operations when a webhook is configured.
 
 ## Runtime Workflow
 
@@ -31,11 +31,11 @@ Key Vault is the certificate store. Acmebot starts a Key Vault certificate opera
 
 ### DNS Providers
 
-Acmebot validates with DNS-01 only. This supports wildcard certificates and works even when the protected application is not publicly reachable. Configure at least one DNS provider before the Function App can start.
+Acmebot uses DNS-01 validation only. This supports wildcard certificates and works even when the protected application is not publicly reachable. Configure at least one DNS provider before starting the Function App.
 
 ### Certificate Authorities
 
-Acmebot works with any ACME v2 directory endpoint. The deployment form offers common endpoints such as Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, and ZeroSSL, and also accepts a custom ACME directory URL.
+Acmebot works with ACME v2 directory endpoints. The deployment form offers common endpoints such as Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, and ZeroSSL, and also accepts a custom ACME directory URL.
 
 ### Dashboard
 
@@ -50,7 +50,7 @@ The dashboard is a same-origin web app served by the Function App. It calls the 
 | Migrate an existing v4 deployment | [Migrating from v4 to v5](./migration-v5) |
 | Issue, renew, or revoke a certificate | [Dashboard](./dashboard) |
 | Configure Azure DNS, Cloudflare, Route 53, or another DNS provider | [DNS Providers](./dns-providers) |
-| Use EAB or a non-Let's Encrypt CA | [Certificate Authorities](./certificate-authorities) |
+| Use EAB or a CA other than Let's Encrypt | [Certificate Authorities](./certificate-authorities) |
 | Monitor renewals and troubleshoot failures | [Operations](./operations) |
 | Connect renewed certificates to Azure services | [Azure Service Integration](./service-integration) |
 | Diagnose failed issuance, renewal, or service sync | [Troubleshooting](./troubleshooting) |
@@ -60,13 +60,13 @@ The dashboard is a same-origin web app served by the Function App. It calls the 
 | Integrate with the HTTP endpoints | [HTTP API Reference](../reference/api) |
 | Automate with the command line | [CLI Reference](../reference/cli) |
 
-## Support Matrix
+## Supported Integrations
 
 ### Azure Services
 
-Certificates live in Key Vault, so any Azure service that consumes a Key Vault certificate or an imported PFX can use them, including:
+Certificates live in Key Vault, so Azure services that consume a Key Vault certificate or an imported PFX can use them, including:
 
-- Azure App Service, Azure Functions, and Azure Web App for Containers.
+- Azure App Service, Azure Functions, and Web App for Containers.
 - Azure Container Apps, including environments with a custom DNS suffix.
 - Azure Front Door Standard and Premium.
 - Azure Application Gateway v2.
