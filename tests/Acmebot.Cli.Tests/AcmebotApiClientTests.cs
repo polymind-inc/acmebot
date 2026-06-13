@@ -1,0 +1,144 @@
+﻿using System.Net;
+using System.Text;
+using System.Text.Json;
+
+using Azure.Core;
+
+using Xunit;
+
+namespace Acmebot.Cli.Tests;
+
+public sealed class AcmebotApiClientTests
+{
+    [Fact]
+    public async Task GetCertificatesAsync_SendsBearerTokenAndDeserializesResponse()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmebotApiClient(
+            httpClient,
+            new Uri("https://acmebot.example/"),
+            new TestCredential("token"),
+            ["api://acmebot/.default"]);
+
+        handler.Enqueue(_ => CreateJsonResponse(HttpStatusCode.OK, new[]
+        {
+            new
+            {
+                id = "https://vault.example/certificates/example",
+                name = "example",
+                dnsNames = new[] { "example.com" },
+                createdOn = "2026-06-01T00:00:00+00:00",
+                expiresOn = "2026-09-01T00:00:00+00:00",
+                enabled = true,
+                isIssuedByAcmebot = true,
+                isSameEndpoint = true
+            }
+        }));
+
+        var certificates = await client.GetCertificatesAsync(TestContext.Current.CancellationToken);
+
+        var certificate = Assert.Single(certificates);
+        Assert.Equal("example", certificate.Name);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Get, request.Method);
+        Assert.Equal(new Uri("https://acmebot.example/api/certificates"), request.RequestUri);
+        Assert.Equal("Bearer", request.AuthorizationScheme);
+        Assert.Equal("token", request.AuthorizationParameter);
+        Assert.Contains("application/json", request.Accept);
+    }
+
+    [Fact]
+    public async Task IssueCertificateAsync_PostsPolicyAndReturnsOperationLocation()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmebotApiClient(
+            httpClient,
+            new Uri("https://acmebot.example/"),
+            new TestCredential("token"),
+            ["api://acmebot/.default"]);
+
+        handler.Enqueue(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Accepted);
+            response.Headers.Location = new Uri("/api/operations/abc", UriKind.Relative);
+
+            return response;
+        });
+
+        var location = await client.IssueCertificateAsync(new CertificatePolicyItem
+        {
+            CertificateName = "example",
+            DnsNames = ["example.com"],
+            KeyType = "RSA",
+            KeySize = 2048
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(new Uri("https://acmebot.example/api/operations/abc"), location);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal(new Uri("https://acmebot.example/api/certificates"), request.RequestUri);
+
+        Assert.NotNull(request.Content);
+        using var document = JsonDocument.Parse(request.Content);
+        Assert.Equal("example", document.RootElement.GetProperty("certificateName").GetString());
+        Assert.Equal("example.com", document.RootElement.GetProperty("dnsNames")[0].GetString());
+    }
+
+    private static HttpResponseMessage CreateJsonResponse(HttpStatusCode statusCode, object content)
+    {
+        return new HttpResponseMessage(statusCode)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
+        };
+    }
+
+    private sealed class TestCredential(string token) : TokenCredential
+    {
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            return new AccessToken(token, DateTimeOffset.UtcNow.AddHours(1));
+        }
+
+        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            return new ValueTask<AccessToken>(GetToken(requestContext, cancellationToken));
+        }
+    }
+
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        private readonly Queue<Func<HttpRequestMessage, HttpResponseMessage>> _responses = [];
+
+        public List<RecordedRequest> Requests { get; } = [];
+
+        public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> response)
+        {
+            _responses.Enqueue(response);
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Add(new RecordedRequest(
+                request.Method,
+                request.RequestUri,
+                request.Headers.Authorization?.Scheme,
+                request.Headers.Authorization?.Parameter,
+                request.Headers.Accept.Select(value => value.MediaType ?? "").ToArray(),
+                request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken)));
+
+            return _responses.Dequeue()(request);
+        }
+    }
+
+    private sealed record RecordedRequest(
+        HttpMethod Method,
+        Uri? RequestUri,
+        string? AuthorizationScheme,
+        string? AuthorizationParameter,
+        IReadOnlyList<string> Accept,
+        string? Content);
+}

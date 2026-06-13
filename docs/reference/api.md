@@ -17,6 +17,24 @@ The Function triggers use anonymous trigger authorization internally, but the ap
 
 When app role enforcement is enabled, issue and renew operations require `Acmebot.IssueCertificate`, and revoke operations require `Acmebot.RevokeCertificate`.
 
+## CLI
+
+The `Acmebot.Cli` project provides an automation-friendly wrapper around the same HTTP API. It uses Microsoft Entra ID bearer tokens through `Azure.Identity`; by default it follows `DefaultAzureCredential`, so local `az login`, managed identity, and service principal environment variables all work without adding API-specific authentication code.
+
+```bash
+acmebot --endpoint https://my-acmebot.azurewebsites.net certificate list
+acmebot --endpoint https://my-acmebot.azurewebsites.net dns-zone list
+acmebot --endpoint https://my-acmebot.azurewebsites.net certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
+acmebot --endpoint https://my-acmebot.azurewebsites.net certificate renew wildcard-example-com
+acmebot --endpoint https://my-acmebot.azurewebsites.net certificate revoke wildcard-example-com
+```
+
+For JSON output, pass `--json` or `--format json`. For service principal authentication, use standard Azure Identity environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and either `AZURE_CLIENT_SECRET` or `AZURE_CLIENT_CERTIFICATE_PATH`) or the matching CLI options.
+
+If the protected API uses a custom application ID URI, pass `--audience <application-id-uri>`. When neither is provided, the CLI requests a token for the Acmebot endpoint origin. The CLI derives the Microsoft Entra token scope internally by appending `/.default`; do not pass `user_impersonation` or `.default` in the `--audience` value.
+
+When using `az login` or Azure CLI-backed credentials against a Microsoft Entra application ID URI such as `api://<application-client-id>`, the application registration used by App Service Authentication must allow the Microsoft Azure CLI public client. In the application registration, open **Expose an API**, add an authorized client application with client ID `04b07795-8ddb-461a-bbee-02f9e1bf7b46`, and select the `user_impersonation` scope. Without this pre-authorization or equivalent tenant consent, Microsoft Entra ID can return `AADSTS65001` / `consent_required` before Acmebot receives the request.
+
 ## Endpoints
 
 | Method | Path | Purpose |
