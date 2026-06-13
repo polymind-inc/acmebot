@@ -1,6 +1,6 @@
 # Guide
 
-Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure. It runs as an Azure Functions app, proves domain ownership with DNS-01 challenges, and stores private keys and issued certificates in Azure Key Vault.
+Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure. It runs as a Function App, proves domain ownership with DNS-01 challenges, and stores private keys and issued certificates in Azure Key Vault.
 
 Use this guide to deploy Acmebot, connect DNS providers, issue certificates from the dashboard, and operate scheduled renewals over time.
 

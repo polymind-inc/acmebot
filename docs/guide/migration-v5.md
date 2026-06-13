@@ -23,7 +23,7 @@ The migration template does not recreate the Function App, App Service plan, Sto
 
 ## Before You Start
 
-Plan a short maintenance window. The Function App restarts during migration, and certificate operations in progress should be allowed to finish before you start.
+Plan a short maintenance window. The Function App restarts during migration. Allow any certificate operations in progress to finish before you start.
 
 Before changing the app:
 

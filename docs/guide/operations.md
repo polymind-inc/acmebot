@@ -9,7 +9,7 @@ The `RenewCertificates` timer runs once per day. It lists Key Vault certificates
 - Are tagged as issued by Acmebot.
 - Match the currently configured ACME endpoint.
 - Are inside the ACME renewal information window, when renewal information is available for the certificate.
-- Have no more than `Acmebot__RenewBeforeExpiry` percent of their lifetime remaining when renewal information is unavailable for the certificate.
+- Have no more than `Acmebot__RenewBeforeExpiry` percent of their lifetime remaining (used when renewal information is unavailable for the certificate).
 
 The default fallback renewal threshold is 30% of the certificate lifetime:
 

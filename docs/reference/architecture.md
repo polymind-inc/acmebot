@@ -1,6 +1,6 @@
 # Architecture
 
-Acmebot is an Azure Functions application that coordinates ACME certificate orders, DNS-01 validation, Azure Key Vault certificate operations, scheduled renewal, and optional notifications.
+Acmebot is a Function App that coordinates ACME certificate orders, DNS-01 validation, Key Vault certificate operations, scheduled renewal, and optional notifications.
 
 ## Components
 

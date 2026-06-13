@@ -68,7 +68,7 @@ Revocation sends the certificate to the configured ACME certificate authority's 
 
 ## Operation Status
 
-Issue and renew operations return an operation URL, which the dashboard polls until it completes or fails. If an operation fails:
+Issue and renew operations return an operation URL, which the dashboard polls until the operation completes or fails. If an operation fails:
 
 - Read the displayed problem message.
 - Check Application Insights for the orchestration instance ID.

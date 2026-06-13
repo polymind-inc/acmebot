@@ -6,9 +6,9 @@ Acmebot is an open source project released under the Apache License 2.0. Communi
 
 Use the community channels when you have general questions, want to discuss usage patterns, or need to report reproducible bugs:
 
-- Usage questions and general discussion: [GitHub Discussions](https://github.com/polymind-inc/acmebot/discussions)
-- Bug reports: [GitHub Issues](https://github.com/polymind-inc/acmebot/issues)
-- Security issues: see the [Security Policy](https://github.com/polymind-inc/acmebot/blob/master/SECURITY.md)
+- Usage questions and general discussion: [GitHub Discussions](https://github.com/polymind-inc/acmebot/discussions).
+- Bug reports: [GitHub Issues](https://github.com/polymind-inc/acmebot/issues).
+- Security issues: see the [Security Policy](https://github.com/polymind-inc/acmebot/blob/master/SECURITY.md).
 
 Community support is best effort and does not include guaranteed response times.
 

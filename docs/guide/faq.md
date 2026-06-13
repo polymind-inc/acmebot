@@ -48,7 +48,7 @@ Provider credentials are Function App app settings, so treat them as secrets. Wh
 
 ## How much does Acmebot cost to run?
 
-For low-volume deployments, the Azure platform cost is usually small: Acmebot runs on serverless Functions with modest storage and telemetry. Exact cost depends on your region, hosting plan, telemetry volume, certificate volume, and Key Vault usage. Review current Azure pricing for Functions, Storage, Application Insights, Log Analytics, and Key Vault before production rollout.
+For low-volume deployments, the Azure cost is usually small: Acmebot runs on serverless Functions with modest storage and telemetry. Exact cost depends on your region, hosting plan, telemetry volume, certificate volume, and Key Vault usage. Review current Azure pricing for Functions, Storage, Application Insights, Log Analytics, and Key Vault before production rollout.
 
 ## Where should I start when issuance or renewal fails?
 

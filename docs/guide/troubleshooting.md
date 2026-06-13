@@ -110,7 +110,7 @@ If it remains pending longer than expected:
 - Check whether the selected provider has a long propagation delay.
 - Poll the operation URL again before starting another operation for the same certificate.
 
-## Certificate Issued But Endpoint Still Uses Old Certificate
+## Certificate Issued But Endpoint Still Uses the Old Certificate
 
 If Key Vault has the new certificate version, ACME issuance succeeded. Continue troubleshooting the consuming Azure service:
 

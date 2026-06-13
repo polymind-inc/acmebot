@@ -97,7 +97,6 @@ Returns an array of certificate objects.
     "keyType": "RSA",
     "keySize": 2048,
     "reuseKey": false,
-    "isExpired": false,
     "enabled": true,
     "isIssuedByAcmebot": true,
     "isSameEndpoint": true,

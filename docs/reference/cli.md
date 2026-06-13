@@ -47,7 +47,7 @@ acmebot certificate revoke wildcard-example-com
 
 ## Authentication
 
-All commands call the Acmebot API with a Microsoft Entra ID bearer token. By default, the CLI uses `DefaultAzureCredential` from Azure Identity, so `az login`, managed identity, Visual Studio, Azure PowerShell, and Azure Identity environment credentials can be used depending on the host environment.
+All commands call the Acmebot API with a Microsoft Entra ID bearer token. By default, the CLI uses `DefaultAzureCredential` from Azure Identity, resolving credentials from `az login`, managed identity, Visual Studio, Azure PowerShell, or Azure Identity environment variables, depending on the host environment.
 
 Set the Acmebot application URL with saved configuration, `ACMEBOT_ENDPOINT`, or `--endpoint`:
 
