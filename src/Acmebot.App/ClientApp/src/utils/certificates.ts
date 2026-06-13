@@ -41,6 +41,10 @@ export function getValidityDays(certificate: CertificateItem): number {
   return Math.round((expiresOn - createdOn) / 86_400_000);
 }
 
+export function isCertificateExpired(certificate: CertificateItem): boolean {
+  return new Date(certificate.expiresOn).getTime() <= Date.now();
+}
+
 export function isShortLived(certificate: CertificateItem): boolean {
   return getValidityDays(certificate) <= 10;
 }
@@ -52,8 +56,10 @@ export function getRemainingDays(certificate: CertificateItem): number {
 }
 
 export function getCertificateStatus(certificate: CertificateItem): CertificateStatus {
+  const createdOn = new Date(certificate.createdOn).getTime();
   const expiresOn = new Date(certificate.expiresOn).getTime();
   const diff = expiresOn - Date.now();
+  const validity = expiresOn - createdOn;
   const remainingDays = Math.round(diff / 86_400_000);
   const remainingHours = Math.round(diff / 3_600_000);
 
@@ -61,13 +67,13 @@ export function getCertificateStatus(certificate: CertificateItem): CertificateS
     return { kind: 'disabled', label: 'Disabled', remainingDays };
   }
 
-  if (diff <= 0 || certificate.isExpired) {
+  if (diff <= 0) {
     return { kind: 'expired', label: 'Expired', remainingDays };
   }
 
-  if (isShortLived(certificate)) {
-    const kind = remainingDays <= 2 ? 'warning' : 'valid';
+  const kind = validity > 0 && diff < validity * 0.2 ? 'warning' : 'valid';
 
+  if (isShortLived(certificate)) {
     if (remainingHours < 24) {
       return { kind, label: `${remainingHours}h remaining`, remainingDays };
     }
@@ -77,11 +83,7 @@ export function getCertificateStatus(certificate: CertificateItem): CertificateS
     return { kind, label: `${days}d ${hours}h remaining`, remainingDays };
   }
 
-  if (remainingDays <= 30) {
-    return { kind: 'warning', label: `${remainingDays}d remaining`, remainingDays };
-  }
-
-  return { kind: 'valid', label: `${remainingDays} days`, remainingDays };
+  return { kind, label: `${remainingDays} days`, remainingDays };
 }
 
 export function formatDate(value?: string | null): string {

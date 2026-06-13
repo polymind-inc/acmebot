@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { AlertTriangle, CalendarDays, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
 
 import type { CertificateItem } from '@/api/types';
-import { displayDnsName, formatDateTime, getCategoryLabel, getCertificateCategory, getValidityDays } from '@/utils/certificates';
+import { displayDnsName, formatDateTime, getCategoryLabel, getCertificateCategory, getValidityDays, isCertificateExpired } from '@/utils/certificates';
 
 import StatusBadge from './StatusBadge.vue';
 
@@ -259,7 +259,7 @@ const customTagsCopyText = computed(() => customTags.value.map(([key, value]) =>
             <span>Renew</span>
           </button>
           <button
-            v-if="certificate.enabled && certificate.isIssuedByAcmebot && certificate.isSameEndpoint && !certificate.isExpired"
+            v-if="certificate.enabled && certificate.isIssuedByAcmebot && certificate.isSameEndpoint && !isCertificateExpired(certificate)"
             class="danger-button"
             type="button"
             :disabled="busy"

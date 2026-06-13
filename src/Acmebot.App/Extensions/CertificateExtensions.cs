@@ -45,7 +45,6 @@ internal static class CertificateExtensions
             KeySize = certificate.Policy.KeySize,
             KeyCurveName = certificate.Policy.KeyCurveName?.ToString(),
             ReuseKey = certificate.Policy.ReuseKey,
-            IsExpired = DateTimeOffset.UtcNow > certificate.Properties.ExpiresOn.GetValueOrDefault(DateTimeOffset.MaxValue),
             Enabled = certificate.Properties.Enabled != false,
             AcmeEndpoint = !string.IsNullOrEmpty(metadata?.Endpoint) ? NormalizeEndpoint(metadata.Endpoint) : "",
             DnsAlias = metadata?.DnsAlias ?? "",

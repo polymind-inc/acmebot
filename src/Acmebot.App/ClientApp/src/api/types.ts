@@ -15,7 +15,6 @@ export interface CertificateItem {
   keySize?: number | null;
   keyCurveName?: KeyCurveName | string | null;
   reuseKey?: boolean | null;
-  isExpired: boolean;
   enabled: boolean;
   isIssuedByAcmebot: boolean;
   isSameEndpoint: boolean;
