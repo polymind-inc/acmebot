@@ -2,7 +2,7 @@
   Acmebot for Microsoft Azure
 </h1>
 <p align="center">
-  ACME SSL/TLS certificate automation for Azure platform teams, built around DNS-01 validation and Azure Key Vault
+  ACME SSL/TLS certificate automation for Microsoft Azure, built around DNS-01 validation and Azure Key Vault
   <br>
   (App Service / Container Apps / Application Gateway / Front Door / others)
 </p>

@@ -330,7 +330,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
         <div class="footer-content">
           <div class="footer-brand">
             <strong>Acmebot</strong>
-            <p>ACME SSL/TLS certificate automation for Azure platform teams</p>
+            <p>ACME SSL/TLS certificate automation for Microsoft Azure</p>
           </div>
           <div class="footer-links">
             <div class="footer-col">
