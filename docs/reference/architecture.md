@@ -42,8 +42,8 @@ The orchestrator:
 1. Lists certificates in the configured Key Vault.
 2. Filters to certificates tagged as Acmebot-managed.
 3. Filters to the current ACME endpoint.
-4. Uses ACME renewal information when available.
-5. Falls back to `RenewBeforeExpiry` day-based renewal.
+4. Uses ACME renewal information when available for the certificate.
+5. Falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
 6. Adds random jitter up to 600 seconds.
 7. Reissues each due certificate with its stored Key Vault policy.
 

@@ -80,10 +80,7 @@ After the operation completes:
 
 ## 7. Let Renewals Run
 
-The `RenewCertificates` timer runs daily. A certificate is renewed when either:
-
-- The ACME server reports that the suggested renewal window has started, or
-- The certificate expires within `Acmebot__RenewBeforeExpiry` days (default 30).
+The `RenewCertificates` timer runs daily. When ACME renewal information is available for a certificate, Acmebot renews after the suggested renewal window starts. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30).
 
 See [Operations](./operations) for monitoring and troubleshooting guidance.
 

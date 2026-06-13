@@ -2,6 +2,7 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
+using Acmebot.Acme;
 using Acmebot.Acme.Models;
 using Acmebot.App.Acme;
 using Acmebot.App.Extensions;
@@ -27,9 +28,10 @@ public partial class AcmeOrderActivities(
     [Function(nameof(Order))]
     public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?) input)
     {
-        var (dnsNames, replaces) = input;
+        var (dnsNames, requestedReplaces) = input;
 
         using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var replaces = acmeContext.Directory.RenewalInfo is not null ? requestedReplaces : null;
 
         var result = await acmeContext.Client.CreateOrderAsync(
             acmeContext.Account,
@@ -167,7 +169,7 @@ public partial class AcmeOrderActivities(
         var mergedCertificate = (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value;
 
         // ARI による更新判定に使う ACME Certificate Identifier (AKI + Serial) をタグに保存する
-        var certificateIdentifier = Acmebot.Acme.AcmeClient.CreateCertificateIdentifier(x509Certificates[0]);
+        var certificateIdentifier = AcmeClient.CreateCertificateIdentifier(x509Certificates[0]);
 
         mergedCertificate.Properties.Tags.SetCertificateId(certificateIdentifier);
 

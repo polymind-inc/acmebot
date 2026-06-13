@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-using Acmebot.App.Acme;
+﻿using Acmebot.App.Acme;
 using Acmebot.App.Extensions;
 using Acmebot.App.Models;
 using Acmebot.App.Options;
@@ -38,27 +36,24 @@ public class CertificateActivities(
                 continue;
             }
 
-            var certificate = await certificateClient.GetCertificateAsync(properties.Name);
-
-            if (acmeContext.Directory.RenewalInfo is not null)
+            if (acmeContext.Directory.RenewalInfo is not null && properties.TryGetCertificateId(out var certificateId))
             {
-                var certificateId = X509CertificateLoader.LoadCertificate(certificate.Value.Cer).GetCertificateId();
+                var renewalInfo = (await acmeClient.GetRenewalInfoAsync(certificateId)).Resource;
 
-                if (certificateId is not null)
+                if (renewalInfo.SuggestedWindow.Start < now)
                 {
-                    var renewalInfo = (await acmeClient.GetRenewalInfoAsync(certificateId)).Resource;
+                    var certificate = await certificateClient.GetCertificateAsync(properties.Name);
 
-                    if (renewalInfo.SuggestedWindow.Start < now)
-                    {
-                        result.Add(certificate.Value.ToCertificateItem());
-
-                        continue;
-                    }
+                    result.Add(certificate.Value.ToCertificateItem());
                 }
+
+                continue;
             }
 
-            if ((properties.ExpiresOn.GetValueOrDefault(DateTimeOffset.MaxValue) - now).TotalDays <= _options.RenewBeforeExpiry)
+            if (ShouldRenewByLifetimePercentage(properties, now, _options.RenewBeforeExpiry))
             {
+                var certificate = await certificateClient.GetCertificateAsync(properties.Name);
+
                 result.Add(certificate.Value.ToCertificateItem());
             }
         }
@@ -102,5 +97,32 @@ public class CertificateActivities(
         using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer);
+    }
+
+    private static bool ShouldRenewByLifetimePercentage(CertificateProperties properties, DateTimeOffset now, int renewBeforeExpiryPercentage)
+    {
+        if (properties.ExpiresOn is not { } expiresOn)
+        {
+            return false;
+        }
+
+        var remainingLifetime = expiresOn - now;
+
+        if (remainingLifetime <= TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        var notBefore = properties.NotBefore ?? properties.CreatedOn;
+
+        if (notBefore is null || notBefore.Value >= expiresOn)
+        {
+            return false;
+        }
+
+        var lifetime = expiresOn - notBefore.Value;
+        var renewalThreshold = TimeSpan.FromTicks((long)(lifetime.Ticks * (renewBeforeExpiryPercentage / 100d)));
+
+        return remainingLifetime <= renewalThreshold;
     }
 }

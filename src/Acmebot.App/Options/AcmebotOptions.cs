@@ -8,7 +8,7 @@ public class AcmebotOptions
 
     public string? ManagedIdentityClientId { get; set; }
 
-    [Range(0, 365)]
+    [Range(0, 100)]
     public int RenewBeforeExpiry { get; set; } = 30;
 
     public bool RequireAppRoles { get; set; } = false;

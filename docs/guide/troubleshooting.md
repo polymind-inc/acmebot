@@ -91,7 +91,7 @@ What to verify:
 
 - The certificate is enabled and readable in Key Vault and has Acmebot metadata tags.
 - `Acmebot__Endpoint` matches the endpoint used when the certificate was issued.
-- `Acmebot__RenewBeforeExpiry` is set to the intended number of days.
+- `Acmebot__RenewBeforeExpiry` is set to the intended remaining lifetime percentage.
 - Application Insights shows `RenewCertificates` timer activity.
 - No local-time assumption is in play; Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
 
