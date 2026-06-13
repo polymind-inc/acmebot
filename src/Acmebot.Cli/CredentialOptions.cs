@@ -17,16 +17,35 @@ internal sealed record CredentialOptions(
         var clientId = commandLine.GetOption("client-id") ?? Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
         var clientSecret = commandLine.GetOption("client-secret");
         var clientCertificatePath = commandLine.GetOption("client-certificate-path");
-        var clientCertificatePassword = commandLine.GetOption("client-certificate-password");
+        var clientCertificatePasswordOption = commandLine.GetOption("client-certificate-password");
+        var clientCertificatePassword = clientCertificatePasswordOption
+            ?? Environment.GetEnvironmentVariable("AZURE_CLIENT_CERTIFICATE_PASSWORD");
 
         if (!string.IsNullOrWhiteSpace(clientSecret) && !string.IsNullOrWhiteSpace(clientCertificatePath))
         {
             throw new CliException("Specify either '--client-secret' or '--client-certificate-path', not both.");
         }
 
-        if (!string.IsNullOrWhiteSpace(clientCertificatePassword) && string.IsNullOrWhiteSpace(clientCertificatePath))
+        if (string.IsNullOrWhiteSpace(clientSecret) && string.IsNullOrWhiteSpace(clientCertificatePath))
+        {
+            clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+
+            if (string.IsNullOrWhiteSpace(clientSecret))
+            {
+                clientCertificatePath = Environment.GetEnvironmentVariable("AZURE_CLIENT_CERTIFICATE_PATH");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(clientCertificatePassword) &&
+            string.IsNullOrWhiteSpace(clientCertificatePath) &&
+            (!string.IsNullOrWhiteSpace(clientCertificatePasswordOption) || string.IsNullOrWhiteSpace(clientSecret)))
         {
             throw new CliException("Option '--client-certificate-password' requires '--client-certificate-path'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(clientCertificatePath))
+        {
+            clientCertificatePassword = null;
         }
 
         return new CredentialOptions(

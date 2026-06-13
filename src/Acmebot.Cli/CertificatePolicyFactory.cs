@@ -6,7 +6,13 @@ namespace Acmebot.Cli;
 internal static partial class CertificatePolicyFactory
 {
     private static readonly HashSet<int> s_rsaKeySizes = [2048, 3072, 4096];
-    private static readonly HashSet<string> s_ecKeyCurves = ["P-256", "P-384", "P-521", "P-256K"];
+    private static readonly Dictionary<string, string> s_ecKeyCurves = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["P-256"] = "P-256",
+        ["P-384"] = "P-384",
+        ["P-521"] = "P-521",
+        ["P-256K"] = "P-256K"
+    };
 
     public static CertificatePolicyItem Create(CommandLine commandLine)
     {
@@ -29,7 +35,7 @@ internal static partial class CertificatePolicyFactory
         }
 
         var keyType = commandLine.GetOption("key-type")?.ToUpperInvariant() ?? "RSA";
-        var keyCurveName = commandLine.GetOption("key-curve");
+        var keyCurveName = NormalizeOptionalValue(commandLine.GetOption("key-curve"));
         int? keySize = null;
 
         if (string.Equals(keyType, "RSA", StringComparison.Ordinal))
@@ -53,9 +59,9 @@ internal static partial class CertificatePolicyFactory
                 throw new CliException("Option '--key-size' can only be used when '--key-type RSA' is specified.");
             }
 
-            keyCurveName ??= "P-256";
+            keyCurveName = NormalizeEcKeyCurve(keyCurveName) ?? "P-256";
 
-            if (!s_ecKeyCurves.Contains(keyCurveName))
+            if (!s_ecKeyCurves.ContainsKey(keyCurveName))
             {
                 throw new CliException("Option '--key-curve' must be P-256, P-384, P-521, or P-256K.");
             }
@@ -137,6 +143,13 @@ internal static partial class CertificatePolicyFactory
     private static string? NormalizeOptionalValue(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? NormalizeEcKeyCurve(string? value)
+    {
+        return value is not null && s_ecKeyCurves.TryGetValue(value, out var canonicalName)
+            ? canonicalName
+            : value;
     }
 
     [GeneratedRegex("^[0-9a-zA-Z-]+$")]

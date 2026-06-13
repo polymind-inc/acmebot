@@ -46,6 +46,26 @@ public sealed class CertificatePolicyTests
     }
 
     [Fact]
+    public void Create_WithLowercaseEcCurve_NormalizesCurveName()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--key-type",
+            "ec",
+            "--key-curve",
+            "p-256k"
+        ]));
+
+        Assert.Equal("EC", policy.KeyType);
+        Assert.Null(policy.KeySize);
+        Assert.Equal("P-256K", policy.KeyCurveName);
+    }
+
+    [Fact]
     public void Create_WithInvalidCertificateName_Throws()
     {
         var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(

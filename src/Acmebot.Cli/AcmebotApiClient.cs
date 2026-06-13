@@ -64,8 +64,6 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
         {
             while (true)
             {
-                await Task.Delay(pollInterval, linkedTokenSource.Token);
-
                 using var request = new HttpRequestMessage(HttpMethod.Get, operationLocation);
                 using var response = await SendAsync(request, linkedTokenSource.Token);
 
@@ -77,6 +75,7 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
                 if (response.StatusCode == HttpStatusCode.Accepted)
                 {
                     await progress.WriteLineAsync("Operation is still running...");
+                    await Task.Delay(pollInterval, linkedTokenSource.Token);
                     continue;
                 }
 

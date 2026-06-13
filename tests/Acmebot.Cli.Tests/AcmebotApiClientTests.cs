@@ -88,6 +88,101 @@ public sealed class AcmebotApiClientTests
         Assert.Equal("example.com", document.RootElement.GetProperty("dnsNames")[0].GetString());
     }
 
+    [Fact]
+    public async Task WaitForOperationAsync_WithImmediateOk_DoesNotWaitBeforeFirstRequest()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = CreateClient(httpClient);
+
+        handler.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.OK));
+
+        await client.WaitForOperationAsync(
+            new Uri("https://acmebot.example/api/operations/abc"),
+            TimeSpan.FromDays(1),
+            TimeSpan.FromMilliseconds(100),
+            TextWriter.Null,
+            TestContext.Current.CancellationToken);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Get, request.Method);
+        Assert.Equal(new Uri("https://acmebot.example/api/operations/abc"), request.RequestUri);
+    }
+
+    [Fact]
+    public async Task WaitForOperationAsync_WithAcceptedThenOk_PollsUntilComplete()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = CreateClient(httpClient);
+        using var progress = new StringWriter();
+
+        handler.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.Accepted));
+        handler.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.OK));
+
+        await client.WaitForOperationAsync(
+            new Uri("https://acmebot.example/api/operations/abc"),
+            TimeSpan.FromMilliseconds(1),
+            TimeSpan.FromSeconds(5),
+            progress,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Contains("Operation is still running...", progress.ToString());
+    }
+
+    [Fact]
+    public async Task WaitForOperationAsync_WithFailureDuringPolling_ThrowsApiException()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = CreateClient(httpClient);
+
+        handler.Enqueue(_ => CreateJsonResponse(HttpStatusCode.BadRequest, new
+        {
+            title = "Invalid operation"
+        }));
+
+        var ex = await Assert.ThrowsAsync<AcmebotApiException>(() => client.WaitForOperationAsync(
+            new Uri("https://acmebot.example/api/operations/abc"),
+            TimeSpan.FromMilliseconds(1),
+            TimeSpan.FromSeconds(5),
+            TextWriter.Null,
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+        Assert.Equal("Invalid operation", ex.Message);
+    }
+
+    [Fact]
+    public async Task WaitForOperationAsync_WithTimeout_ThrowsTimeoutException()
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = CreateClient(httpClient);
+
+        handler.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.Accepted));
+
+        var ex = await Assert.ThrowsAsync<TimeoutException>(() => client.WaitForOperationAsync(
+            new Uri("https://acmebot.example/api/operations/abc"),
+            TimeSpan.FromDays(1),
+            TimeSpan.FromMilliseconds(10),
+            TextWriter.Null,
+            TestContext.Current.CancellationToken));
+
+        Assert.Contains("Operation did not complete within", ex.Message);
+        Assert.Single(handler.Requests);
+    }
+
+    private static AcmebotApiClient CreateClient(HttpClient httpClient)
+    {
+        return new AcmebotApiClient(
+            httpClient,
+            new Uri("https://acmebot.example/"),
+            new TestCredential("token"),
+            ["api://acmebot/.default"]);
+    }
+
     private static HttpResponseMessage CreateJsonResponse(HttpStatusCode statusCode, object content)
     {
         return new HttpResponseMessage(statusCode)
