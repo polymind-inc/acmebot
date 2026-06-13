@@ -148,9 +148,23 @@
   text-decoration: none;
 }
 
+.vp-doc .deploy-buttons a:hover,
+.vp-doc .deploy-buttons a:focus-visible {
+  background: var(--vp-c-brand-2);
+  color: #fff;
+  text-decoration: none;
+}
+
 .deploy-buttons a.secondary {
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+}
+
+.vp-doc .deploy-buttons a.secondary:hover,
+.vp-doc .deploy-buttons a.secondary:focus-visible {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
   color: var(--vp-c-text-1);
 }
 
