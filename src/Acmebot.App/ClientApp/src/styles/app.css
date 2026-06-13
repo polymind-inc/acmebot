@@ -183,7 +183,7 @@ p {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -213,6 +213,10 @@ p {
 
 .summary-item--danger svg {
   color: var(--color-danger);
+}
+
+.summary-item--disabled svg {
+  color: var(--color-muted);
 }
 
 .summary-item__value {
@@ -580,8 +584,22 @@ button:disabled {
   border-color: #f2b8c5;
 }
 
+.zone-stat--disabled {
+  color: var(--color-muted);
+  background: var(--color-neutral-soft);
+  border-color: var(--color-border);
+}
+
 .certificate-table tbody tr.certificate-row.is-selected {
   background: #f4f8fb;
+}
+
+.certificate-table tbody tr.certificate-row.is-disabled {
+  background: var(--color-surface-subtle);
+}
+
+.certificate-table tbody tr.certificate-row.is-disabled .certificate-name {
+  color: var(--color-muted);
 }
 
 .certificate-table .cell-subtext {
@@ -602,6 +620,11 @@ button:disabled {
   background: var(--color-neutral-soft);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.inline-note--disabled {
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
 }
 
 .dns-list {
@@ -694,6 +717,15 @@ button:disabled {
   background: var(--color-danger);
 }
 
+.status-badge--disabled {
+  color: var(--color-muted);
+  background: var(--color-neutral-soft);
+}
+
+.status-badge--disabled .status-badge__dot {
+  background: var(--color-muted);
+}
+
 .row-action,
 .icon-only-button,
 .copy-button {
@@ -740,6 +772,11 @@ button:disabled {
   inset: 0;
   border: 0;
   background: rgba(15, 23, 42, 0.42);
+}
+
+.modal-scrim {
+  position: fixed;
+  z-index: 70;
 }
 
 .drawer {
@@ -1259,6 +1296,7 @@ button:disabled {
   top: 50%;
   left: 50%;
   z-index: 80;
+  pointer-events: auto;
   width: min(440px, calc(100vw - 32px));
   padding: 18px;
   display: grid;

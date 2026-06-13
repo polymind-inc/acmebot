@@ -2,7 +2,7 @@
 
 ## How does automatic renewal work?
 
-The `RenewCertificates` timer runs daily. When ACME renewal information is available for a managed certificate, Acmebot renews after the CA reports that the renewal window has opened. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
+The `RenewCertificates` timer runs daily for enabled managed certificates. When ACME renewal information is available, Acmebot renews after the CA reports that the renewal window has opened. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
 
 ```text
 Acmebot__RenewBeforeExpiry=30
@@ -20,7 +20,7 @@ Yes. Acmebot stores the certificate in Key Vault, and any number of services can
 
 ## How do I remove a certificate from Acmebot management?
 
-Delete it from Key Vault. If it must also be revoked at the certificate authority, revoke it from the dashboard or HTTP API before deleting it.
+Delete it from Key Vault. If it must also be revoked at the certificate authority, revoke it from the dashboard or HTTP API before deleting it. Revocation also disables the current Key Vault certificate version.
 
 ## How do I reinstall or upgrade Acmebot without losing certificates?
 

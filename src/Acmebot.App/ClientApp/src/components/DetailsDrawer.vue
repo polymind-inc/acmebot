@@ -259,7 +259,7 @@ const customTagsCopyText = computed(() => customTags.value.map(([key, value]) =>
             <span>Renew</span>
           </button>
           <button
-            v-if="certificate.isIssuedByAcmebot && certificate.isSameEndpoint && !certificate.isExpired"
+            v-if="certificate.enabled && certificate.isIssuedByAcmebot && certificate.isSameEndpoint && !certificate.isExpired"
             class="danger-button"
             type="button"
             :disabled="busy"

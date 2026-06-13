@@ -98,6 +98,7 @@ Returns an array of certificate objects.
     "keySize": 2048,
     "reuseKey": false,
     "isExpired": false,
+    "enabled": true,
     "isIssuedByAcmebot": true,
     "isSameEndpoint": true,
     "acmeEndpoint": "acme-v02.api.letsencrypt.org",
@@ -143,7 +144,7 @@ POST /api/certificates/wildcard-example-com/revoke
 Accept: application/json
 ```
 
-Revocation waits for the ACME revoke operation to complete and returns `200 OK` on success.
+Revocation waits for the ACME revoke operation to complete, disables the current Key Vault certificate version, and returns `200 OK` on success.
 
 ## Errors
 

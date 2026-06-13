@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, Shield, ShieldAlert, ShieldCheck, X } from 'lucide-vue-next';
+import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Shield, ShieldAlert, ShieldCheck, X } from 'lucide-vue-next';
 
 import { formatApiError, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
@@ -51,7 +51,7 @@ const summary = computed(() => {
       counts[status.kind] += 1;
       return counts;
     },
-    { valid: 0, warning: 0, expired: 0 },
+    { valid: 0, warning: 0, expired: 0, disabled: 0 },
   );
 
   return {
@@ -67,6 +67,7 @@ const summaryItems = computed(() => [
   { label: 'Managed', value: summary.value.managed, tone: 'good', icon: ShieldCheck },
   { label: 'Expiring soon', value: summary.value.warning, tone: 'warning', icon: ShieldAlert },
   { label: 'Expired', value: summary.value.expired, tone: 'danger', icon: AlertTriangle },
+  { label: 'Disabled', value: summary.value.disabled, tone: 'disabled', icon: PowerOff },
   { label: 'Other CA', value: summary.value.otherCa, tone: 'neutral', icon: BadgeCheck },
   { label: 'Unmanaged', value: summary.value.unmanaged, tone: 'neutral', icon: CircleSlash },
 ]);

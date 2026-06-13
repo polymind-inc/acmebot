@@ -172,6 +172,7 @@ const zoneGroups = computed<ZoneGroup[]>(() => {
           valid: statusKind === 'valid' ? 1 : 0,
           warning: statusKind === 'warning' ? 1 : 0,
           expired: statusKind === 'expired' ? 1 : 0,
+          disabled: statusKind === 'disabled' ? 1 : 0,
         },
       });
     } else {
@@ -312,6 +313,7 @@ function toggleAllZoneGroups(): void {
           <option value="valid">Valid</option>
           <option value="warning">Expiring soon</option>
           <option value="expired">Expired</option>
+          <option value="disabled">Disabled</option>
         </select>
       </label>
       <label class="select-field">
@@ -473,6 +475,10 @@ function toggleAllZoneGroups(): void {
                         v-if="group.statusCounts.expired > 0"
                         class="zone-stat zone-stat--expired"
                       >{{ group.statusCounts.expired }} expired</span>
+                      <span
+                        v-if="group.statusCounts.disabled > 0"
+                        class="zone-stat zone-stat--disabled"
+                      >{{ group.statusCounts.disabled }} disabled</span>
                     </div>
                   </div>
                 </td>
@@ -482,14 +488,20 @@ function toggleAllZoneGroups(): void {
                   v-for="row in group.rows"
                   :key="row.original.id"
                   class="certificate-row"
-                  :class="{ 'is-selected': selectedCertificate?.id === row.original.id }"
+                  :class="{ 'is-selected': selectedCertificate?.id === row.original.id, 'is-disabled': !row.original.enabled }"
                 >
                   <td data-label="Name">
                     <div class="certificate-name">
                       {{ row.original.name }}
                     </div>
                     <div
-                      v-if="isShortLived(row.original)"
+                      v-if="!row.original.enabled"
+                      class="inline-note inline-note--disabled"
+                    >
+                      Disabled
+                    </div>
+                    <div
+                      v-if="row.original.enabled && isShortLived(row.original)"
                       class="inline-note"
                     >
                       Short-lived

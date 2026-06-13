@@ -57,6 +57,10 @@ export function getCertificateStatus(certificate: CertificateItem): CertificateS
   const remainingDays = Math.round(diff / 86_400_000);
   const remainingHours = Math.round(diff / 3_600_000);
 
+  if (!certificate.enabled) {
+    return { kind: 'disabled', label: 'Disabled', remainingDays };
+  }
+
   if (diff <= 0 || certificate.isExpired) {
     return { kind: 'expired', label: 'Expired', remainingDays };
   }

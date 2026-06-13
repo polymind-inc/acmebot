@@ -1,7 +1,7 @@
 export type KeyType = 'RSA' | 'EC';
 export type KeyCurveName = 'P-256' | 'P-384' | 'P-521' | 'P-256K';
 export type CertificateCategory = 'managed' | 'other-ca' | 'unmanaged';
-export type CertificateStatusKind = 'valid' | 'warning' | 'expired';
+export type CertificateStatusKind = 'valid' | 'warning' | 'expired' | 'disabled';
 
 export interface CertificateItem {
   id: string;
@@ -16,6 +16,7 @@ export interface CertificateItem {
   keyCurveName?: KeyCurveName | string | null;
   reuseKey?: boolean | null;
   isExpired: boolean;
+  enabled: boolean;
   isIssuedByAcmebot: boolean;
   isSameEndpoint: boolean;
   acmeEndpoint?: string | null;

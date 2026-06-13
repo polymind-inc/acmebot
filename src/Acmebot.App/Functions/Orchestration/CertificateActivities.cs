@@ -31,6 +31,11 @@ public class CertificateActivities(
 
         await foreach (var properties in certificateProperties)
         {
+            if (properties.Enabled == false)
+            {
+                continue;
+            }
+
             if (!properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
             {
                 continue;
@@ -97,6 +102,10 @@ public class CertificateActivities(
         using var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer);
+
+        response.Value.Properties.Enabled = false;
+
+        await certificateClient.UpdateCertificatePropertiesAsync(response.Value.Properties);
     }
 
     private static bool ShouldRenewByLifetimePercentage(CertificateProperties properties, DateTimeOffset now, int renewBeforeExpiryPercentage)

@@ -23,6 +23,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 2048,
     reuseKey: false,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -41,6 +42,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 2048,
     reuseKey: false,
     isExpired: false,
+    enabled: false,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -59,6 +61,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 2048,
     reuseKey: false,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -76,6 +79,7 @@ let mockCertificates: CertificateItem[] = [
     keyCurveName: 'P-256',
     reuseKey: true,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -93,6 +97,7 @@ let mockCertificates: CertificateItem[] = [
     keyCurveName: 'P-256',
     reuseKey: false,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -110,6 +115,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 3072,
     reuseKey: false,
     isExpired: true,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -127,6 +133,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 2048,
     reuseKey: false,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: true,
     isSameEndpoint: false,
     acmeEndpoint: 'https://acme.zerossl.com/v2/DV90',
@@ -144,6 +151,7 @@ let mockCertificates: CertificateItem[] = [
     keySize: 4096,
     reuseKey: null,
     isExpired: false,
+    enabled: true,
     isIssuedByAcmebot: false,
     isSameEndpoint: false,
     acmeEndpoint: null,
@@ -195,6 +203,7 @@ export async function mockIssueCertificate(policy: CertificatePolicyItem): Promi
       keyCurveName: policy.keyCurveName,
       reuseKey: policy.reuseKey,
       isExpired: false,
+      enabled: true,
       isIssuedByAcmebot: true,
       isSameEndpoint: true,
       acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
@@ -213,6 +222,7 @@ export async function mockRenewCertificate(certificateName: string): Promise<voi
           createdOn: new Date().toISOString(),
           expiresOn: dateFromNow(90),
           isExpired: false,
+          enabled: true,
         }
       : certificate,
   );
@@ -220,7 +230,7 @@ export async function mockRenewCertificate(certificateName: string): Promise<voi
 
 export async function mockRevokeCertificate(certificateName: string): Promise<void> {
   await delay(650);
-  mockCertificates = mockCertificates.filter((certificate) => certificate.name !== certificateName);
+  mockCertificates = mockCertificates.map((certificate) => (certificate.name === certificateName ? { ...certificate, enabled: false } : certificate));
 }
 
 function delay(milliseconds: number): Promise<void> {
