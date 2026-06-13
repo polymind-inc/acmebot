@@ -15,7 +15,6 @@ trim_trailing_whitespace = true
 # C# files
 [*.cs]
 charset = utf-8-bom
-end_of_line = crlf
 
 # New line preferences
 csharp_new_line_before_open_brace = all
