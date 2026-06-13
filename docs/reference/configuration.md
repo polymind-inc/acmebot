@@ -33,10 +33,8 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | Value | Cloud |
 | --- | --- |
 | `AzureCloud` | Azure public cloud |
-| `AzureChinaCloud` | Azure China |
-| `AzureUSGovernment` | Azure Government |
 
-The selected environment controls Azure Resource Manager and identity authority hosts. The standard Flex Consumption deployment template supports the Azure public cloud only because Flex Consumption is not available in Azure China or Azure Government.
+The selected environment controls Azure Resource Manager and identity authority hosts.
 
 ## External Account Binding
 

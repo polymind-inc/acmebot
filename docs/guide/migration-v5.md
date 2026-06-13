@@ -48,13 +48,11 @@ The automatic migration uses the ARM template in `deploy/migrate`. The template 
 
 <div class="deploy-buttons">
   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2FuiFormDefinition.json">Azure Public</a>
-  <a class="secondary" href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2FuiFormDefinition.json">Azure China</a>
-  <a class="secondary" href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fmigrate%2FuiFormDefinition.json">Azure Government</a>
 </div>
 
 ### Portal Steps
 
-1. Open the migration template for your Azure cloud.
+1. Open the Azure Public migration template.
 2. Select the subscription that contains the existing Function App.
 3. Select the existing Acmebot v4 Function App.
 4. Review and create the deployment.

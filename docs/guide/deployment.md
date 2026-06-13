@@ -1,6 +1,6 @@
 # Deployment
 
-Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template supports the Azure public cloud only because Flex Consumption is not available in Azure China or Azure Government.
+Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template targets the Azure public cloud.
 
 ## Deploy to Azure
 
