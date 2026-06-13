@@ -5,7 +5,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>acmebot</AssemblyName>
     <RootNamespace>Acmebot.Cli</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackAsTool>true</PackAsTool>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <ToolCommandName>acmebot</ToolCommandName>
     <PackageId>Acmebot.Cli</PackageId>
     <Title>Acmebot CLI</Title>
@@ -13,9 +19,6 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>acme;azure;key-vault;certificates;cli</PackageTags>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

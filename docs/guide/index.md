@@ -58,6 +58,7 @@ The dashboard is a same-origin web app served by the Function App. It calls the 
 | Get community or commercial support | [Support](./support) |
 | Review every app setting | [Configuration Reference](../reference/configuration) |
 | Integrate with the HTTP endpoints | [HTTP API Reference](../reference/api) |
+| Automate with the command line | [CLI Reference](../reference/cli) |
 
 ## Support Matrix
 

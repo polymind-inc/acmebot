@@ -12,11 +12,16 @@ internal sealed record CliOptions(
 {
     public static CliOptions Create(CommandLine commandLine)
     {
-        var endpointValue = GetOptionOrEnvironment(commandLine, "endpoint", "ACMEBOT_ENDPOINT");
+        return Create(commandLine, CliConfig.Empty);
+    }
+
+    public static CliOptions Create(CommandLine commandLine, CliConfig config)
+    {
+        var endpointValue = GetOptionOrEnvironmentOrConfig(commandLine, "endpoint", "ACMEBOT_ENDPOINT", config.Endpoint);
 
         if (string.IsNullOrWhiteSpace(endpointValue))
         {
-            throw new CliException("Missing required option '--endpoint'. You can also set ACMEBOT_ENDPOINT.");
+            throw new CliException("Missing required option '--endpoint'. Run 'acmebot config set --endpoint <url>', set ACMEBOT_ENDPOINT, or pass --endpoint.");
         }
 
         if (!Uri.TryCreate(endpointValue, UriKind.Absolute, out var endpoint))
@@ -25,7 +30,7 @@ internal sealed record CliOptions(
         }
 
         var credentialOptions = CredentialOptions.Create(commandLine);
-        var tokenScopes = GetTokenScopes(commandLine, endpoint);
+        var tokenScopes = GetTokenScopes(commandLine, endpoint, config);
         var outputFormat = GetOutputFormat(commandLine);
 
         return new CliOptions(
@@ -42,18 +47,24 @@ internal sealed record CliOptions(
         return new Uri(endpoint.AbsoluteUri.TrimEnd('/') + "/");
     }
 
-    private static string[] GetTokenScopes(CommandLine commandLine, Uri endpoint)
+    private static string[] GetTokenScopes(CommandLine commandLine, Uri endpoint, CliConfig config)
     {
         var audience = commandLine.GetOption("audience")
             ?? Environment.GetEnvironmentVariable("ACMEBOT_AUDIENCE")
+            ?? config.Audience
             ?? endpoint.GetLeftPart(UriPartial.Authority);
 
+        ValidateAudience(audience);
+
+        return [ToDefaultScope(audience)];
+    }
+
+    public static void ValidateAudience(string audience)
+    {
         if (audience.EndsWith("/.default", StringComparison.Ordinal) || audience.EndsWith("/user_impersonation", StringComparison.Ordinal))
         {
             throw new CliException("Option '--audience' must be an application ID URI or endpoint origin, not a token scope.");
         }
-
-        return [ToDefaultScope(audience)];
     }
 
     private static string ToDefaultScope(string audience)
@@ -97,9 +108,9 @@ internal sealed record CliOptions(
         return TimeSpan.FromSeconds(seconds);
     }
 
-    private static string? GetOptionOrEnvironment(CommandLine commandLine, string optionName, string environmentName)
+    private static string? GetOptionOrEnvironmentOrConfig(CommandLine commandLine, string optionName, string environmentName, string? configValue)
     {
-        return commandLine.GetOption(optionName) ?? Environment.GetEnvironmentVariable(environmentName);
+        return commandLine.GetOption(optionName) ?? Environment.GetEnvironmentVariable(environmentName) ?? configValue;
     }
 }
 

@@ -6,6 +6,7 @@ internal static class CliOptionNames
     {
         "endpoint",
         "audience",
+        "config",
         "tenant-id",
         "client-id",
         "client-secret",

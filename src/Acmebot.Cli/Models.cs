@@ -116,6 +116,6 @@ internal sealed class ProblemDetails
     public Dictionary<string, string[]>? Errors { get; set; }
 }
 
-internal sealed record OperationResult(string Status, Uri OperationLocation);
+internal sealed record OperationResult(string Status, string OperationInstanceId);
 
 internal sealed record CertificateCommandResult(string Status, string CertificateName);

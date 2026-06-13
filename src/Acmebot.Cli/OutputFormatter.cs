@@ -68,9 +68,9 @@ internal static class OutputFormatter
         await WriteTableAsync(writer, ["DNS Provider", "Zone"], rows);
     }
 
-    public static async Task WriteOperationResultAsync(TextWriter writer, Uri location, bool completed, OutputFormat format, CancellationToken cancellationToken)
+    public static async Task WriteOperationResultAsync(TextWriter writer, string operationInstanceId, bool completed, OutputFormat format, CancellationToken cancellationToken)
     {
-        var result = new OperationResult(completed ? "completed" : "accepted", location);
+        var result = new OperationResult(completed ? "completed" : "accepted", operationInstanceId);
 
         if (format == OutputFormat.Json)
         {
@@ -79,7 +79,7 @@ internal static class OutputFormatter
         }
 
         await writer.WriteLineAsync(completed ? "Operation completed." : "Operation accepted.");
-        await writer.WriteLineAsync($"Location: {location}");
+        await writer.WriteLineAsync($"Instance ID: {operationInstanceId}");
     }
 
     public static async Task WriteCertificateCommandResultAsync(TextWriter writer, string certificateName, string status, OutputFormat format, CancellationToken cancellationToken)

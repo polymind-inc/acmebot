@@ -18,7 +18,13 @@ internal static class CliApplication
 
             ValidateKnownOptions(commandLine);
 
-            var options = CliOptions.Create(commandLine);
+            if (string.Equals(commandLine.Arguments[0], "config", StringComparison.OrdinalIgnoreCase))
+            {
+                return await RunConfigCommandAsync(commandLine, output);
+            }
+
+            var config = CliConfig.Load(commandLine);
+            var options = CliOptions.Create(commandLine, config);
 
             using var client = new AcmebotApiClient(new HttpClient(), options.Endpoint, options.CredentialOptions.CreateCredential(), options.TokenScopes);
 
@@ -84,6 +90,71 @@ internal static class CliApplication
         };
     }
 
+    private static async Task<int> RunConfigCommandAsync(CommandLine commandLine, TextWriter output)
+    {
+        if (commandLine.Arguments.Count < 2)
+        {
+            throw new CliException("Missing config subcommand.");
+        }
+
+        return commandLine.Arguments[1].ToLowerInvariant() switch
+        {
+            "set" => await SetConfigAsync(commandLine, output),
+            "show" => await ShowConfigAsync(commandLine, output),
+            "clear" => await ClearConfigAsync(commandLine, output),
+            _ => throw new CliException($"Unknown config subcommand '{commandLine.Arguments[1]}'.")
+        };
+    }
+
+    private static async Task<int> SetConfigAsync(CommandLine commandLine, TextWriter output)
+    {
+        EnsureNoExtraArguments(commandLine, 2);
+
+        if (!commandLine.HasOption("endpoint") && !commandLine.HasOption("audience"))
+        {
+            throw new CliException("Specify '--endpoint' or '--audience'.");
+        }
+
+        var currentConfig = CliConfig.Load(commandLine);
+        var endpoint = commandLine.HasOption("endpoint")
+            ? ValidateEndpoint(commandLine.GetOption("endpoint"))
+            : currentConfig.Endpoint;
+        var audience = commandLine.HasOption("audience")
+            ? ValidateAudience(commandLine.GetOption("audience"))
+            : currentConfig.Audience;
+
+        new CliConfig(endpoint, audience).Save(commandLine);
+
+        await output.WriteLineAsync("Configuration saved.");
+        await output.WriteLineAsync($"Path: {CliConfig.GetPath(commandLine)}");
+
+        return ExitCodes.Success;
+    }
+
+    private static async Task<int> ShowConfigAsync(CommandLine commandLine, TextWriter output)
+    {
+        EnsureNoExtraArguments(commandLine, 2);
+
+        var config = CliConfig.Load(commandLine);
+
+        await output.WriteLineAsync($"Path: {CliConfig.GetPath(commandLine)}");
+        await output.WriteLineAsync($"Endpoint: {config.Endpoint ?? "<not set>"}");
+        await output.WriteLineAsync($"Audience: {config.Audience ?? "<endpoint origin>"}");
+
+        return ExitCodes.Success;
+    }
+
+    private static async Task<int> ClearConfigAsync(CommandLine commandLine, TextWriter output)
+    {
+        EnsureNoExtraArguments(commandLine, 2);
+
+        CliConfig.Delete(commandLine);
+
+        await output.WriteLineAsync("Configuration cleared.");
+
+        return ExitCodes.Success;
+    }
+
     private static async Task<int> RunCertificateCommandAsync(
         CommandLine commandLine,
         CliOptions options,
@@ -144,10 +215,11 @@ internal static class CliApplication
             throw new CliException($"Unknown operation subcommand '{commandLine.Arguments[1]}'.");
         }
 
-        var operationLocation = GetSingleArgument(commandLine, 2, "operation location");
+        var operationInstanceId = GetOperationInstanceId(GetSingleArgument(commandLine, 2, "operation instance ID"));
+        var operationLocation = BuildOperationLocation(options.Endpoint, operationInstanceId);
 
-        await client.WaitForOperationAsync(BuildOperationLocation(options.Endpoint, operationLocation), options.PollInterval, options.Timeout, error, cancellationToken);
-        await OutputFormatter.WriteOperationResultAsync(output, BuildOperationLocation(options.Endpoint, operationLocation), completed: true, options.OutputFormat, cancellationToken);
+        await client.WaitForOperationAsync(operationLocation, options.PollInterval, options.Timeout, error, cancellationToken);
+        await OutputFormatter.WriteOperationResultAsync(output, operationInstanceId, completed: true, options.OutputFormat, cancellationToken);
 
         return ExitCodes.Success;
     }
@@ -199,6 +271,7 @@ internal static class CliApplication
 
         var policy = CertificatePolicyFactory.Create(commandLine);
         var operationLocation = await client.IssueCertificateAsync(policy, cancellationToken);
+        var operationInstanceId = GetOperationInstanceId(operationLocation);
         var wait = ShouldWait(commandLine);
 
         if (wait)
@@ -206,7 +279,7 @@ internal static class CliApplication
             await client.WaitForOperationAsync(operationLocation, options.PollInterval, options.Timeout, error, cancellationToken);
         }
 
-        await OutputFormatter.WriteOperationResultAsync(output, operationLocation, wait, options.OutputFormat, cancellationToken);
+        await OutputFormatter.WriteOperationResultAsync(output, operationInstanceId, wait, options.OutputFormat, cancellationToken);
 
         return ExitCodes.Success;
     }
@@ -222,6 +295,7 @@ internal static class CliApplication
     {
         var certificateName = GetSingleArgument(commandLine, commandOffset, "certificate name");
         var operationLocation = await client.RenewCertificateAsync(certificateName, cancellationToken);
+        var operationInstanceId = GetOperationInstanceId(operationLocation);
         var wait = ShouldWait(commandLine);
 
         if (wait)
@@ -229,7 +303,7 @@ internal static class CliApplication
             await client.WaitForOperationAsync(operationLocation, options.PollInterval, options.Timeout, error, cancellationToken);
         }
 
-        await OutputFormatter.WriteOperationResultAsync(output, operationLocation, wait, options.OutputFormat, cancellationToken);
+        await OutputFormatter.WriteOperationResultAsync(output, operationInstanceId, wait, options.OutputFormat, cancellationToken);
 
         return ExitCodes.Success;
     }
@@ -287,23 +361,69 @@ internal static class CliApplication
         }
     }
 
-    private static Uri BuildOperationLocation(Uri endpoint, string operationLocation)
+    private static string GetOperationInstanceId(string value)
     {
-        if (Uri.TryCreate(operationLocation, UriKind.Absolute, out var absoluteUri))
+        var operationInstanceId = value.Trim();
+
+        if (operationInstanceId.Length == 0)
         {
-            return absoluteUri;
+            throw new CliException("Missing operation instance ID.");
         }
 
-        if (operationLocation.StartsWith("/", StringComparison.Ordinal))
+        if (Uri.TryCreate(operationInstanceId, UriKind.Absolute, out _) ||
+            operationInstanceId.Contains('/', StringComparison.Ordinal) ||
+            operationInstanceId.Contains('\\', StringComparison.Ordinal) ||
+            operationInstanceId.Contains('?', StringComparison.Ordinal) ||
+            operationInstanceId.Contains('#', StringComparison.Ordinal))
         {
-            return new Uri(new Uri(endpoint.GetLeftPart(UriPartial.Authority)), operationLocation.TrimStart('/'));
+            throw new CliException("Operation wait accepts an operation instance ID, not an operation URL or path.");
         }
 
-        if (!operationLocation.Contains('/', StringComparison.Ordinal))
+        return operationInstanceId;
+    }
+
+    private static string GetOperationInstanceId(Uri operationLocation)
+    {
+        var path = operationLocation.AbsolutePath.TrimEnd('/');
+        var separatorIndex = path.LastIndexOf('/');
+
+        if (separatorIndex < 0 || separatorIndex == path.Length - 1)
         {
-            return new Uri(endpoint, $"api/operations/{Uri.EscapeDataString(operationLocation)}");
+            throw new AcmebotApiException(System.Net.HttpStatusCode.Accepted, "The operation response did not include an operation instance ID.");
         }
 
-        return new Uri(endpoint, operationLocation);
+        return Uri.UnescapeDataString(path[(separatorIndex + 1)..]);
+    }
+
+    private static Uri BuildOperationLocation(Uri endpoint, string operationInstanceId)
+    {
+        return new Uri(endpoint, $"api/operations/{Uri.EscapeDataString(operationInstanceId)}");
+    }
+
+    private static string ValidateEndpoint(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new CliException("Option '--endpoint' requires a value.");
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out _))
+        {
+            throw new CliException("Option '--endpoint' must be an absolute URL.");
+        }
+
+        return value.Trim();
+    }
+
+    private static string ValidateAudience(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new CliException("Option '--audience' requires a value.");
+        }
+
+        CliOptions.ValidateAudience(value);
+
+        return value.Trim();
     }
 }

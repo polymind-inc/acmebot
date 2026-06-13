@@ -30,6 +30,36 @@ public sealed class CliOptionsTests
     }
 
     [Fact]
+    public void Create_WithConfig_UsesConfiguredEndpointAndAudience()
+    {
+        var options = CliOptions.Create(
+            CommandLine.Parse(["certificate", "list"]),
+            new CliConfig("https://acmebot.example", "api://f3b48385-9523-470f-9f85-6ed488a1f6f2"));
+
+        Assert.Equal(new Uri("https://acmebot.example/"), options.Endpoint);
+        Assert.Equal(["api://f3b48385-9523-470f-9f85-6ed488a1f6f2/.default"], options.TokenScopes);
+    }
+
+    [Fact]
+    public void Create_WithOptions_OverridesConfig()
+    {
+        var options = CliOptions.Create(
+            CommandLine.Parse(
+            [
+                "--endpoint",
+                "https://override.example",
+                "--audience",
+                "api://override",
+                "certificate",
+                "list"
+            ]),
+            new CliConfig("https://configured.example", "api://configured"));
+
+        Assert.Equal(new Uri("https://override.example/"), options.Endpoint);
+        Assert.Equal(["api://override/.default"], options.TokenScopes);
+    }
+
+    [Fact]
     public void Create_WithScopeAsAudience_Throws()
     {
         var ex = Assert.Throws<CliException>(() => CliOptions.Create(CommandLine.Parse(

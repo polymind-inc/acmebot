@@ -39,6 +39,7 @@ const guideSidebar = [
       { text: "Configuration", link: "/reference/configuration" },
       { text: "Architecture", link: "/reference/architecture" },
       { text: "HTTP API", link: "/reference/api" },
+      { text: "CLI", link: "/reference/cli" },
       { text: "Security", link: "/reference/security" }
     ]
   }
