@@ -45,6 +45,12 @@ These commands cover the contributor-facing validation checks.
 - Avoid unrelated refactoring in the same pull request.
 - Do not commit secrets, certificates, or populated `local.settings.json` values.
 
+## Release Publishing
+
+The `Publish` workflow runs for version tags such as `v5.0.0`. Before pushing the tag, create a matching draft GitHub Release. The workflow uploads the Function App package, publishes the CLI package to NuGet, and then publishes the draft release.
+
+NuGet publishing uses Trusted Publishing. Configure a nuget.org trusted publishing policy for repository `polymind-inc/acmebot` and workflow file `publish.yml`, then set the repository secret `NUGET_USER` to the nuget.org profile name used by that policy.
+
 ## Submission Checklist
 
 - Build succeeds locally.
