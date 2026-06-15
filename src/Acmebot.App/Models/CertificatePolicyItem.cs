@@ -6,7 +6,7 @@ namespace Acmebot.App.Models;
 public class CertificatePolicyItem : IValidatableObject
 {
     [JsonPropertyName("certificateName")]
-    [RegularExpression("^[0-9A-Za-z-]{1,100}$")]
+    [RegularExpression("^[0-9A-Za-z-]{1,127}$")]
     public string? CertificateName { get; set; }
 
     [JsonPropertyName("dnsNames")]

@@ -31,7 +31,7 @@ internal static partial class CertificatePolicyFactory
 
         if (certificateName is not null && !CertificateNameRegex().IsMatch(certificateName))
         {
-            throw new CliException("Option '--name' must contain only letters, numbers, and hyphens.");
+            throw new CliException("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.");
         }
 
         var keyType = commandLine.GetOption("key-type")?.ToUpperInvariant() ?? "RSA";
@@ -149,6 +149,6 @@ internal static partial class CertificatePolicyFactory
             : value;
     }
 
-    [GeneratedRegex("^[0-9a-zA-Z-]+$")]
+    [GeneratedRegex("^[0-9A-Za-z-]{1,127}$")]
     private static partial Regex CertificateNameRegex();
 }

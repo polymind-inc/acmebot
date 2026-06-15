@@ -42,7 +42,7 @@ public class CertificateActivities(
 
         var properties = certificate.Properties;
 
-        if (properties.Enabled != true)
+        if (properties.Enabled == false)
         {
             return new CertificateRenewalEvaluation
             {

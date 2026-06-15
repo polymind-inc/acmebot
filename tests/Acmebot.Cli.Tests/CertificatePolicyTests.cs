@@ -78,7 +78,23 @@ public sealed class CertificatePolicyTests
             "example.com"
         ])));
 
-        Assert.Equal("Option '--name' must contain only letters, numbers, and hyphens.", ex.Message);
+        Assert.Equal("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_WithTooLongCertificateName_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--name",
+            new string('a', 128),
+            "--dns-name",
+            "example.com"
+        ])));
+
+        Assert.Equal("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.", ex.Message);
     }
 
     [Fact]

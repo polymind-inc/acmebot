@@ -31,7 +31,7 @@ public partial class RenewCertificates(
 
         await foreach (var properties in certificateClient.GetPropertiesOfCertificatesAsync())
         {
-            if (properties.Enabled != true || !properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
+            if (properties.Enabled == false || !properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
             {
                 skipped++;
                 continue;
