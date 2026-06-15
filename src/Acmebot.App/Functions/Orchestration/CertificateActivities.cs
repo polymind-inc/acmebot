@@ -73,12 +73,13 @@ public class CertificateActivities(
                 try
                 {
                     var renewalInfo = await acmeContext.Client.GetRenewalInfoAsync(certificateId);
+                    var suggestedWindow = renewalInfo.Resource.SuggestedWindow;
 
                     return new CertificateRenewalEvaluation
                     {
                         IsActive = true,
-                        ShouldRenew = renewalInfo.Resource.SuggestedWindow.Start <= now,
-                        NextCheck = now.Add(renewalInfo.RetryAfter ?? TimeSpan.FromDays(1)),
+                        ShouldRenew = suggestedWindow.Start <= now,
+                        NextCheck = SelectNextCheck(now, suggestedWindow.Start, suggestedWindow.End, renewalInfo.RetryAfter),
                         Reason = "ARI"
                     };
                 }
@@ -89,7 +90,7 @@ public class CertificateActivities(
                     {
                         IsActive = true,
                         ShouldRenew = CheckShouldRenew(properties, now),
-                        NextCheck = now.Add(TimeSpan.FromDays(1)),
+                        NextCheck = now.AddHours(6),
                         Reason = "ARI unavailable"
                     };
                 }
@@ -171,5 +172,15 @@ public class CertificateActivities(
         var suggestedWindowStart = expiresOn - renewalThreshold;
 
         return suggestedWindowStart <= now;
+    }
+
+    private static DateTimeOffset SelectNextCheck(DateTimeOffset now, DateTimeOffset suggestedWindowStart, DateTimeOffset suggestedWindowEnd, TimeSpan? retryAfter)
+    {
+        var window = suggestedWindowEnd - suggestedWindowStart;
+
+        var randomRenewalTime = suggestedWindowStart.AddTicks(Random.Shared.NextInt64(window.Ticks));
+        var nextRenewalInfoCheck = now.Add(retryAfter ?? TimeSpan.FromHours(6));
+
+        return randomRenewalTime <= nextRenewalInfoCheck ? randomRenewalTime : nextRenewalInfoCheck;
     }
 }
