@@ -1,6 +1,4 @@
-﻿using Acmebot.App.Models;
-
-using Microsoft.Azure.Functions.Worker;
+﻿using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -9,15 +7,15 @@ namespace Acmebot.App.Functions.Orchestration;
 public partial class CertificateRenewalSchedulerOrchestrator
 {
     [Function(nameof(ScheduleCertificateRenewal))]
-    public async Task ScheduleCertificateRenewal([OrchestrationTrigger] TaskOrchestrationContext context, CertificateRenewalSchedulerState state)
+    public async Task ScheduleCertificateRenewal([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
     {
         var logger = context.CreateReplaySafeLogger<CertificateRenewalSchedulerOrchestrator>();
 
-        var evaluation = await context.CallEvaluateCertificateRenewalAsync(state);
+        var evaluation = await context.CallEvaluateCertificateRenewalAsync(certificateName);
 
         if (!evaluation.IsActive)
         {
-            LogCertificateRenewalSchedulerStopped(logger, state.CertificateName, evaluation.Reason);
+            LogCertificateRenewalSchedulerStopped(logger, certificateName, evaluation.Reason);
             return;
         }
 
@@ -25,9 +23,9 @@ public partial class CertificateRenewalSchedulerOrchestrator
         {
             try
             {
-                LogCertificateRenewalStarted(logger, state.CertificateName, evaluation.Reason);
+                LogCertificateRenewalStarted(logger, certificateName, evaluation.Reason);
 
-                var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(state.CertificateName);
+                var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
 
                 await context.CallSubOrchestratorAsync(
                     nameof(CertificateIssuanceOrchestrator.IssueCertificate),
@@ -36,24 +34,24 @@ public partial class CertificateRenewalSchedulerOrchestrator
             }
             catch (Exception ex)
             {
-                LogCertificateRenewalFailed(logger, ex, state.CertificateName);
+                LogCertificateRenewalFailed(logger, ex, certificateName);
 
                 await context.CreateTimer(context.CurrentUtcDateTime.Add(s_failedRenewalRetryInterval), CancellationToken.None);
-                context.ContinueAsNew(state);
+                context.ContinueAsNew(certificateName);
 
                 return;
             }
 
-            context.ContinueAsNew(state);
+            context.ContinueAsNew(certificateName);
 
             return;
         }
 
-        LogCertificateRenewalScheduled(logger, state.CertificateName, evaluation.NextCheck, evaluation.Reason);
+        LogCertificateRenewalScheduled(logger, certificateName, evaluation.NextCheck, evaluation.Reason);
 
         await context.CreateTimer(evaluation.NextCheck.UtcDateTime, CancellationToken.None);
 
-        context.ContinueAsNew(state);
+        context.ContinueAsNew(certificateName);
     }
 
     private static readonly TimeSpan s_failedRenewalRetryInterval = TimeSpan.FromHours(6);

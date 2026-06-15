@@ -2,7 +2,6 @@
 using System.Text;
 
 using Acmebot.App.Extensions;
-using Acmebot.App.Models;
 using Acmebot.App.Options;
 
 using Azure.Security.KeyVault.Certificates;
@@ -49,10 +48,7 @@ public partial class RenewCertificates(
 
             await starter.ScheduleNewOrchestrationInstanceAsync(
                 nameof(CertificateRenewalSchedulerOrchestrator.ScheduleCertificateRenewal),
-                new CertificateRenewalSchedulerState
-                {
-                    CertificateName = properties.Name
-                },
+                properties.Name,
                 new StartOrchestrationOptions
                 {
                     InstanceId = instanceId

@@ -1,10 +1,5 @@
 ﻿namespace Acmebot.App.Models;
 
-public sealed record CertificateRenewalSchedulerState
-{
-    public required string CertificateName { get; init; }
-}
-
 public sealed record CertificateRenewalEvaluation
 {
     public required bool IsActive { get; init; }

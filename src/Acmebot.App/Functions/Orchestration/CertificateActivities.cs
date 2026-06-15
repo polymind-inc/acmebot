@@ -18,16 +18,16 @@ public class CertificateActivities(
     private readonly AcmebotOptions _options = options.Value;
 
     [Function(nameof(EvaluateCertificateRenewal))]
-    public async Task<CertificateRenewalEvaluation> EvaluateCertificateRenewal([ActivityTrigger] CertificateRenewalSchedulerState state)
+    public async Task<CertificateRenewalEvaluation> EvaluateCertificateRenewal([ActivityTrigger] string certificateName)
     {
-        ArgumentNullException.ThrowIfNull(state);
+        ArgumentException.ThrowIfNullOrWhiteSpace(certificateName);
 
         var now = DateTimeOffset.UtcNow;
         KeyVaultCertificateWithPolicy certificate;
 
         try
         {
-            certificate = await certificateClient.GetCertificateAsync(state.CertificateName);
+            certificate = await certificateClient.GetCertificateAsync(certificateName);
         }
         catch (Azure.RequestFailedException ex) when (ex.Status == 404)
         {
