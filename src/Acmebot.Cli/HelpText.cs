@@ -45,8 +45,5 @@ internal static class HelpText
         await writer.WriteLineAsync("  --no-wait                              Return after the operation is accepted.");
     }
 
-    public static async Task WriteUsageHintAsync(TextWriter writer)
-    {
-        await writer.WriteLineAsync("Run 'acmebot --help' for usage.");
-    }
+    public static async Task WriteUsageHintAsync(TextWriter writer) => await writer.WriteLineAsync("Run 'acmebot --help' for usage.");
 }

@@ -93,8 +93,5 @@ internal sealed class AcmeProblemTypeJsonConverter : JsonConverter<AcmeProblemTy
         return new AcmeProblemType(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeProblemType value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeProblemType value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }

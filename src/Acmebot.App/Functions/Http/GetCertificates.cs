@@ -14,10 +14,7 @@ namespace Acmebot.App.Functions.Http;
 public partial class GetCertificates(IHttpContextAccessor httpContextAccessor, ILogger<GetCertificates> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(GetCertificates)}_{nameof(Orchestrator)}")]
-    public Task<IReadOnlyList<CertificateItem>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
-    {
-        return context.CallGetAllCertificatesAsync(null!);
-    }
+    public Task<IReadOnlyList<CertificateItem>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context) => context.CallGetAllCertificatesAsync(null!);
 
     [Function($"{nameof(GetCertificates)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(

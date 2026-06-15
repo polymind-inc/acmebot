@@ -97,10 +97,7 @@ internal sealed class AcmeAuthorizationStatusJsonConverter : JsonConverter<AcmeA
         return new AcmeAuthorizationStatus(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeAuthorizationStatus value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeAuthorizationStatus value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }
 
 [JsonConverter(typeof(AcmeChallengeTypeJsonConverter))]
@@ -136,10 +133,7 @@ internal sealed class AcmeChallengeTypeJsonConverter : JsonConverter<AcmeChallen
         return new AcmeChallengeType(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeChallengeType value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeChallengeType value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }
 
 [JsonConverter(typeof(AcmeChallengeStatusJsonConverter))]
@@ -183,8 +177,5 @@ internal sealed class AcmeChallengeStatusJsonConverter : JsonConverter<AcmeChall
         return new AcmeChallengeStatus(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeChallengeStatus value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeChallengeStatus value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }

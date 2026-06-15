@@ -140,10 +140,7 @@ internal static partial class CertificatePolicyFactory
         return result;
     }
 
-    private static string? NormalizeOptionalValue(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
+    private static string? NormalizeOptionalValue(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string? NormalizeEcKeyCurve(string? value)
     {

@@ -120,10 +120,7 @@ internal sealed record CliConfig(string? Endpoint, string? Audience)
             : Path.Combine(userProfile, ".acmebot", "config.json");
     }
 
-    private static string? Normalize(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private sealed class CliConfigFile
     {

@@ -14,10 +14,7 @@ namespace Acmebot.App.Functions.Http;
 public partial class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogger<GetDnsZones> logger) : HttpFunctionBase(httpContextAccessor)
 {
     [Function($"{nameof(GetDnsZones)}_{nameof(Orchestrator)}")]
-    public Task<IReadOnlyList<DnsZoneGroup>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
-    {
-        return context.CallGetAllDnsZonesAsync(null!);
-    }
+    public Task<IReadOnlyList<DnsZoneGroup>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context) => context.CallGetAllDnsZonesAsync(null!);
 
     [Function($"{nameof(GetDnsZones)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(

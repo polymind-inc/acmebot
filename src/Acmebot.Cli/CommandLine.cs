@@ -80,10 +80,7 @@ internal sealed class CommandLine
 
     public bool HasOption(string name) => _options.ContainsKey(name);
 
-    public string? GetOption(string name)
-    {
-        return _options.TryGetValue(name, out var values) ? values.LastOrDefault() : null;
-    }
+    public string? GetOption(string name) => _options.TryGetValue(name, out var values) ? values.LastOrDefault() : null;
 
     public IReadOnlyList<string> GetOptions(string name)
     {

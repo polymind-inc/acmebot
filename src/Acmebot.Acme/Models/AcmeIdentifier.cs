@@ -51,8 +51,5 @@ internal sealed class AcmeIdentifierTypeJsonConverter : JsonConverter<AcmeIdenti
         return new AcmeIdentifierType(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeIdentifierType value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeIdentifierType value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }

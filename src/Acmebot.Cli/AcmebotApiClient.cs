@@ -20,15 +20,9 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
     private readonly string[] _scopes = scopes;
     private AccessToken? _accessToken;
 
-    public async Task<IReadOnlyList<CertificateItem>> GetCertificatesAsync(CancellationToken cancellationToken)
-    {
-        return await GetJsonAsync<IReadOnlyList<CertificateItem>>("api/certificates", cancellationToken);
-    }
+    public async Task<IReadOnlyList<CertificateItem>> GetCertificatesAsync(CancellationToken cancellationToken) => await GetJsonAsync<IReadOnlyList<CertificateItem>>("api/certificates", cancellationToken);
 
-    public async Task<IReadOnlyList<DnsZoneGroup>> GetDnsZonesAsync(CancellationToken cancellationToken)
-    {
-        return await GetJsonAsync<IReadOnlyList<DnsZoneGroup>>("api/dns-zones", cancellationToken);
-    }
+    public async Task<IReadOnlyList<DnsZoneGroup>> GetDnsZonesAsync(CancellationToken cancellationToken) => await GetJsonAsync<IReadOnlyList<DnsZoneGroup>>("api/dns-zones", cancellationToken);
 
     public async Task<Uri> IssueCertificateAsync(CertificatePolicyItem policy, CancellationToken cancellationToken)
     {
@@ -88,10 +82,7 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
         }
     }
 
-    public void Dispose()
-    {
-        _httpClient.Dispose();
-    }
+    public void Dispose() => _httpClient.Dispose();
 
     private async Task<T> GetJsonAsync<T>(string path, CancellationToken cancellationToken)
     {
@@ -181,10 +172,7 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
             ?? $"HTTP {(int)statusCode} {statusCode}";
     }
 
-    private Uri BuildUri(string path)
-    {
-        return new Uri(_endpoint, path);
-    }
+    private Uri BuildUri(string path) => new(_endpoint, path);
 
     private Uri BuildLocationUri(Uri location)
     {

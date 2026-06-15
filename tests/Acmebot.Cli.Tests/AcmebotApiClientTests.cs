@@ -193,15 +193,9 @@ public sealed class AcmebotApiClientTests
 
     private sealed class TestCredential(string token) : TokenCredential
     {
-        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
-        {
-            return new AccessToken(token, DateTimeOffset.UtcNow.AddHours(1));
-        }
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken) => new(token, DateTimeOffset.UtcNow.AddHours(1));
 
-        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
-        {
-            return new ValueTask<AccessToken>(GetToken(requestContext, cancellationToken));
-        }
+        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken) => new(GetToken(requestContext, cancellationToken));
     }
 
     private sealed class RecordingHandler : HttpMessageHandler
@@ -210,10 +204,7 @@ public sealed class AcmebotApiClientTests
 
         public List<RecordedRequest> Requests { get; } = [];
 
-        public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> response)
-        {
-            _responses.Enqueue(response);
-        }
+        public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> response) => _responses.Enqueue(response);
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

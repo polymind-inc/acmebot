@@ -1,81 +1,82 @@
-﻿using Microsoft.Azure.Functions.Worker;
+﻿using System.Security.Cryptography;
+using System.Text;
+
+using Acmebot.App.Extensions;
+using Acmebot.App.Models;
+using Acmebot.App.Options;
+
+using Azure.Security.KeyVault.Certificates;
+
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Functions.Orchestration;
 
-public partial class RenewCertificates(ILogger<RenewCertificates> logger)
+public partial class RenewCertificates(
+    CertificateClient certificateClient,
+    IOptions<AcmebotOptions> options,
+    ILogger<RenewCertificates> logger)
 {
-    [Function($"{nameof(RenewCertificates)}_{nameof(Orchestrator)}")]
-    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
-    {
-        var replaySafeLogger = context.CreateReplaySafeLogger<RenewCertificates>();
-
-        // 更新が必要な証明書の一覧を取得する
-        var certificates = await context.CallGetRenewalCertificatesAsync(null!);
-
-        // 更新対象となる証明書がない場合は終わる
-        if (certificates.Count == 0)
-        {
-            LogCertificatesNotFound(replaySafeLogger);
-
-            return;
-        }
-
-        // スロットリング対策として 600 秒以内でジッターを追加する
-        var jitter = BitConverter.ToUInt32(context.NewGuid().ToByteArray(), 0) % 600;
-
-        LogAddingRandomDelay(replaySafeLogger, jitter);
-
-        await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(jitter), CancellationToken.None);
-
-        // 証明書の更新を行う
-        foreach (var certificate in certificates)
-        {
-            LogRenewingCertificate(replaySafeLogger, certificate.Name, certificate.ExpiresOn);
-
-            try
-            {
-                // 証明書の更新処理を開始
-                var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificate.Name);
-
-                await context.CallSubOrchestratorAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem, TaskOptions.FromRetryPolicy(_retryOptions));
-            }
-            catch (Exception ex)
-            {
-                // 失敗した場合はログに詳細を書き出して続きを実行する
-                LogFailedSubOrchestration(replaySafeLogger, ex, certificate.Name, string.Join(",", certificate.DnsNames));
-            }
-        }
-    }
+    private readonly AcmebotOptions _options = options.Value;
 
     [Function($"{nameof(RenewCertificates)}_{nameof(Timer)}")]
     public async Task Timer([TimerTrigger("0 0 0 * * *")] TimerInfo timer, [DurableClient] DurableTaskClient starter)
     {
-        // Function input comes from the request content.
-        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RenewCertificates)}_{nameof(Orchestrator)}");
+        var started = 0;
+        var running = 0;
+        var skipped = 0;
 
-        LogOrchestrationStarted(logger, instanceId);
+        await foreach (var properties in certificateClient.GetPropertiesOfCertificatesAsync())
+        {
+            if (properties.Enabled != true || !properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
+            {
+                skipped++;
+                continue;
+            }
+
+            var instanceId = Convert.ToHexStringLower(SHA1.HashData(Encoding.UTF8.GetBytes(properties.Name)));
+
+            var instance = await starter.GetInstanceAsync(instanceId, getInputsAndOutputs: false);
+
+            if (!ShouldStartScheduler(instance))
+            {
+                running++;
+                continue;
+            }
+
+            await starter.ScheduleNewOrchestrationInstanceAsync(
+                nameof(CertificateRenewalSchedulerOrchestrator.ScheduleCertificateRenewal),
+                new CertificateRenewalSchedulerState
+                {
+                    CertificateName = properties.Name
+                },
+                new StartOrchestrationOptions
+                {
+                    InstanceId = instanceId
+                });
+
+            started++;
+
+            LogRenewalSchedulerStarted(logger, properties.Name, instanceId);
+        }
+
+        LogRenewalSchedulersEnsured(logger, started, running, skipped);
     }
 
-    private readonly RetryPolicy _retryOptions = new(2, TimeSpan.FromHours(3))
+    private static bool ShouldStartScheduler(OrchestrationMetadata? instance)
     {
-        HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableOrchestratorException>()
-    };
+        return instance is null ||
+               instance.RuntimeStatus is OrchestrationRuntimeStatus.Completed or
+                   OrchestrationRuntimeStatus.Failed or
+                   OrchestrationRuntimeStatus.Terminated;
+    }
 
-    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal skipped. Reason: No certificates are due for renewal.")]
-    private static partial void LogCertificatesNotFound(ILogger logger);
+    [LoggerMessage(LogLevel.Information, "Certificate renewal scheduler started. CertificateName: {CertificateName}. InstanceId: {instanceId}")]
+    private static partial void LogRenewalSchedulerStarted(ILogger logger, string certificateName, string instanceId);
 
-    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal delayed. DelaySeconds: {Jitter}")]
-    private static partial void LogAddingRandomDelay(ILogger logger, uint jitter);
-
-    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal processing. CertificateName: {CertificateName}. ExpiresOn: {CertificateExpiresOn}")]
-    private static partial void LogRenewingCertificate(ILogger logger, string certificateName, DateTimeOffset certificateExpiresOn);
-
-    [LoggerMessage(LogLevel.Error, "Scheduled certificate renewal failed. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
-    private static partial void LogFailedSubOrchestration(ILogger logger, Exception exception, string certificateName, string dnsNames);
-
-    [LoggerMessage(LogLevel.Information, "Scheduled certificate renewal orchestration started. InstanceId: {InstanceId}")]
-    private static partial void LogOrchestrationStarted(ILogger logger, string instanceId);
+    [LoggerMessage(LogLevel.Information, "Certificate renewal schedulers ensured. Started: {Started}. Running: {Running}. Skipped: {Skipped}")]
+    private static partial void LogRenewalSchedulersEnsured(ILogger logger, int started, int running, int skipped);
 }

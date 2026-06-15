@@ -77,15 +77,9 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
-        {
-            return GetAllPagesAsync<Domain>("managed", cancellationToken);
-        }
+        public Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default) => GetAllPagesAsync<Domain>("managed", cancellationToken);
 
-        public Task<IReadOnlyList<Record>> ListRecordsAsync(long zoneId, CancellationToken cancellationToken = default)
-        {
-            return GetAllPagesAsync<Record>($"managed/{zoneId}/records", cancellationToken);
-        }
+        public Task<IReadOnlyList<Record>> ListRecordsAsync(long zoneId, CancellationToken cancellationToken = default) => GetAllPagesAsync<Record>($"managed/{zoneId}/records", cancellationToken);
 
         private async Task<IReadOnlyList<T>> GetAllPagesAsync<T>(string path, CancellationToken cancellationToken)
         {

@@ -17,53 +17,92 @@ public class CertificateActivities(
 {
     private readonly AcmebotOptions _options = options.Value;
 
-    [Function(nameof(GetRenewalCertificates))]
-    public async Task<IReadOnlyList<CertificateItem>> GetRenewalCertificates([ActivityTrigger] object input)
+    [Function(nameof(EvaluateCertificateRenewal))]
+    public async Task<CertificateRenewalEvaluation> EvaluateCertificateRenewal([ActivityTrigger] CertificateRenewalSchedulerState state)
     {
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
-        var acmeClient = acmeContext.Client;
-
-        var certificateProperties = certificateClient.GetPropertiesOfCertificatesAsync();
-
-        var result = new List<CertificateItem>();
+        ArgumentNullException.ThrowIfNull(state);
 
         var now = DateTimeOffset.UtcNow;
+        KeyVaultCertificateWithPolicy certificate;
 
-        await foreach (var properties in certificateProperties)
+        try
         {
-            if (properties.Enabled == false)
+            certificate = await certificateClient.GetCertificateAsync(state.CertificateName);
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            return new CertificateRenewalEvaluation
             {
-                continue;
-            }
+                IsActive = false,
+                ShouldRenew = false,
+                NextCheck = now,
+                Reason = "Certificate was not found."
+            };
+        }
 
-            if (!properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
+        var properties = certificate.Properties;
+
+        if (properties.Enabled != true)
+        {
+            return new CertificateRenewalEvaluation
             {
-                continue;
-            }
+                IsActive = false,
+                ShouldRenew = false,
+                NextCheck = now,
+                Reason = "Certificate is disabled."
+            };
+        }
 
-            if (acmeContext.Directory.RenewalInfo is not null && properties.TryGetCertificateId(out var certificateId))
+        if (!properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
+        {
+            return new CertificateRenewalEvaluation
             {
-                var renewalInfo = (await acmeClient.GetRenewalInfoAsync(certificateId)).Resource;
+                IsActive = false,
+                ShouldRenew = false,
+                NextCheck = now,
+                Reason = "Certificate is not managed by this Acmebot endpoint."
+            };
+        }
 
-                if (renewalInfo.SuggestedWindow.Start < now)
+        if (properties.TryGetCertificateId(out var certificateId))
+        {
+            using var acmeContext = await acmeClientFactory.CreateClientAsync();
+
+            if (acmeContext.Directory.RenewalInfo is not null)
+            {
+                try
                 {
-                    var certificate = await certificateClient.GetCertificateAsync(properties.Name);
+                    var renewalInfo = await acmeContext.Client.GetRenewalInfoAsync(certificateId);
 
-                    result.Add(certificate.Value.ToCertificateItem());
+                    return new CertificateRenewalEvaluation
+                    {
+                        IsActive = true,
+                        ShouldRenew = renewalInfo.Resource.SuggestedWindow.Start <= now,
+                        NextCheck = now.Add(renewalInfo.RetryAfter ?? TimeSpan.FromDays(1)),
+                        Reason = "ARI"
+                    };
                 }
-
-                continue;
-            }
-
-            if (ShouldRenewByLifetimePercentage(properties, now, _options.RenewBeforeExpiry))
-            {
-                var certificate = await certificateClient.GetCertificateAsync(properties.Name);
-
-                result.Add(certificate.Value.ToCertificateItem());
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Fall back to local scheduling below and check renewalInfo again later.
+                    return new CertificateRenewalEvaluation
+                    {
+                        IsActive = true,
+                        ShouldRenew = CheckShouldRenew(properties, now),
+                        NextCheck = now.Add(TimeSpan.FromDays(1)),
+                        Reason = "ARI unavailable"
+                    };
+                }
             }
         }
 
-        return result;
+        return new CertificateRenewalEvaluation
+        {
+            IsActive = true,
+            ShouldRenew = CheckShouldRenew(properties, now),
+            NextCheck = now.AddDays(1),
+            Reason = "Schedule"
+        };
     }
 
     [Function(nameof(GetAllCertificates))]
@@ -108,30 +147,29 @@ public class CertificateActivities(
         await certificateClient.UpdateCertificatePropertiesAsync(response.Value.Properties);
     }
 
-    private static bool ShouldRenewByLifetimePercentage(CertificateProperties properties, DateTimeOffset now, int renewBeforeExpiryPercentage)
+    private bool CheckShouldRenew(CertificateProperties properties, DateTimeOffset now)
     {
         if (properties.ExpiresOn is not { } expiresOn)
         {
             return false;
         }
 
-        var remainingLifetime = expiresOn - now;
+        var notBefore = properties.NotBefore ?? properties.CreatedOn;
 
-        if (remainingLifetime <= TimeSpan.Zero)
+        if (expiresOn <= now)
         {
             return true;
         }
 
-        var notBefore = properties.NotBefore ?? properties.CreatedOn;
-
-        if (notBefore is null || notBefore.Value >= expiresOn)
+        if (notBefore is null || notBefore.Value > expiresOn)
         {
             return false;
         }
 
         var lifetime = expiresOn - notBefore.Value;
-        var renewalThreshold = TimeSpan.FromTicks((long)(lifetime.Ticks * (renewBeforeExpiryPercentage / 100d)));
+        var renewalThreshold = TimeSpan.FromTicks((long)(lifetime.Ticks * (_options.RenewBeforeExpiry / 100d)));
+        var suggestedWindowStart = expiresOn - renewalThreshold;
 
-        return remainingLifetime <= renewalThreshold;
+        return suggestedWindowStart <= now;
     }
 }

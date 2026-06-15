@@ -324,10 +324,7 @@ internal static class CliApplication
         return ExitCodes.Success;
     }
 
-    private static bool ShouldWait(CommandLine commandLine)
-    {
-        return !commandLine.GetFlag("no-wait");
-    }
+    private static bool ShouldWait(CommandLine commandLine) => !commandLine.GetFlag("no-wait");
 
     private static string GetSingleArgument(CommandLine commandLine, int commandOffset, string name)
     {
@@ -395,10 +392,7 @@ internal static class CliApplication
         return Uri.UnescapeDataString(path[(separatorIndex + 1)..]);
     }
 
-    private static Uri BuildOperationLocation(Uri endpoint, string operationInstanceId)
-    {
-        return new Uri(endpoint, $"api/operations/{Uri.EscapeDataString(operationInstanceId)}");
-    }
+    private static Uri BuildOperationLocation(Uri endpoint, string operationInstanceId) => new(endpoint, $"api/operations/{Uri.EscapeDataString(operationInstanceId)}");
 
     private static string ValidateEndpoint(string? value)
     {

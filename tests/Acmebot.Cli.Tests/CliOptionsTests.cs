@@ -153,10 +153,7 @@ public sealed class CliOptionsTests
             }
         }
 
-        public static EnvironmentVariableScope Set(IReadOnlyList<(string Name, string? Value)> variables)
-        {
-            return new EnvironmentVariableScope(variables);
-        }
+        public static EnvironmentVariableScope Set(IReadOnlyList<(string Name, string? Value)> variables) => new(variables);
 
         public void Dispose()
         {

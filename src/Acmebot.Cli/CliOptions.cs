@@ -10,10 +10,7 @@ internal sealed record CliOptions(
     TimeSpan PollInterval,
     TimeSpan Timeout)
 {
-    public static CliOptions Create(CommandLine commandLine)
-    {
-        return Create(commandLine, CliConfig.Empty);
-    }
+    public static CliOptions Create(CommandLine commandLine) => Create(commandLine, CliConfig.Empty);
 
     public static CliOptions Create(CommandLine commandLine, CliConfig config)
     {
@@ -42,10 +39,7 @@ internal sealed record CliOptions(
             GetDuration(commandLine, "timeout", TimeSpan.FromMinutes(30)));
     }
 
-    private static Uri NormalizeEndpoint(Uri endpoint)
-    {
-        return new Uri(endpoint.AbsoluteUri.TrimEnd('/') + "/");
-    }
+    private static Uri NormalizeEndpoint(Uri endpoint) => new(endpoint.AbsoluteUri.TrimEnd('/') + "/");
 
     private static string[] GetTokenScopes(CommandLine commandLine, Uri endpoint, CliConfig config)
     {
@@ -67,10 +61,7 @@ internal sealed record CliOptions(
         }
     }
 
-    private static string ToDefaultScope(string audience)
-    {
-        return audience.TrimEnd('/') + "/.default";
-    }
+    private static string ToDefaultScope(string audience) => audience.TrimEnd('/') + "/.default";
 
     private static OutputFormat GetOutputFormat(CommandLine commandLine)
     {
@@ -108,10 +99,7 @@ internal sealed record CliOptions(
         return TimeSpan.FromSeconds(seconds);
     }
 
-    private static string? GetOptionOrEnvironmentOrConfig(CommandLine commandLine, string optionName, string environmentName, string? configValue)
-    {
-        return commandLine.GetOption(optionName) ?? Environment.GetEnvironmentVariable(environmentName) ?? configValue;
-    }
+    private static string? GetOptionOrEnvironmentOrConfig(CommandLine commandLine, string optionName, string environmentName, string? configValue) => commandLine.GetOption(optionName) ?? Environment.GetEnvironmentVariable(environmentName) ?? configValue;
 }
 
 internal enum OutputFormat

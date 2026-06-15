@@ -59,10 +59,7 @@ internal static class AcmeTestSupport
         return (certificate, authorityKeyIdentifier.KeyIdentifier!.Value.ToArray(), serialNumber);
     }
 
-    public static HttpResponseMessage CreateJsonResponse<T>(HttpStatusCode statusCode, T payload, string? replayNonce = null, Uri? location = null, string contentType = "application/json")
-    {
-        return CreateResponse(statusCode, JsonSerializer.Serialize(payload), contentType, replayNonce, location);
-    }
+    public static HttpResponseMessage CreateJsonResponse<T>(HttpStatusCode statusCode, T payload, string? replayNonce = null, Uri? location = null, string contentType = "application/json") => CreateResponse(statusCode, JsonSerializer.Serialize(payload), contentType, replayNonce, location);
 
     public static HttpResponseMessage CreateDirectoryResponse(
         Uri? newNonce = null,
@@ -134,10 +131,7 @@ internal static class AcmeTestSupport
             profiles));
     }
 
-    public static void EnqueueNonce(RecordingHandler handler, string replayNonce = "bm9uY2Ux")
-    {
-        handler.Enqueue(_ => CreateResponse(HttpStatusCode.OK, string.Empty, contentType: null, replayNonce: replayNonce));
-    }
+    public static void EnqueueNonce(RecordingHandler handler, string replayNonce = "bm9uY2Ux") => handler.Enqueue(_ => CreateResponse(HttpStatusCode.OK, string.Empty, contentType: null, replayNonce: replayNonce));
 
     public static HttpResponseMessage CreateResponse(HttpStatusCode statusCode, string content, string? contentType, string? replayNonce = null, Uri? location = null)
     {
@@ -157,10 +151,7 @@ internal static class AcmeTestSupport
         return response;
     }
 
-    public static string DecodeBase64UrlUtf8(string value)
-    {
-        return Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));
-    }
+    public static string DecodeBase64UrlUtf8(string value) => Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));
 }
 
 internal sealed class RecordingHandler : HttpMessageHandler
@@ -169,10 +160,7 @@ internal sealed class RecordingHandler : HttpMessageHandler
 
     public List<RecordedRequest> Requests { get; } = [];
 
-    public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
-    {
-        _responses.Enqueue(responseFactory);
-    }
+    public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) => _responses.Enqueue(responseFactory);
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -198,15 +186,9 @@ internal sealed record RecordedRequest(
             ?? throw new InvalidOperationException("The request body did not contain a signed ACME message.");
     }
 
-    public JsonDocument GetPayloadJson()
-    {
-        return JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(GetSignedMessage().Payload));
-    }
+    public JsonDocument GetPayloadJson() => JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(GetSignedMessage().Payload));
 
-    public JsonDocument GetProtectedHeaderJson()
-    {
-        return JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(GetSignedMessage().Protected));
-    }
+    public JsonDocument GetProtectedHeaderJson() => JsonDocument.Parse(AcmeTestSupport.DecodeBase64UrlUtf8(GetSignedMessage().Protected));
 
     public static async Task<RecordedRequest> CreateAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {

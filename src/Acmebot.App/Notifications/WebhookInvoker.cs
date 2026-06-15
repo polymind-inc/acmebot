@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 
-using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 using Microsoft.Extensions.Logging;

@@ -58,10 +58,7 @@ internal class AccountKey
         throw new NotSupportedException($"The account key type '{KeyType}' is not supported.");
     }
 
-    private bool IsLegacyEcExport()
-    {
-        return KeyExport.TrimStart().StartsWith('{');
-    }
+    private bool IsLegacyEcExport() => KeyExport.TrimStart().StartsWith('{');
 
     private void ImportLegacyEcKey(ECDsa ecdsa)
     {

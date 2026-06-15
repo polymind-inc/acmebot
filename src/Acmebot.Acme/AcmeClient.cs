@@ -72,10 +72,7 @@ public sealed class AcmeClient : IDisposable
         }
     }
 
-    public async Task<AcmeDirectoryResource> GetDirectoryAsync(CancellationToken cancellationToken = default)
-    {
-        return await EnsureDirectoryAsync(forceRefresh: false, cancellationToken).ConfigureAwait(false);
-    }
+    public async Task<AcmeDirectoryResource> GetDirectoryAsync(CancellationToken cancellationToken = default) => await EnsureDirectoryAsync(forceRefresh: false, cancellationToken).ConfigureAwait(false);
 
     public async Task<AcmeAccountHandle> CreateAccountAsync(
         AcmeSigner signer,
@@ -841,10 +838,7 @@ public sealed class AcmeClient : IDisposable
         };
     }
 
-    private static AcmeAccountHandle CreateAccountHandle(AcmeAccountHandle account, AcmeAccountResource resource, AcmeSigner? signer = null)
-    {
-        return CreateAccountHandle(account.AccountUrl, signer ?? account.Signer, resource);
-    }
+    private static AcmeAccountHandle CreateAccountHandle(AcmeAccountHandle account, AcmeAccountResource resource, AcmeSigner? signer = null) => CreateAccountHandle(account.AccountUrl, signer ?? account.Signer, resource);
 
     private static AcmeResult<T> CreateResult<T>(AcmeRawResponse response, T resource)
     {
@@ -871,10 +865,7 @@ public sealed class AcmeClient : IDisposable
             rawResponse.Links);
     }
 
-    private static byte[] SerializeUtf8<T>(T value)
-    {
-        return JsonSerializer.SerializeToUtf8Bytes(value, s_jsonSerializerOptions);
-    }
+    private static byte[] SerializeUtf8<T>(T value) => JsonSerializer.SerializeToUtf8Bytes(value, s_jsonSerializerOptions);
 
     private static T DeserializeUtf8<T>(ReadOnlyMemory<byte> data)
     {
@@ -900,10 +891,7 @@ public sealed class AcmeClient : IDisposable
         }
     }
 
-    private static string? TryGetSingleHeaderValue(HttpResponseHeaders headers, string name)
-    {
-        return headers.TryGetValues(name, out var values) ? values.FirstOrDefault() : null;
-    }
+    private static string? TryGetSingleHeaderValue(HttpResponseHeaders headers, string name) => headers.TryGetValues(name, out var values) ? values.FirstOrDefault() : null;
 
     private static TimeSpan? TryGetRetryAfter(HttpResponseHeaders headers)
     {
@@ -939,10 +927,7 @@ public sealed class AcmeClient : IDisposable
         };
     }
 
-    private static Uri CreateResourceUrl(Uri baseUrl, string relativePath)
-    {
-        return new Uri($"{baseUrl.AbsoluteUri.TrimEnd('/')}/{Uri.EscapeDataString(relativePath)}", UriKind.Absolute);
-    }
+    private static Uri CreateResourceUrl(Uri baseUrl, string relativePath) => new($"{baseUrl.AbsoluteUri.TrimEnd('/')}/{Uri.EscapeDataString(relativePath)}", UriKind.Absolute);
 
     private static byte[] GetAuthorityKeyIdentifier(X509Certificate2 certificate)
     {

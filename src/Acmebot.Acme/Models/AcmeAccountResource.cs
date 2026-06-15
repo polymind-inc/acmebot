@@ -76,10 +76,7 @@ internal sealed class AcmeAccountStatusJsonConverter : JsonConverter<AcmeAccount
         return new AcmeAccountStatus(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeAccountStatus value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeAccountStatus value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }
 
 public sealed record AcmeUpdateAccountRequest

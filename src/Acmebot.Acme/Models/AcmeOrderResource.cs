@@ -90,10 +90,7 @@ internal sealed class AcmeOrderStatusJsonConverter : JsonConverter<AcmeOrderStat
         return new AcmeOrderStatus(value);
     }
 
-    public override void Write(Utf8JsonWriter writer, AcmeOrderStatus value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.Value);
-    }
+    public override void Write(Utf8JsonWriter writer, AcmeOrderStatus value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 }
 
 public sealed record AcmeNewOrderRequest
