@@ -66,7 +66,7 @@ public class CertificateActivities(
 
         if (properties.TryGetCertificateId(out var certificateId))
         {
-            using var acmeContext = await acmeClientFactory.CreateClientAsync();
+            var acmeContext = await acmeClientFactory.CreateClientAsync();
 
             if (acmeContext.Directory.RenewalInfo is not null)
             {
@@ -139,7 +139,7 @@ public class CertificateActivities(
     {
         var response = await certificateClient.GetCertificateAsync(certificateName);
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer);
 

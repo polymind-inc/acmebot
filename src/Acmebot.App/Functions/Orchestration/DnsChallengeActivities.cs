@@ -103,7 +103,7 @@ public class DnsChallengeActivities(
     {
         var (dnsProviderName, dnsAlias, authorizationUrls) = input;
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
         var acmeClient = acmeContext.Client;
 
         var challengeResults = new List<AcmeChallengeResult>();

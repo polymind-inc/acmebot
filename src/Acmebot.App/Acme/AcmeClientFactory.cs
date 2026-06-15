@@ -7,11 +7,49 @@ using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-public class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeStateStore stateStore)
+public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeStateStore stateStore) : IDisposable
 {
     private readonly AcmebotOptions _options = options.Value;
+    private readonly SemaphoreSlim _clientContextLock = new(1, 1);
+    private AcmeClientContext? _clientContext;
+    private bool _disposed;
 
     public async Task<AcmeClientContext> CreateClientAsync()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_clientContext is not null)
+        {
+            return _clientContext;
+        }
+
+        await _clientContextLock.WaitAsync();
+
+        try
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            return _clientContext ??= await CreateClientCoreAsync();
+        }
+        finally
+        {
+            _clientContextLock.Release();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _clientContextLock.Dispose();
+        _clientContext?.Dispose();
+    }
+
+    private async Task<AcmeClientContext> CreateClientCoreAsync()
     {
         var account = await stateStore.LoadAsync<AccountDetails>("account.json");
         var accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json");

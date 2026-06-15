@@ -30,7 +30,7 @@ public partial class AcmeOrderActivities(
     {
         var (dnsNames, requestedReplaces) = input;
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
         var replaces = acmeContext.Directory.RenewalInfo is not null ? requestedReplaces : null;
 
         var result = await acmeContext.Client.CreateOrderAsync(
@@ -49,7 +49,7 @@ public partial class AcmeOrderActivities(
     [Function(nameof(AnswerChallenges))]
     public async Task AnswerChallenges([ActivityTrigger] IReadOnlyList<AcmeChallengeResult> challengeResults)
     {
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         foreach (var challengeResult in challengeResults)
         {
@@ -62,7 +62,7 @@ public partial class AcmeOrderActivities(
     {
         var (orderDetails, challengeResults) = input;
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
         var acmeClient = acmeContext.Client;
 
         orderDetails = OrderDetails.FromResult(await acmeClient.GetOrderAsync(acmeContext.Account, orderDetails.OrderUrl), orderDetails.OrderUrl);
@@ -122,7 +122,7 @@ public partial class AcmeOrderActivities(
             csr = certificateOperation.Properties.Csr;
         }
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         return OrderDetails.FromResult(
             await acmeContext.Client.FinalizeOrderAsync(
@@ -135,7 +135,7 @@ public partial class AcmeOrderActivities(
     [Function(nameof(CheckIsValid))]
     public async Task<OrderDetails> CheckIsValid([ActivityTrigger] OrderDetails orderDetails)
     {
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         orderDetails = OrderDetails.FromResult(await acmeContext.Client.GetOrderAsync(acmeContext.Account, orderDetails.OrderUrl), orderDetails.OrderUrl);
 
@@ -157,7 +157,7 @@ public partial class AcmeOrderActivities(
     {
         var (certificateName, orderDetails) = input;
 
-        using var acmeContext = await acmeClientFactory.CreateClientAsync();
+        var acmeContext = await acmeClientFactory.CreateClientAsync();
 
         var x509Certificates = await acmeContext.Client.GetOrderCertificateAsync(acmeContext.Account, orderDetails, _options.PreferredChain);
 
