@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Acmebot.Acme.Tests/Acmebot.Acme.Tests.csproj" />
+    <Project Path="tests/Acmebot.App.Tests/Acmebot.App.Tests.csproj" />
     <Project Path="tests/Acmebot.Cli.Tests/Acmebot.Cli.Tests.csproj" />
   </Folder>
 </Solution>

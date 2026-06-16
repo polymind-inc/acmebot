@@ -100,28 +100,16 @@ builder.Services.AddSingleton(provider =>
     var environment = provider.GetRequiredService<AzureEnvironment>();
     var configuration = provider.GetRequiredService<IConfiguration>();
 
-    var connectionString = configuration["AzureWebJobsStorage"];
+    var storageSettings = AzureWebJobsStorageSettings.FromConfiguration(configuration);
+    var connectionString = storageSettings.ConnectionString;
 
     if (!string.IsNullOrWhiteSpace(connectionString))
     {
         return new BlobContainerClient(connectionString, acmeStateContainerName);
     }
 
-    var blobServiceUri = configuration["AzureWebJobsStorage__blobServiceUri"];
-
-    if (string.IsNullOrWhiteSpace(blobServiceUri))
-    {
-        var accountName = configuration["AzureWebJobsStorage__accountName"];
-
-        if (string.IsNullOrWhiteSpace(accountName))
-        {
-            throw new InvalidOperationException("AzureWebJobsStorage, AzureWebJobsStorage__blobServiceUri, or AzureWebJobsStorage__accountName is required.");
-        }
-
-        blobServiceUri = $"https://{accountName}.blob.core.windows.net";
-    }
-
-    var clientId = configuration["AzureWebJobsStorage__clientId"];
+    var blobServiceUri = storageSettings.GetBlobServiceUri();
+    var clientId = storageSettings.ClientId;
 
     var managedIdentityId = string.IsNullOrWhiteSpace(clientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(clientId);
 
