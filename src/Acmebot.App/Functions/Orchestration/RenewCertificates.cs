@@ -70,7 +70,7 @@ public partial class RenewCertificates(
                    OrchestrationRuntimeStatus.Terminated;
     }
 
-    [LoggerMessage(LogLevel.Information, "Certificate renewal scheduler started. CertificateName: {CertificateName}. InstanceId: {instanceId}")]
+    [LoggerMessage(LogLevel.Information, "Certificate renewal scheduler started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
     private static partial void LogRenewalSchedulerStarted(ILogger logger, string certificateName, string instanceId);
 
     [LoggerMessage(LogLevel.Information, "Certificate renewal schedulers ensured. Started: {Started}. Running: {Running}. Skipped: {Skipped}")]
