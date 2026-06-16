@@ -976,6 +976,7 @@ button:disabled {
 
 .modal-panel {
   position: relative;
+  z-index: 80;
   width: min(760px, 100%);
   max-height: min(760px, calc(100vh - 40px));
   display: flex;
