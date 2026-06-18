@@ -85,7 +85,7 @@ internal static class CertificateExtensions
                     continue;
                 }
 
-                tags[tag.Key.Trim()] = tag.Value?.Trim() ?? "";
+                tags[tag.Key.Trim()] = tag.Value.Trim();
             }
         }
 
@@ -170,11 +170,6 @@ internal static class CertificateExtensions
 
     private static Dictionary<string, string> GetCustomCertificateTags(this IDictionary<string, string> tags)
     {
-        if (tags is null)
-        {
-            return [];
-        }
-
         string[] internalTagKeys = tags.Keys.Contains(AcmebotTagKey, StringComparer.OrdinalIgnoreCase)
             ? [AcmebotTagKey]
             : [AcmebotTagKey, LegacyIssuerKey, LegacyEndpointKey, LegacyDnsProviderKey, LegacyDnsAliasKey];
@@ -189,13 +184,13 @@ internal static class CertificateExtensions
     private sealed class AcmebotCertificateMetadata
     {
         [JsonPropertyName("endpoint")]
-        public string? Endpoint { get; set; }
+        public string? Endpoint { get; init; }
 
         [JsonPropertyName("dnsProvider")]
-        public string? DnsProvider { get; set; }
+        public string? DnsProvider { get; init; }
 
         [JsonPropertyName("dnsAlias")]
-        public string? DnsAlias { get; set; }
+        public string? DnsAlias { get; init; }
 
         [JsonPropertyName("certificateId")]
         public string? CertificateId { get; set; }
