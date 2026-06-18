@@ -52,6 +52,9 @@ builder.Services.AddOptions<AcmebotOptions>()
 // Add Services
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<AppRoleService>();
+builder.Services.AddSingleton<CertificateQueryService>();
+builder.Services.AddSingleton<DnsZoneQueryService>();
+builder.Services.AddSingleton<CertificateOperationService>();
 
 builder.Services.AddSingleton(provider =>
 {

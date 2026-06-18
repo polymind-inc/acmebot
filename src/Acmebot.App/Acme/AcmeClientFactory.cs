@@ -18,11 +18,6 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_clientContext is not null)
-        {
-            return _clientContext;
-        }
-
         await _clientContextLock.WaitAsync();
 
         try

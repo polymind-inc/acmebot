@@ -2,13 +2,16 @@
 import { computed, reactive, ref } from 'vue';
 import { createColumnHelper, FlexRender, getCoreRowModel, getSortedRowModel, useVueTable, type Row, type SortingState } from '@tanstack/vue-table';
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  CalendarClock,
   ChevronDown,
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
+  Clock3,
   CirclePlus,
   Filter,
   LoaderCircle,
@@ -20,10 +23,11 @@ import {
   X,
 } from 'lucide-vue-next';
 
-import type { CertificateCategory, CertificateItem, CertificateStatusKind, DnsZoneGroup } from '@/api/types';
+import type { CertificateCategory, CertificateItem, CertificateRenewalItem, CertificateStatusKind, DnsZoneGroup } from '@/api/types';
 import {
   displayDnsName,
   formatDate,
+  formatDateTime,
   getCategoryLabel,
   getCertificateCategory,
   getCertificateStatus,
@@ -38,6 +42,8 @@ const props = defineProps<{
   dnsZoneGroups?: DnsZoneGroup[];
   loading: boolean;
   selectedCertificate?: CertificateItem | null;
+  renewals?: CertificateRenewalItem[];
+  renewalsLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -72,6 +78,7 @@ const columns = [
   columnHelper.display({ id: 'dnsNames', header: 'DNS Names', enableSorting: false }),
   columnHelper.accessor((certificate) => getCategoryLabel(getCertificateCategory(certificate)), { id: 'category', header: 'Category' }),
   columnHelper.accessor('expiresOn', { header: 'Expires' }),
+  columnHelper.display({ id: 'autoRenewal', header: 'Auto Renewal', enableSorting: false }),
   columnHelper.accessor((certificate) => `${certificate.keyType ?? ''} ${certificate.keySize ?? certificate.keyCurveName ?? ''}`, { id: 'key', header: 'Key' }),
   columnHelper.display({ id: 'actions', header: '', enableSorting: false }),
 ];
@@ -186,6 +193,7 @@ const zoneGroups = computed<ZoneGroup[]>(() => {
 });
 
 const allZoneGroupsCollapsed = computed(() => zoneGroups.value.length > 0 && zoneGroups.value.every((group) => collapsedZones.value.has(group.zoneName)));
+const renewalByCertificateName = computed(() => new Map((props.renewals ?? []).map((renewal) => [renewal.certificateName, renewal])));
 
 function clearFilters(): void {
   filters.query = '';
@@ -228,6 +236,60 @@ function toggleZoneGroup(zoneName: string): void {
 
 function toggleAllZoneGroups(): void {
   collapsedZones.value = allZoneGroupsCollapsed.value ? new Set() : new Set(zoneGroups.value.map((group) => group.zoneName));
+}
+
+function getRenewal(certificate: CertificateItem): CertificateRenewalItem | null {
+  return renewalByCertificateName.value.get(certificate.name) ?? null;
+}
+
+function getRenewalTone(renewal: CertificateRenewalItem | null): string {
+  if (!renewal) {
+    return props.renewalsLoading ? 'pending' : 'neutral';
+  }
+
+  if (renewal.statusKind === 'scheduled' || renewal.statusKind === 'active' || renewal.statusKind === 'attention' || renewal.statusKind === 'pending') {
+    return renewal.statusKind;
+  }
+
+  return 'neutral';
+}
+
+function getRenewalLabel(renewal: CertificateRenewalItem | null): string {
+  if (!renewal) {
+    return props.renewalsLoading ? 'Loading' : '-';
+  }
+
+  return renewal.status;
+}
+
+function getRenewalSubtext(renewal: CertificateRenewalItem | null): string {
+  if (!renewal) {
+    return props.renewalsLoading ? 'Refreshing status' : '';
+  }
+
+  if (renewal.nextCheck) {
+    return `Next ${formatDateTime(renewal.nextCheck)}`;
+  }
+
+  return '';
+}
+
+function getRenewalIcon(renewal: CertificateRenewalItem | null) {
+  const tone = getRenewalTone(renewal);
+
+  if (tone === 'attention') {
+    return AlertTriangle;
+  }
+
+  if (tone === 'active') {
+    return RefreshCw;
+  }
+
+  if (tone === 'scheduled') {
+    return CalendarClock;
+  }
+
+  return Clock3;
 }
 </script>
 
@@ -397,7 +459,7 @@ function toggleAllZoneGroups(): void {
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6">
+            <td colspan="7">
               <div class="table-empty table-empty--compact">
                 <LoaderCircle
                   class="spin"
@@ -409,7 +471,7 @@ function toggleAllZoneGroups(): void {
             </td>
           </tr>
           <tr v-else-if="filteredCertificates.length === 0">
-            <td colspan="6">
+            <td colspan="7">
               <div class="table-empty">
                 <SearchX
                   :size="28"
@@ -446,7 +508,7 @@ function toggleAllZoneGroups(): void {
               :key="group.zoneName"
             >
               <tr class="zone-group-row">
-                <td colspan="6">
+                <td colspan="7">
                   <div class="zone-group">
                     <button
                       class="zone-group__toggle"
@@ -527,6 +589,28 @@ function toggleAllZoneGroups(): void {
                     <StatusBadge :certificate="row.original" />
                     <div class="cell-subtext">
                       {{ formatDate(row.original.expiresOn) }}
+                    </div>
+                  </td>
+                  <td data-label="Auto Renewal">
+                    <div class="renewal-status-cell">
+                      <span
+                        class="renewal-state"
+                        :class="`renewal-state--${getRenewalTone(getRenewal(row.original))}`"
+                      >
+                        <component
+                          :is="getRenewalIcon(getRenewal(row.original))"
+                          :class="{ 'spin': getRenewalTone(getRenewal(row.original)) === 'active' }"
+                          :size="14"
+                          aria-hidden="true"
+                        />
+                        {{ getRenewalLabel(getRenewal(row.original)) }}
+                      </span>
+                      <span
+                        v-if="getRenewalSubtext(getRenewal(row.original))"
+                        class="cell-subtext"
+                      >
+                        {{ getRenewalSubtext(getRenewal(row.original)) }}
+                      </span>
                     </div>
                   </td>
                   <td data-label="Key">

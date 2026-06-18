@@ -2,6 +2,7 @@
 using Acmebot.App.Extensions;
 using Acmebot.App.Models;
 using Acmebot.App.Options;
+using Acmebot.App.Services;
 
 using Azure.Security.KeyVault.Certificates;
 
@@ -13,6 +14,7 @@ namespace Acmebot.App.Functions.Orchestration;
 public class CertificateActivities(
     AcmeClientFactory acmeClientFactory,
     CertificateClient certificateClient,
+    CertificateOperationService certificateOperationService,
     IOptions<AcmebotOptions> options)
 {
     private readonly AcmebotOptions _options = options.Value;
@@ -106,47 +108,8 @@ public class CertificateActivities(
         };
     }
 
-    [Function(nameof(GetAllCertificates))]
-    public async Task<IReadOnlyList<CertificateItem>> GetAllCertificates([ActivityTrigger] object input)
-    {
-        var certificates = certificateClient.GetPropertiesOfCertificatesAsync();
-
-        var result = new List<CertificateItem>();
-
-        await foreach (var certificate in certificates)
-        {
-            var certificateItem = (await certificateClient.GetCertificateAsync(certificate.Name)).Value.ToCertificateItem();
-
-            certificateItem.IsIssuedByAcmebot = certificate.IsIssuedByAcmebot();
-            certificateItem.IsSameEndpoint = certificate.IsSameEndpoint(_options.Endpoint);
-
-            result.Add(certificateItem);
-        }
-
-        return result;
-    }
-
     [Function(nameof(GetCertificatePolicy))]
-    public async Task<CertificatePolicyItem> GetCertificatePolicy([ActivityTrigger] string certificateName)
-    {
-        KeyVaultCertificateWithPolicy certificate = await certificateClient.GetCertificateAsync(certificateName);
-
-        return certificate.ToCertificatePolicyItem();
-    }
-
-    [Function(nameof(RevokeCertificate))]
-    public async Task RevokeCertificate([ActivityTrigger] string certificateName)
-    {
-        var response = await certificateClient.GetCertificateAsync(certificateName);
-
-        var acmeContext = await acmeClientFactory.CreateClientAsync();
-
-        await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer);
-
-        response.Value.Properties.Enabled = false;
-
-        await certificateClient.UpdateCertificatePropertiesAsync(response.Value.Properties);
-    }
+    public Task<CertificatePolicyItem> GetCertificatePolicy([ActivityTrigger] string certificateName) => certificateOperationService.GetCertificatePolicyAsync(certificateName);
 
     private bool CheckShouldRenew(CertificateProperties properties, DateTimeOffset now)
     {

@@ -6,28 +6,17 @@ using Azure.Functions.Worker.Extensions.HttpApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, AppRoleService appRoleService, ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RenewCertificate(
+    IHttpContextAccessor httpContextAccessor,
+    AppRoleService appRoleService,
+    CertificateOperationService certificateOperationService,
+    ILogger<RenewCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
-    [Function($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}")]
-    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
-    {
-        if (string.IsNullOrEmpty(certificateName))
-        {
-            return;
-        }
-
-        // 証明書の更新処理を開始
-        var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
-
-        await context.CallSubOrchestratorAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
-    }
-
     [Function($"{nameof(RenewCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates/{certificateName}/renew")] HttpRequest req,
@@ -44,8 +33,8 @@ public partial class RenewCertificate(IHttpContextAccessor httpContextAccessor, 
             return Forbid();
         }
 
-        // Function input comes from the request content.
-        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RenewCertificate)}_{nameof(Orchestrator)}", certificateName);
+        var certificatePolicyItem = await certificateOperationService.GetCertificatePolicyAsync(certificateName, req.HttpContext.RequestAborted);
+        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
 
         LogOrchestrationStarted(logger, certificateName, instanceId);
 

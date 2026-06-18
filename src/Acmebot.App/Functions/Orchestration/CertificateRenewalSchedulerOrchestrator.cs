@@ -1,4 +1,9 @@
-﻿using Microsoft.Azure.Functions.Worker;
+﻿using System.Security.Cryptography;
+using System.Text;
+
+using Acmebot.App.Models;
+
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -6,21 +11,29 @@ namespace Acmebot.App.Functions.Orchestration;
 
 public partial class CertificateRenewalSchedulerOrchestrator
 {
+    public static string GetInstanceId(string certificateName) => Convert.ToHexStringLower(SHA1.HashData(Encoding.UTF8.GetBytes(certificateName)));
+
+
     [Function(nameof(ScheduleCertificateRenewal))]
     public async Task ScheduleCertificateRenewal([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
     {
         var logger = context.CreateReplaySafeLogger<CertificateRenewalSchedulerOrchestrator>();
 
+        SetSchedulerStatus(context, certificateName, "Checking", null, "Automatic renewal status is being refreshed.");
+
         var evaluation = await context.CallEvaluateCertificateRenewalAsync(certificateName);
 
         if (!evaluation.IsActive)
         {
+            SetSchedulerStatus(context, certificateName, "Stopped", null, evaluation.Reason);
             LogCertificateRenewalSchedulerStopped(logger, certificateName, evaluation.Reason);
             return;
         }
 
         if (evaluation.ShouldRenew)
         {
+            SetSchedulerStatus(context, certificateName, "Renewing", null, evaluation.Reason);
+
             try
             {
                 LogCertificateRenewalStarted(logger, certificateName, evaluation.Reason);
@@ -36,7 +49,10 @@ public partial class CertificateRenewalSchedulerOrchestrator
             {
                 LogCertificateRenewalFailed(logger, ex, certificateName);
 
-                await context.CreateTimer(context.CurrentUtcDateTime.Add(s_failedRenewalRetryInterval), CancellationToken.None);
+                var nextCheck = context.CurrentUtcDateTime.Add(s_failedRenewalRetryInterval);
+                SetSchedulerStatus(context, certificateName, "Retrying", nextCheck, "Automatic renewal failed. Retrying later.");
+
+                await context.CreateTimer(nextCheck, CancellationToken.None);
                 context.ContinueAsNew(certificateName);
 
                 return;
@@ -49,6 +65,8 @@ public partial class CertificateRenewalSchedulerOrchestrator
 
         LogCertificateRenewalScheduled(logger, certificateName, evaluation.NextCheck, evaluation.Reason);
 
+        SetSchedulerStatus(context, certificateName, "Scheduled", evaluation.NextCheck, evaluation.Reason);
+
         await context.CreateTimer(evaluation.NextCheck.UtcDateTime, CancellationToken.None);
 
         context.ContinueAsNew(certificateName);
@@ -60,6 +78,18 @@ public partial class CertificateRenewalSchedulerOrchestrator
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableOrchestratorException>()
     };
+
+    private static void SetSchedulerStatus(TaskOrchestrationContext context, string certificateName, string state, DateTimeOffset? nextCheck, string reason)
+    {
+        context.SetCustomStatus(new CertificateRenewalSchedulerStatus
+        {
+            CertificateName = certificateName,
+            State = state,
+            NextCheck = nextCheck,
+            Reason = reason,
+            UpdatedAt = context.CurrentUtcDateTime
+        });
+    }
 
     [LoggerMessage(LogLevel.Information, "Certificate renewal scheduler stopped. CertificateName: {CertificateName}. Reason: {Reason}")]
     private static partial void LogCertificateRenewalSchedulerStopped(ILogger logger, string certificateName, string reason);

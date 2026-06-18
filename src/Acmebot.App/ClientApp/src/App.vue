@@ -2,9 +2,9 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Shield, ShieldAlert, ShieldCheck, X } from 'lucide-vue-next';
 
-import { formatApiError, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
+import { formatApiError, getCertificateRenewals, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
-import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
+import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
 import ConfirmRevokeDialog from '@/components/ConfirmRevokeDialog.vue';
@@ -16,6 +16,7 @@ import { isNewerVersion, isVersionLike } from '@/utils/versions';
 
 const certificates = ref<CertificateItem[]>([]);
 const dnsZoneGroups = ref<DnsZoneGroup[]>([]);
+const renewals = ref<CertificateRenewalItem[]>([]);
 const selectedCertificate = ref<CertificateItem | null>(null);
 const pendingRevokeCertificate = ref<CertificateItem | null>(null);
 const addDialogOpen = ref(false);
@@ -36,6 +37,11 @@ const certificateState = reactive({
 const dnsZoneState = reactive({
   loading: false,
   loaded: false,
+});
+
+const renewalState = reactive({
+  loading: false,
+  error: '',
 });
 
 const operation = reactive({
@@ -75,11 +81,13 @@ const summaryItems = computed(() => [
 const acmebotCommitLabel = computed(() => (acmebotCommitHash.length > 7 ? acmebotCommitHash.slice(0, 7) : acmebotCommitHash));
 const acmebotVersionUrl = computed(() => (isVersionLike(acmebotVersion) ? `${acmebotRepositoryUrl}/releases/tag/${encodeURIComponent(acmebotVersion)}` : null));
 const acmebotCommitUrl = computed(() => (isCommitHashLike(acmebotCommitHash) ? `${acmebotRepositoryUrl}/commit/${encodeURIComponent(acmebotCommitHash)}` : null));
+const renewalByCertificateName = computed(() => new Map(renewals.value.map((renewal) => [renewal.certificateName, renewal])));
+const selectedCertificateRenewal = computed(() => (selectedCertificate.value ? renewalByCertificateName.value.get(selectedCertificate.value.name) ?? null : null));
+const renewalAttentionCount = computed(() => renewals.value.filter((renewal) => renewal.statusKind === 'attention').length);
 
 onMounted(async () => {
   void loadUpgradeNotice();
-  await loadCertificates();
-  await loadDnsZones(false);
+  await Promise.all([loadCertificates(), loadRenewals(), loadDnsZones(false)]);
 });
 
 async function loadUpgradeNotice(): Promise<void> {
@@ -175,6 +183,24 @@ async function loadDnsZones(showErrorToast = true): Promise<void> {
   }
 }
 
+async function loadRenewals(): Promise<void> {
+  renewalState.loading = true;
+  renewalState.error = '';
+
+  try {
+    renewals.value = await getCertificateRenewals();
+  } catch (error) {
+    renewalState.error = formatApiError(error);
+    pushToast('error', 'Failed to load renewals', renewalState.error);
+  } finally {
+    renewalState.loading = false;
+  }
+}
+
+async function refreshCertificates(): Promise<void> {
+  await Promise.all([loadCertificates(), loadRenewals()]);
+}
+
 async function runCertificateOperation(title: string, message: string, action: () => Promise<void>): Promise<void> {
   operation.active = true;
   operation.title = title;
@@ -185,7 +211,7 @@ async function runCertificateOperation(title: string, message: string, action: (
     pushToast('success', 'Operation completed', message.replace('...', ' completed.'));
     addDialogOpen.value = false;
     selectedCertificate.value = null;
-    await loadCertificates();
+    await refreshCertificates();
   } catch (error) {
     pushToast('error', 'Operation failed', formatApiError(error));
   } finally {
@@ -352,13 +378,39 @@ async function confirmRevokeCertificate(): Promise<void> {
         <span>{{ certificateState.error }}</span>
       </div>
 
+      <div
+        v-if="renewalState.error"
+        class="banner banner--error"
+        role="alert"
+      >
+        <AlertTriangle
+          :size="17"
+          aria-hidden="true"
+        />
+        <span>{{ renewalState.error }}</span>
+      </div>
+
+      <div
+        v-else-if="renewalAttentionCount > 0"
+        class="banner banner--warning"
+        role="status"
+      >
+        <AlertTriangle
+          :size="17"
+          aria-hidden="true"
+        />
+        <span>{{ renewalAttentionCount }} automatic {{ renewalAttentionCount === 1 ? 'renewal needs' : 'renewals need' }} attention.</span>
+      </div>
+
       <CertificateTable
         :certificates="certificates"
         :dns-zone-groups="dnsZoneGroups"
         :loading="certificateState.loading"
         :selected-certificate="selectedCertificate"
+        :renewals="renewals"
+        :renewals-loading="renewalState.loading"
         @select="selectedCertificate = $event"
-        @refresh="loadCertificates"
+        @refresh="refreshCertificates"
         @add="addDialogOpen = true"
       />
     </main>
@@ -418,6 +470,8 @@ async function confirmRevokeCertificate(): Promise<void> {
       :open="selectedCertificate !== null"
       :certificate="selectedCertificate"
       :busy="detailsBusy || operation.active"
+      :renewal="selectedCertificateRenewal"
+      :renewal-loading="renewalState.loading"
       @close="selectedCertificate = null"
       @renew="handleRenewCertificate"
       @revoke="handleRevokeCertificate"

@@ -1,4 +1,4 @@
-import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup } from './types';
+import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
 
 const day = 86_400_000;
 
@@ -166,6 +166,36 @@ const mockDnsZoneGroups: DnsZoneGroup[] = [
   },
 ];
 
+const mockRenewalSchedules: Record<string, Partial<CertificateRenewalItem>> = {
+  'edge-adatum-io': {
+    status: 'Renewing',
+    statusKind: 'active',
+    message: 'Certificate is within the renewal window.',
+    lastCheckedAt: dateBefore(0.02),
+  },
+  'api-contoso-com': {
+    status: 'Scheduled',
+    statusKind: 'scheduled',
+    message: 'Certificate expires in 12 days.',
+    nextCheck: dateFromNow(1.5),
+    lastCheckedAt: dateBefore(0.3),
+  },
+  'www-example-com': {
+    status: 'Scheduled',
+    statusKind: 'scheduled',
+    message: 'Certificate is healthy.',
+    nextCheck: dateFromNow(24),
+    lastCheckedAt: dateBefore(1),
+  },
+  'wildcard-fabrikam-net': {
+    status: 'Retrying',
+    statusKind: 'attention',
+    message: 'Automatic renewal failed. Retrying later.',
+    nextCheck: dateFromNow(0.25),
+    lastCheckedAt: dateBefore(0.1),
+  },
+};
+
 export async function getMockCertificates(): Promise<CertificateItem[]> {
   await delay(250);
   return structuredClone(mockCertificates).toSorted((left, right) => left.expiresOn.localeCompare(right.expiresOn));
@@ -174,6 +204,11 @@ export async function getMockCertificates(): Promise<CertificateItem[]> {
 export async function getMockDnsZones(): Promise<DnsZoneGroup[]> {
   await delay(250);
   return structuredClone(mockDnsZoneGroups);
+}
+
+export async function getMockCertificateRenewals(): Promise<CertificateRenewalItem[]> {
+  await delay(250);
+  return structuredClone(mockCertificates.map(createMockCertificateRenewal)).toSorted(compareCertificateRenewals);
 }
 
 export async function mockIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
@@ -225,4 +260,74 @@ export async function mockRevokeCertificate(certificateName: string): Promise<vo
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function createMockCertificateRenewal(certificate: CertificateItem): CertificateRenewalItem {
+  const schedule = mockRenewalSchedules[certificate.name];
+  const base = {
+    certificateName: certificate.name,
+  };
+
+  if (!certificate.enabled) {
+    return {
+      ...base,
+      status: 'Disabled',
+      statusKind: 'disabled',
+      message: 'Automatic renewal is paused because this certificate is disabled.',
+      nextCheck: null,
+      lastCheckedAt: null,
+    };
+  }
+
+  if (!certificate.isIssuedByAcmebot || !certificate.isSameEndpoint) {
+    return {
+      ...base,
+      status: 'Not managed',
+      statusKind: 'neutral',
+      message: 'This certificate is not managed by this Acmebot endpoint.',
+      nextCheck: null,
+      lastCheckedAt: null,
+    };
+  }
+
+  if (!schedule) {
+    return {
+      ...base,
+      status: 'Not scheduled',
+      statusKind: 'pending',
+      message: 'Automatic renewal will start after the daily renewal check runs.',
+      nextCheck: null,
+      lastCheckedAt: null,
+    };
+  }
+
+  return {
+    ...base,
+    status: schedule.status ?? 'Checking',
+    statusKind: schedule.statusKind ?? 'pending',
+    message: schedule.message ?? 'Automatic renewal status is being refreshed.',
+    nextCheck: schedule.nextCheck ?? null,
+    lastCheckedAt: schedule.lastCheckedAt ?? null,
+  };
+}
+
+function compareCertificateRenewals(left: CertificateRenewalItem, right: CertificateRenewalItem): number {
+  return (
+    getCertificateRenewalSortRank(left) - getCertificateRenewalSortRank(right) ||
+    (left.nextCheck ?? '9999-12-31T23:59:59.999Z').localeCompare(right.nextCheck ?? '9999-12-31T23:59:59.999Z') ||
+    left.certificateName.localeCompare(right.certificateName)
+  );
+}
+
+function getCertificateRenewalSortRank(renewal: CertificateRenewalItem): number {
+  const ranks: Record<string, number> = {
+    attention: 0,
+    active: 1,
+    pending: 2,
+    scheduled: 3,
+    disabled: 4,
+    neutral: 5,
+  };
+
+  return ranks[renewal.statusKind] ?? 5;
 }

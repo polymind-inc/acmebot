@@ -1,26 +1,16 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-
-using Acmebot.App.Extensions;
-using Acmebot.App.Options;
-
-using Azure.Security.KeyVault.Certificates;
+﻿using Acmebot.App.Services;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Functions.Orchestration;
 
 public partial class RenewCertificates(
-    CertificateClient certificateClient,
-    IOptions<AcmebotOptions> options,
+    CertificateQueryService certificateQueryService,
     ILogger<RenewCertificates> logger)
 {
-    private readonly AcmebotOptions _options = options.Value;
-
     [Function($"{nameof(RenewCertificates)}_{nameof(Timer)}")]
     public async Task Timer([TimerTrigger("0 0 0 * * *")] TimerInfo timer, [DurableClient] DurableTaskClient starter)
     {
@@ -28,15 +18,17 @@ public partial class RenewCertificates(
         var running = 0;
         var skipped = 0;
 
-        await foreach (var properties in certificateClient.GetPropertiesOfCertificatesAsync())
+        var certificates = await certificateQueryService.GetRenewalTargetsAsync();
+
+        foreach (var certificate in certificates)
         {
-            if (properties.Enabled == false || !properties.IsIssuedByAcmebot() || !properties.IsSameEndpoint(_options.Endpoint))
+            if (!certificate.Enabled || !certificate.IsIssuedByAcmebot || !certificate.IsSameEndpoint)
             {
                 skipped++;
                 continue;
             }
 
-            var instanceId = Convert.ToHexStringLower(SHA1.HashData(Encoding.UTF8.GetBytes(properties.Name)));
+            var instanceId = CertificateRenewalSchedulerOrchestrator.GetInstanceId(certificate.Name);
 
             var instance = await starter.GetInstanceAsync(instanceId, getInputsAndOutputs: false);
 
@@ -48,7 +40,7 @@ public partial class RenewCertificates(
 
             await starter.ScheduleNewOrchestrationInstanceAsync(
                 nameof(CertificateRenewalSchedulerOrchestrator.ScheduleCertificateRenewal),
-                properties.Name,
+                certificate.Name,
                 new StartOrchestrationOptions
                 {
                     InstanceId = instanceId
@@ -56,7 +48,7 @@ public partial class RenewCertificates(
 
             started++;
 
-            LogRenewalSchedulerStarted(logger, properties.Name, instanceId);
+            LogRenewalSchedulerStarted(logger, certificate.Name, instanceId);
         }
 
         LogRenewalSchedulersEnsured(logger, started, running, skipped);

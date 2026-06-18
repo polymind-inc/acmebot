@@ -5,30 +5,20 @@ using Azure.Functions.Worker.Extensions.HttpApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.DurableTask;
-using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor, AppRoleService appRoleService, ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class RevokeCertificate(
+    IHttpContextAccessor httpContextAccessor,
+    AppRoleService appRoleService,
+    CertificateOperationService certificateOperationService,
+    ILogger<RevokeCertificate> logger) : HttpFunctionBase(httpContextAccessor)
 {
-    [Function($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}")]
-    public async Task Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context, string certificateName)
-    {
-        if (string.IsNullOrEmpty(certificateName))
-        {
-            return;
-        }
-
-        await context.CallRevokeCertificateAsync(certificateName);
-    }
-
     [Function($"{nameof(RevokeCertificate)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates/{certificateName}/revoke")] HttpRequest req,
-        string certificateName,
-        [DurableClient] DurableTaskClient starter)
+        string certificateName)
     {
         if (!User.Identity?.IsAuthenticated ?? false)
         {
@@ -40,21 +30,13 @@ public partial class RevokeCertificate(IHttpContextAccessor httpContextAccessor,
             return Forbid();
         }
 
-        // Function input comes from the request content.
-        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(RevokeCertificate)}_{nameof(Orchestrator)}", certificateName);
+        await certificateOperationService.RevokeCertificateAsync(certificateName, req.HttpContext.RequestAborted);
 
-        LogOrchestrationStarted(logger, certificateName, instanceId);
-
-        var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
-
-        if (metadata.RuntimeStatus != OrchestrationRuntimeStatus.Completed)
-        {
-            return Problem();
-        }
+        LogCertificateRevoked(logger, certificateName);
 
         return Ok();
     }
 
-    [LoggerMessage(LogLevel.Information, "Certificate revocation orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
-    private static partial void LogOrchestrationStarted(ILogger logger, string certificateName, string instanceId);
+    [LoggerMessage(LogLevel.Information, "Certificate revoked. CertificateName: {CertificateName}")]
+    private static partial void LogCertificateRevoked(ILogger logger, string certificateName);
 }

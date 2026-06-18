@@ -1,4 +1,4 @@
-import type { CertificateItem, CertificatePolicyItem, DnsZoneGroup, ProblemDetails } from './types';
+import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ProblemDetails } from './types';
 
 const useMockApi = import.meta.env.DEV && import.meta.env.VITE_ACMEBOT_USE_MOCKS === 'true';
 
@@ -116,6 +116,15 @@ export async function getDnsZones(): Promise<DnsZoneGroup[]> {
   }
 
   return requestJson<DnsZoneGroup[]>('/api/dns-zones');
+}
+
+export async function getCertificateRenewals(): Promise<CertificateRenewalItem[]> {
+  if (useMockApi) {
+    const { getMockCertificateRenewals } = await import('./mockData');
+    return getMockCertificateRenewals();
+  }
+
+  return requestJson<CertificateRenewalItem[]>('/api/renewals');
 }
 
 export async function issueCertificate(policy: CertificatePolicyItem): Promise<void> {

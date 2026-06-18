@@ -48,6 +48,17 @@ export interface CertificatePolicyItem {
   tags?: Record<string, string>;
 }
 
+export type CertificateRenewalStatusKind = 'scheduled' | 'active' | 'attention' | 'pending' | 'disabled' | 'neutral';
+
+export interface CertificateRenewalItem {
+  certificateName: string;
+  status: string;
+  statusKind: CertificateRenewalStatusKind | (string & {});
+  message: string;
+  nextCheck?: string | null;
+  lastCheckedAt?: string | null;
+}
+
 export interface ProblemDetails {
   title?: string;
   detail?: string;

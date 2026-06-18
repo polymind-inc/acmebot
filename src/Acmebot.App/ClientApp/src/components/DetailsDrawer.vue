@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { AlertTriangle, CalendarDays, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
+import { AlertTriangle, CalendarClock, CalendarDays, Clock3, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
 
-import type { CertificateItem } from '@/api/types';
+import type { CertificateItem, CertificateRenewalItem } from '@/api/types';
 import { displayDnsName, formatDateTime, getCategoryLabel, getCertificateCategory, getValidityDays, isCertificateExpired } from '@/utils/certificates';
 
 import StatusBadge from './StatusBadge.vue';
@@ -11,6 +11,8 @@ const props = defineProps<{
   certificate: CertificateItem | null;
   open: boolean;
   busy: boolean;
+  renewal?: CertificateRenewalItem | null;
+  renewalLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +24,50 @@ const emit = defineEmits<{
 
 const customTags = computed(() => Object.entries(props.certificate?.tags ?? {}).toSorted(([left], [right]) => left.localeCompare(right)));
 const customTagsCopyText = computed(() => customTags.value.map(([key, value]) => `${key}: ${value}`).join('\n'));
+
+function getRenewalTone(): string {
+  const kind = props.renewal?.statusKind;
+
+  if (kind === 'scheduled' || kind === 'active' || kind === 'attention' || kind === 'pending') {
+    return kind;
+  }
+
+  return props.renewalLoading ? 'pending' : 'neutral';
+}
+
+function getRenewalLabel(): string {
+  if (!props.renewal) {
+    return props.renewalLoading ? 'Loading' : '-';
+  }
+
+  return props.renewal.status;
+}
+
+function getRenewalIcon() {
+  const tone = getRenewalTone();
+
+  if (tone === 'attention') {
+    return AlertTriangle;
+  }
+
+  if (tone === 'active') {
+    return RotateCw;
+  }
+
+  if (tone === 'scheduled') {
+    return CalendarClock;
+  }
+
+  return Clock3;
+}
+
+function getRenewalMessage(): string {
+  if (props.renewal) {
+    return props.renewal.message;
+  }
+
+  return props.renewalLoading ? 'Refreshing status.' : 'No automatic renewal status is available.';
+}
 </script>
 
 <template>
@@ -147,6 +193,45 @@ const customTagsCopyText = computed(() => customTags.value.map(([key, value]) =>
               />
             </button>
           </div>
+        </section>
+
+        <section class="detail-section">
+          <div class="detail-section__heading">
+            <h3>Automatic Renewal</h3>
+          </div>
+          <dl class="metadata-list">
+            <div class="metadata-row">
+              <dt>Status</dt>
+              <dd>
+                <span
+                  class="renewal-state"
+                  :class="`renewal-state--${getRenewalTone()}`"
+                >
+                  <component
+                    :is="getRenewalIcon()"
+                    :class="{ 'spin': getRenewalTone() === 'active' }"
+                    :size="14"
+                    aria-hidden="true"
+                  />
+                  {{ getRenewalLabel() }}
+                </span>
+              </dd>
+            </div>
+            <div class="metadata-row">
+              <dt>Next check</dt>
+              <dd>{{ formatDateTime(renewal?.nextCheck) }}</dd>
+            </div>
+            <div class="metadata-row">
+              <dt>Last checked</dt>
+              <dd>{{ formatDateTime(renewal?.lastCheckedAt) }}</dd>
+            </div>
+            <div class="metadata-row metadata-row--stacked">
+              <dt>Message</dt>
+              <dd class="metadata-value-line">
+                <span class="metadata-value">{{ getRenewalMessage() }}</span>
+              </dd>
+            </div>
+          </dl>
         </section>
 
         <section class="detail-section">

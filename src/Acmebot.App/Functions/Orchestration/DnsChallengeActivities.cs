@@ -16,26 +16,6 @@ public class DnsChallengeActivities(
     AcmeClientFactory acmeClientFactory,
     IEnumerable<IDnsProvider> dnsProviders)
 {
-    [Function(nameof(GetAllDnsZones))]
-    public async Task<IReadOnlyList<DnsZoneGroup>> GetAllDnsZones([ActivityTrigger] object input)
-    {
-        try
-        {
-            var zones = await dnsProviders.ListAllZonesAsync();
-
-            return zones.Where(x => x.Item2 is not null)
-                        .Select(x => new DnsZoneGroup
-                        {
-                            DnsProviderName = x.Item1,
-                            DnsZones = x.Item2!.Select(xs => xs.ToDnsZoneItem()).OrderBy(xs => xs.Name).ToArray()
-                        }).ToArray();
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
     [Function(nameof(Dns01Precondition))]
     public async Task<string> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
     {

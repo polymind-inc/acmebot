@@ -1,43 +1,35 @@
-﻿using Acmebot.App.Models;
+﻿using Acmebot.App.Services;
 
 using Azure.Functions.Worker.Extensions.HttpApi;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.DurableTask;
-using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Http;
 
-public partial class GetDnsZones(IHttpContextAccessor httpContextAccessor, ILogger<GetDnsZones> logger) : HttpFunctionBase(httpContextAccessor)
+public partial class GetDnsZones(
+    IHttpContextAccessor httpContextAccessor,
+    DnsZoneQueryService dnsZoneQueryService,
+    ILogger<GetDnsZones> logger) : HttpFunctionBase(httpContextAccessor)
 {
-    [Function($"{nameof(GetDnsZones)}_{nameof(Orchestrator)}")]
-    public Task<IReadOnlyList<DnsZoneGroup>> Orchestrator([OrchestrationTrigger] TaskOrchestrationContext context) => context.CallGetAllDnsZonesAsync(null!);
-
     [Function($"{nameof(GetDnsZones)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/dns-zones")] HttpRequest req,
-        [DurableClient] DurableTaskClient starter)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/dns-zones")] HttpRequest req)
     {
         if (!User.Identity?.IsAuthenticated ?? false)
         {
             return Unauthorized();
         }
 
-        // Function input comes from the request content.
-        var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync($"{nameof(GetDnsZones)}_{nameof(Orchestrator)}");
+        var output = await dnsZoneQueryService.GetAllDnsZonesAsync(req.HttpContext.RequestAborted);
 
-        LogOrchestrationStarted(logger, instanceId);
-
-        var metadata = await starter.WaitForInstanceCompletionAsync(instanceId, getInputsAndOutputs: true);
-
-        var output = metadata.ReadOutputAs<IReadOnlyList<DnsZoneGroup>>();
+        LogDnsZonesRetrieved(logger, output.Count);
 
         return Ok(output);
     }
 
-    [LoggerMessage(LogLevel.Information, "DNS zone retrieval orchestration started. InstanceId: {InstanceId}")]
-    private static partial void LogOrchestrationStarted(ILogger logger, string instanceId);
+    [LoggerMessage(LogLevel.Information, "DNS zone list retrieved. Count: {Count}")]
+    private static partial void LogDnsZonesRetrieved(ILogger logger, int count);
 }
