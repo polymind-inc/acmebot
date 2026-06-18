@@ -69,6 +69,33 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
         public async IAsyncEnumerable<Domain> ListDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var found = false;
+
+            await foreach (var domain in ListLiveDnsDomainsAsync(cancellationToken))
+            {
+                found = true;
+
+                yield return domain;
+            }
+
+            if (found)
+            {
+                yield break;
+            }
+
+            // Some Gandi accounts (most often organization-scoped Personal Access Tokens) return an
+            // empty list from GET livedns/domains even when they manage LiveDNS zones. In that case fall
+            // back to the registrar domain listing and keep the domains whose live nameservers are set to
+            // LiveDNS. This re-enables the registrar-based zone listing that was the original behavior
+            // before the DNS providers were rewritten for v5.
+            await foreach (var domain in ListRegistrarLiveDnsDomainsAsync(cancellationToken))
+            {
+                yield return domain;
+            }
+        }
+
+        private async IAsyncEnumerable<Domain> ListLiveDnsDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
             var page = 1;
 
             while (true)
@@ -83,6 +110,42 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
                 foreach (var domain in domains)
                 {
                     yield return domain;
+                }
+
+                page++;
+            }
+        }
+
+        private async IAsyncEnumerable<Domain> ListRegistrarLiveDnsDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var page = 1;
+
+            while (true)
+            {
+                Domain[]? domains;
+
+                try
+                {
+                    domains = await _httpClient.GetFromJsonAsync<Domain[]>($"domain/domains?page={page}", cancellationToken);
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                {
+                    // The token is not authorized for the registrar API; treat it as no manageable zones.
+                    // Other failures (transient, 5xx, network) are left to surface as actionable errors.
+                    domains = null;
+                }
+
+                if (domains is null or { Length: 0 })
+                {
+                    break;
+                }
+
+                foreach (var domain in domains)
+                {
+                    if (domain.Nameserver?.Current == "livedns")
+                    {
+                        yield return domain;
+                    }
                 }
 
                 page++;
@@ -108,6 +171,15 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
     {
         [JsonPropertyName("fqdn")]
         public required string Fqdn { get; set; }
+
+        [JsonPropertyName("nameserver")]
+        public DomainNameserver? Nameserver { get; set; }
+    }
+
+    internal class DomainNameserver
+    {
+        [JsonPropertyName("current")]
+        public string? Current { get; set; }
     }
 
     internal class Record
