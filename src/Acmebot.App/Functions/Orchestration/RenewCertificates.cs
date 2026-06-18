@@ -22,7 +22,7 @@ public partial class RenewCertificates(
 
         foreach (var certificate in certificates)
         {
-            if (!certificate.Enabled || !certificate.IsIssuedByAcmebot || !certificate.IsSameEndpoint)
+            if (!certificate.IsRenewable)
             {
                 skipped++;
                 continue;

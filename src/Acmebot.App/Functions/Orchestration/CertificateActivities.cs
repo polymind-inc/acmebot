@@ -19,6 +19,9 @@ public class CertificateActivities(
 {
     private readonly AcmebotOptions _options = options.Value;
 
+    // How long to wait before checking the ACME renewal information (ARI) again when it cannot be used right now.
+    private static readonly TimeSpan s_renewalInfoCheckInterval = TimeSpan.FromHours(6);
+
     [Function(nameof(EvaluateCertificateRenewal))]
     public async Task<CertificateRenewalEvaluation> EvaluateCertificateRenewal([ActivityTrigger] string certificateName)
     {
@@ -82,7 +85,7 @@ public class CertificateActivities(
                         IsActive = true,
                         ShouldRenew = suggestedWindow.Start <= now,
                         NextCheck = SelectNextCheck(now, suggestedWindow.Start, suggestedWindow.End, renewalInfo.RetryAfter),
-                        Reason = "ARI"
+                        Reason = "Renewal is scheduled within the certificate authority's suggested renewal window."
                     };
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -92,8 +95,8 @@ public class CertificateActivities(
                     {
                         IsActive = true,
                         ShouldRenew = CheckShouldRenew(properties, now),
-                        NextCheck = now.AddHours(6),
-                        Reason = "ARI unavailable"
+                        NextCheck = now.Add(s_renewalInfoCheckInterval),
+                        Reason = "Renewal information is temporarily unavailable. Using the configured schedule and rechecking soon."
                     };
                 }
             }
@@ -104,7 +107,7 @@ public class CertificateActivities(
             IsActive = true,
             ShouldRenew = CheckShouldRenew(properties, now),
             NextCheck = now.AddDays(1),
-            Reason = "Schedule"
+            Reason = "Renewal is scheduled based on the configured renewal threshold."
         };
     }
 
@@ -142,7 +145,7 @@ public class CertificateActivities(
         var window = suggestedWindowEnd - suggestedWindowStart;
 
         var randomRenewalTime = suggestedWindowStart.AddTicks(Random.Shared.NextInt64(window.Ticks));
-        var nextRenewalInfoCheck = now.Add(retryAfter ?? TimeSpan.FromHours(6));
+        var nextRenewalInfoCheck = now.Add(retryAfter ?? s_renewalInfoCheckInterval);
 
         return randomRenewalTime <= nextRenewalInfoCheck ? randomRenewalTime : nextRenewalInfoCheck;
     }

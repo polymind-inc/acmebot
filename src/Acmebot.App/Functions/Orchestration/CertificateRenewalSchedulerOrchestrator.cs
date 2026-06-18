@@ -32,7 +32,7 @@ public partial class CertificateRenewalSchedulerOrchestrator
 
         if (evaluation.ShouldRenew)
         {
-            SetSchedulerStatus(context, certificateName, "Renewing", null, evaluation.Reason);
+            SetSchedulerStatus(context, certificateName, "Renewing", null, "Automatic renewal is in progress.");
 
             try
             {

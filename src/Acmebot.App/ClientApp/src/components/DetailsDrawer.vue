@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { AlertTriangle, CalendarClock, CalendarDays, Clock3, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
+import { AlertTriangle, CalendarDays, Copy, Fingerprint, KeyRound, RotateCw, ShieldCheck, Trash2, X } from 'lucide-vue-next';
 
 import type { CertificateItem, CertificateRenewalItem } from '@/api/types';
 import { displayDnsName, formatDateTime, getCategoryLabel, getCertificateCategory, getValidityDays, isCertificateExpired } from '@/utils/certificates';
+import { renewalIcon, renewalLabel, renewalTone } from '@/utils/renewals';
 
 import StatusBadge from './StatusBadge.vue';
 
@@ -84,39 +85,15 @@ function getReuseKeyLabel(certificate: CertificateItem): string {
 }
 
 function getRenewalTone(): string {
-  const kind = props.renewal?.statusKind;
-
-  if (kind === 'scheduled' || kind === 'active' || kind === 'attention' || kind === 'pending') {
-    return kind;
-  }
-
-  return props.renewalLoading ? 'pending' : 'neutral';
+  return renewalTone(props.renewal ?? null, props.renewalLoading);
 }
 
 function getRenewalLabel(): string {
-  if (!props.renewal) {
-    return props.renewalLoading ? 'Loading' : '-';
-  }
-
-  return props.renewal.status;
+  return renewalLabel(props.renewal ?? null, props.renewalLoading);
 }
 
 function getRenewalIcon() {
-  const tone = getRenewalTone();
-
-  if (tone === 'attention') {
-    return AlertTriangle;
-  }
-
-  if (tone === 'active') {
-    return RotateCw;
-  }
-
-  if (tone === 'scheduled') {
-    return CalendarClock;
-  }
-
-  return Clock3;
+  return renewalIcon(props.renewal ?? null, props.renewalLoading);
 }
 
 function getRenewalMessage(): string {

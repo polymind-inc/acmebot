@@ -2,16 +2,13 @@
 import { computed, reactive, ref } from 'vue';
 import { createColumnHelper, FlexRender, getCoreRowModel, getSortedRowModel, useVueTable, type Row, type SortingState } from '@tanstack/vue-table';
 import {
-  AlertTriangle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CalendarClock,
   ChevronDown,
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
-  Clock3,
   CirclePlus,
   Filter,
   LoaderCircle,
@@ -27,13 +24,13 @@ import type { CertificateCategory, CertificateItem, CertificateRenewalItem, Cert
 import {
   displayDnsName,
   formatDate,
-  formatDateTime,
   getCategoryLabel,
   getCertificateCategory,
   getCertificateStatus,
   getPrimaryZone,
   isShortLived,
 } from '@/utils/certificates';
+import { renewalIcon, renewalLabel, renewalSubtext, renewalTone } from '@/utils/renewals';
 
 import StatusBadge from './StatusBadge.vue';
 
@@ -243,53 +240,19 @@ function getRenewal(certificate: CertificateItem): CertificateRenewalItem | null
 }
 
 function getRenewalTone(renewal: CertificateRenewalItem | null): string {
-  if (!renewal) {
-    return props.renewalsLoading ? 'pending' : 'neutral';
-  }
-
-  if (renewal.statusKind === 'scheduled' || renewal.statusKind === 'active' || renewal.statusKind === 'attention' || renewal.statusKind === 'pending') {
-    return renewal.statusKind;
-  }
-
-  return 'neutral';
+  return renewalTone(renewal, props.renewalsLoading);
 }
 
 function getRenewalLabel(renewal: CertificateRenewalItem | null): string {
-  if (!renewal) {
-    return props.renewalsLoading ? 'Loading' : '-';
-  }
-
-  return renewal.status;
+  return renewalLabel(renewal, props.renewalsLoading);
 }
 
 function getRenewalSubtext(renewal: CertificateRenewalItem | null): string {
-  if (!renewal) {
-    return props.renewalsLoading ? 'Refreshing status' : '';
-  }
-
-  if (renewal.nextCheck) {
-    return `Next ${formatDateTime(renewal.nextCheck)}`;
-  }
-
-  return '';
+  return renewalSubtext(renewal, props.renewalsLoading);
 }
 
 function getRenewalIcon(renewal: CertificateRenewalItem | null) {
-  const tone = getRenewalTone(renewal);
-
-  if (tone === 'attention') {
-    return AlertTriangle;
-  }
-
-  if (tone === 'active') {
-    return RefreshCw;
-  }
-
-  if (tone === 'scheduled') {
-    return CalendarClock;
-  }
-
-  return Clock3;
+  return renewalIcon(renewal, props.renewalsLoading);
 }
 </script>
 
