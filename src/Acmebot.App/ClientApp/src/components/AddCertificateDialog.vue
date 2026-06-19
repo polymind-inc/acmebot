@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { CirclePlus, KeyRound, Plus, ShieldPlus, Tag, Trash2, X } from 'lucide-vue-next';
+import { CirclePlus, KeyRound, ShieldPlus, Tag, X } from 'lucide-vue-next';
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
-import { createCertificateName, createDelegatedDnsAlias, validateOptionalDnsAlias } from '@/utils/dnsNames';
+import { createCertificateName, createDelegatedDnsAlias } from '@/utils/dnsNames';
 
+import AdvancedCertificateOptions from './AdvancedCertificateOptions.vue';
 import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
 import ManagedDnsNameEditor from './ManagedDnsNameEditor.vue';
 import SearchableZoneSelect from './SearchableZoneSelect.vue';
@@ -37,19 +38,17 @@ interface TagValidationOutcome {
 const issueModeOptions = {
   managed: {
     editor: ManagedDnsNameEditor,
-    zoneLabel: 'DNS Zone',
-    zoneStepLabel: 'Zone',
+    zoneLabel: 'DNS zone',
+    zoneStepLabel: 'DNS zone',
     emptyStatusLabel: 'Select zone',
-    showManualDnsAlias: true,
     useSelectedZoneProvider: false,
     useGeneratedDnsAlias: false,
   },
   delegated: {
     editor: DelegatedDnsNameEditor,
-    zoneLabel: 'DNS Alias Zone',
-    zoneStepLabel: 'Alias zone',
-    emptyStatusLabel: 'Select alias zone',
-    showManualDnsAlias: false,
+    zoneLabel: 'CNAME zone',
+    zoneStepLabel: 'CNAME zone',
+    emptyStatusLabel: 'Select zone',
     useSelectedZoneProvider: true,
     useGeneratedDnsAlias: true,
   },
@@ -58,7 +57,6 @@ const issueModeOptions = {
 type IssueMode = keyof typeof issueModeOptions;
 
 const selectedZone = ref<SelectableDnsZone | null>(null);
-let certificateTagId = 0;
 
 const validKeySizes = [2048, 3072, 4096];
 const validKeyCurves: KeyCurveName[] = ['P-256', 'P-384', 'P-521', 'P-256K'];
@@ -73,7 +71,6 @@ const form = reactive({
   keySize: 2048,
   keyCurveName: 'P-256' as KeyCurveName,
   reuseKey: false,
-  dnsAlias: '',
   tags: [] as CertificateTagInput[],
 });
 
@@ -89,14 +86,12 @@ const tagError = computed(() => tagValidation.value.message);
 const zoneLabel = computed(() => activeIssueMode.value.zoneLabel);
 const zoneStepLabel = computed(() => activeIssueMode.value.zoneStepLabel);
 const delegatedDnsAlias = computed(() => (activeIssueMode.value.useGeneratedDnsAlias && selectedZone.value ? createDelegatedDnsAlias(form.dnsNames, selectedZone.value) : ''));
-const dnsAliasValidation = computed(() => (form.useAdvancedOptions && activeIssueMode.value.showManualDnsAlias ? validateOptionalDnsAlias(form.dnsAlias) : { value: '', message: '' }));
-const dnsAliasError = computed(() => dnsAliasValidation.value.message);
 const submitValidationMessage = computed(() => {
   if (form.dnsNames.length === 0) {
     return 'Add at least one DNS name.';
   }
 
-  return certificateNameError.value || dnsAliasError.value || keyOptionError.value || tagError.value;
+  return certificateNameError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
 const keySummary = computed(() => (form.keyType === 'RSA' ? `${form.keySize} bit RSA` : `${form.keyCurveName} EC`));
@@ -143,10 +138,6 @@ watch(
   () => {
     form.dnsNames = [];
     form.dnsProviderName = activeIssueMode.value.useSelectedZoneProvider && selectedZone.value ? selectedZone.value.dnsProviderName : '';
-
-    if (!activeIssueMode.value.showManualDnsAlias) {
-      form.dnsAlias = '';
-    }
   },
 );
 
@@ -170,7 +161,6 @@ watch(
       form.keySize = 2048;
       form.keyCurveName = 'P-256';
       form.reuseKey = false;
-      form.dnsAlias = '';
       form.tags = [];
     }
   },
@@ -187,12 +177,7 @@ function resetForm(): void {
   form.keySize = 2048;
   form.keyCurveName = 'P-256';
   form.reuseKey = false;
-  form.dnsAlias = '';
   form.tags = [];
-}
-
-function createTagInput(): CertificateTagInput {
-  return { id: ++certificateTagId, key: '', value: '' };
 }
 
 function validateCertificateName(certificateName: string): string {
@@ -258,18 +243,6 @@ function validateTags(items: CertificateTagInput[]): TagValidationOutcome {
   return { tags, message: '' };
 }
 
-function addTag(): void {
-  if (form.tags.some((tag) => !tag.key.trim() && !tag.value.trim())) {
-    return;
-  }
-
-  form.tags.push(createTagInput());
-}
-
-function removeTag(id: number): void {
-  form.tags = form.tags.filter((tag) => tag.id !== id);
-}
-
 function addDnsName(dnsName: string, dnsProviderName: string): void {
   form.dnsNames.push(dnsName);
   form.dnsProviderName = dnsProviderName;
@@ -292,7 +265,7 @@ function submit(): void {
     return;
   }
 
-  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : dnsAliasValidation.value.value;
+  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : '';
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
@@ -426,25 +399,25 @@ function submit(): void {
 
           <div class="wizard-body">
             <div class="form-section">
-              <span class="form-label">Issue Mode</span>
+              <span class="form-label">Validation method</span>
               <div
                 class="segmented-control issue-mode-control"
                 role="group"
-                aria-label="Issue mode"
+                aria-label="Validation method"
               >
                 <button
                   type="button"
                   :class="{ 'is-selected': form.issueMode === 'managed' }"
                   @click="form.issueMode = 'managed'"
                 >
-                  Managed zone
+                  TXT record
                 </button>
                 <button
                   type="button"
                   :class="{ 'is-selected': form.issueMode === 'delegated' }"
                   @click="form.issueMode = 'delegated'"
                 >
-                  Delegated DNS-01
+                  CNAME alias
                 </button>
               </div>
             </div>
@@ -477,164 +450,18 @@ function submit(): void {
               </label>
             </div>
 
-            <div
+            <AdvancedCertificateOptions
               v-if="form.useAdvancedOptions"
-              class="advanced-grid"
-            >
-              <label
-                class="form-field"
-                :class="{ 'is-invalid': certificateNameError }"
-              >
-                <span class="form-label">Certificate Name</span>
-                <input
-                  v-model="form.certificateName"
-                  type="text"
-                  placeholder="Defaults to first DNS name"
-                  :aria-invalid="certificateNameError ? 'true' : 'false'"
-                >
-                <span
-                  v-if="certificateNameError"
-                  class="form-error"
-                >{{ certificateNameError }}</span>
-              </label>
-
-              <label
-                class="form-field"
-                :class="{ 'is-invalid': keyOptionError }"
-              >
-                <span class="form-label">Key Type</span>
-                <select v-model="form.keyType">
-                  <option value="RSA">RSA</option>
-                  <option value="EC">EC</option>
-                </select>
-                <span
-                  v-if="keyOptionError"
-                  class="form-error"
-                >{{ keyOptionError }}</span>
-              </label>
-
-              <label
-                v-if="form.keyType === 'RSA'"
-                class="form-field"
-              >
-                <span class="form-label">Key Size</span>
-                <select v-model.number="form.keySize">
-                  <option :value="2048">2048</option>
-                  <option :value="3072">3072</option>
-                  <option :value="4096">4096</option>
-                </select>
-              </label>
-
-              <label
-                v-else
-                class="form-field"
-              >
-                <span class="form-label">Curve</span>
-                <select v-model="form.keyCurveName">
-                  <option value="P-256">P-256</option>
-                  <option value="P-384">P-384</option>
-                  <option value="P-521">P-521</option>
-                  <option value="P-256K">P-256K</option>
-                </select>
-              </label>
-
-              <label
-                v-if="activeIssueMode.showManualDnsAlias"
-                class="form-field"
-                :class="{ 'is-invalid': dnsAliasError }"
-              >
-                <span class="form-label">DNS Alias</span>
-                <input
-                  v-model="form.dnsAlias"
-                  type="text"
-                  placeholder="alias.example.com"
-                  :aria-invalid="dnsAliasError ? 'true' : 'false'"
-                >
-                <span
-                  v-if="dnsAliasError"
-                  class="form-error"
-                >{{ dnsAliasError }}</span>
-              </label>
-
-              <label class="toggle-row advanced-grid__toggle">
-                <input
-                  v-model="form.reuseKey"
-                  type="checkbox"
-                >
-                <span>Reuse key on renewal</span>
-              </label>
-
-              <div class="tag-editor advanced-grid__wide">
-                <div class="tag-editor__header">
-                  <span class="form-label">Key Vault Tags</span>
-                  <button
-                    class="secondary-button"
-                    type="button"
-                    @click="addTag"
-                  >
-                    <Plus
-                      :size="16"
-                      aria-hidden="true"
-                    />
-                    <span>Add tag</span>
-                  </button>
-                </div>
-                <div
-                  v-if="form.tags.length === 0"
-                  class="tag-editor__empty"
-                >
-                  No tags
-                </div>
-                <div
-                  v-else
-                  class="tag-editor__rows"
-                >
-                  <div
-                    v-for="tagItem in form.tags"
-                    :key="tagItem.id"
-                    class="tag-row"
-                  >
-                    <label
-                      class="visually-hidden"
-                      :for="`tag-key-${tagItem.id}`"
-                    >Tag name</label>
-                    <input
-                      :id="`tag-key-${tagItem.id}`"
-                      v-model="tagItem.key"
-                      type="text"
-                      placeholder="Name"
-                      :aria-invalid="tagError ? 'true' : 'false'"
-                    >
-                    <label
-                      class="visually-hidden"
-                      :for="`tag-value-${tagItem.id}`"
-                    >Tag value</label>
-                    <input
-                      :id="`tag-value-${tagItem.id}`"
-                      v-model="tagItem.value"
-                      type="text"
-                      placeholder="Value"
-                      :aria-invalid="tagError ? 'true' : 'false'"
-                    >
-                    <button
-                      class="icon-only-button"
-                      type="button"
-                      title="Remove tag"
-                      @click="removeTag(tagItem.id)"
-                    >
-                      <Trash2
-                        :size="15"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  </div>
-                </div>
-                <span
-                  v-if="tagError"
-                  class="form-error"
-                >{{ tagError }}</span>
-              </div>
-            </div>
+              v-model:certificate-name="form.certificateName"
+              v-model:key-type="form.keyType"
+              v-model:key-size="form.keySize"
+              v-model:key-curve-name="form.keyCurveName"
+              v-model:reuse-key="form.reuseKey"
+              v-model:tags="form.tags"
+              :certificate-name-error="certificateNameError"
+              :key-option-error="keyOptionError"
+              :tag-error="tagError"
+            />
           </div>
         </div>
 
