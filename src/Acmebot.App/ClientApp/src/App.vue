@@ -36,7 +36,6 @@ const certificateState = reactive({
 
 const dnsZoneState = reactive({
   loading: false,
-  loaded: false,
 });
 
 const renewalState = reactive({
@@ -87,7 +86,7 @@ const renewalAttentionCount = computed(() => renewals.value.filter((renewal) => 
 
 onMounted(async () => {
   void loadUpgradeNotice();
-  await Promise.all([loadCertificates(), loadRenewals(), loadDnsZones(false)]);
+  await Promise.all([loadCertificates(), loadRenewals()]);
 });
 
 async function loadUpgradeNotice(): Promise<void> {
@@ -164,8 +163,8 @@ async function loadCertificates(): Promise<void> {
   }
 }
 
-async function loadDnsZones(showErrorToast = true): Promise<void> {
-  if (dnsZoneState.loaded || dnsZoneState.loading) {
+async function loadDnsZones(): Promise<void> {
+  if (dnsZoneState.loading) {
     return;
   }
 
@@ -173,11 +172,8 @@ async function loadDnsZones(showErrorToast = true): Promise<void> {
 
   try {
     dnsZoneGroups.value = await getDnsZones();
-    dnsZoneState.loaded = true;
   } catch (error) {
-    if (showErrorToast) {
-      pushToast('error', 'Failed to load DNS zones', formatApiError(error));
-    }
+    pushToast('error', 'Failed to load DNS zones', formatApiError(error));
   } finally {
     dnsZoneState.loading = false;
   }
