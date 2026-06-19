@@ -223,6 +223,7 @@ function updateReuseKey(event: Event): void {
             class="icon-only-button"
             type="button"
             title="Remove tag"
+            aria-label="Remove tag"
             @click="removeTag(tagItem.id)"
           >
             <Trash2
