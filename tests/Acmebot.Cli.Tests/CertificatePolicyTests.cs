@@ -15,11 +15,14 @@ public sealed class CertificatePolicyTests
             " example.com ",
             "--dns-name",
             "EXAMPLE.com",
+            "--dns-provider",
+            "Azure DNS",
             "--tag",
             "owner=platform"
         ]));
 
         Assert.Equal(["example.com"], policy.DnsNames);
+        Assert.Equal("Azure DNS", policy.DnsProviderName);
         Assert.Equal("RSA", policy.KeyType);
         Assert.Equal(2048, policy.KeySize);
         Assert.Null(policy.KeyCurveName);
@@ -36,6 +39,8 @@ public sealed class CertificatePolicyTests
             "issue",
             "--dns-name",
             "example.com",
+            "--dns-provider",
+            "Azure DNS",
             "--key-type",
             "EC"
         ]));
@@ -54,6 +59,8 @@ public sealed class CertificatePolicyTests
             "issue",
             "--dns-name",
             "example.com",
+            "--dns-provider",
+            "Azure DNS",
             "--key-type",
             "ec",
             "--key-curve",
@@ -75,7 +82,9 @@ public sealed class CertificatePolicyTests
             "--name",
             "bad_name",
             "--dns-name",
-            "example.com"
+            "example.com",
+            "--dns-provider",
+            "Azure DNS"
         ])));
 
         Assert.Equal("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.", ex.Message);
@@ -91,7 +100,9 @@ public sealed class CertificatePolicyTests
             "--name",
             new string('a', 128),
             "--dns-name",
-            "example.com"
+            "example.com",
+            "--dns-provider",
+            "Azure DNS"
         ])));
 
         Assert.Equal("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.", ex.Message);
@@ -106,10 +117,26 @@ public sealed class CertificatePolicyTests
             "issue",
             "--dns-name",
             "example.com",
+            "--dns-provider",
+            "Azure DNS",
             "--tag",
             "Acmebot=true"
         ])));
 
         Assert.Equal("The 'Acmebot' tag is reserved for internal metadata.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_WithoutDnsProvider_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com"
+        ])));
+
+        Assert.Equal("Option '--dns-provider' is required.", ex.Message);
     }
 }

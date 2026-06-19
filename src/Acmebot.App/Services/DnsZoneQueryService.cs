@@ -10,14 +10,33 @@ public class DnsZoneQueryService(IEnumerable<IDnsProvider> dnsProviders)
     {
         try
         {
-            var zones = await dnsProviders.ListAllZonesAsync(cancellationToken);
+            var zones = await Task.WhenAll(dnsProviders.Select(async dnsProvider =>
+            {
+                try
+                {
+                    var dnsZones = await dnsProvider.ListZonesAsync(cancellationToken);
 
-            return zones.Where(x => x.Item2 is not null)
-                        .Select(x => new DnsZoneGroup
-                        {
-                            DnsProviderName = x.Item1,
-                            DnsZones = x.Item2!.Select(xs => xs.ToDnsZoneItem()).OrderBy(xs => xs.Name).ToArray()
-                        }).ToArray();
+                    return new DnsZoneGroup
+                    {
+                        DnsProviderName = dnsProvider.Name,
+                        DnsZones = dnsZones.Select(x => x.ToDnsZoneItem()).OrderBy(x => x.Name).ToArray()
+                    };
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch
+                {
+                    return new DnsZoneGroup
+                    {
+                        DnsProviderName = dnsProvider.Name,
+                        DnsZones = []
+                    };
+                }
+            }));
+
+            return zones.ToArray();
         }
         catch (OperationCanceledException)
         {
@@ -27,5 +46,19 @@ public class DnsZoneQueryService(IEnumerable<IDnsProvider> dnsProviders)
         {
             return [];
         }
+    }
+
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(string dnsProviderName, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dnsProviderName);
+
+        var dnsProvider = dnsProviders.FirstOrDefault(x => x.Name == dnsProviderName);
+
+        if (dnsProvider is null)
+        {
+            return [];
+        }
+
+        return await dnsProvider.ListZonesAsync(cancellationToken);
     }
 }

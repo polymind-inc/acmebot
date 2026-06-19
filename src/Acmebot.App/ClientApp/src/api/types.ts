@@ -7,7 +7,7 @@ export interface CertificateItem {
   id: string;
   name: string;
   dnsNames: string[];
-  dnsProviderName?: string | null;
+  dnsProviderName: string;
   createdOn: string;
   expiresOn: string;
   x509Thumbprint?: string | null;
@@ -39,7 +39,7 @@ export interface SelectableDnsZone extends DnsZoneItem {
 export interface CertificatePolicyItem {
   certificateName?: string;
   dnsNames: string[];
-  dnsProviderName?: string;
+  dnsProviderName: string;
   keyType: KeyType;
   keySize?: number;
   keyCurveName?: KeyCurveName;

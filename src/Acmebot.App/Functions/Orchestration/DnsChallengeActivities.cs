@@ -4,6 +4,7 @@ using Acmebot.App.Acme;
 using Acmebot.App.Extensions;
 using Acmebot.App.Models;
 using Acmebot.App.Providers;
+using Acmebot.App.Services;
 
 using DnsClient;
 
@@ -14,12 +15,12 @@ namespace Acmebot.App.Functions.Orchestration;
 public class DnsChallengeActivities(
     LookupClient lookupClient,
     AcmeClientFactory acmeClientFactory,
-    IEnumerable<IDnsProvider> dnsProviders)
+    DnsZoneQueryService dnsZoneQueryService)
 {
     [Function(nameof(Dns01Precondition))]
     public async Task<string> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
     {
-        var zones = await dnsProviders.FlattenAllZonesAsync();
+        var zones = await dnsZoneQueryService.ListZonesAsync(certificatePolicyItem.DnsProviderName);
 
         var foundZones = new HashSet<DnsZone>();
         var notFoundZoneDnsNames = new List<string>();
@@ -61,21 +62,7 @@ public class DnsChallengeActivities(
             }
         }
 
-        var dnsProvider = foundZones.Select(x => x.DnsProvider).FirstOrDefault(x => x.Name == certificatePolicyItem.DnsProviderName);
-
-        if (dnsProvider is null)
-        {
-            var foundDnsProviders = foundZones.Select(x => x.DnsProvider).DistinctBy(x => x.Name).ToArray();
-
-            if (foundDnsProviders.Length != 1)
-            {
-                return "";
-            }
-
-            dnsProvider = foundDnsProviders[0];
-        }
-
-        return dnsProvider.Name;
+        return certificatePolicyItem.DnsProviderName;
     }
 
     [Function(nameof(Dns01Authorization))]
@@ -114,7 +101,7 @@ public class DnsChallengeActivities(
             });
         }
 
-        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync(cancellationToken) : dnsProviders.ListZonesAsync(dnsProviderName, cancellationToken));
+        var zones = await dnsZoneQueryService.ListZonesAsync(dnsProviderName, cancellationToken);
 
         var propagationSeconds = 0;
 
@@ -177,7 +164,7 @@ public class DnsChallengeActivities(
     {
         var (dnsProviderName, challengeResults) = input;
 
-        var zones = await (string.IsNullOrEmpty(dnsProviderName) ? dnsProviders.FlattenAllZonesAsync(cancellationToken) : dnsProviders.ListZonesAsync(dnsProviderName, cancellationToken));
+        var zones = await dnsZoneQueryService.ListZonesAsync(dnsProviderName, cancellationToken);
 
         foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
         {

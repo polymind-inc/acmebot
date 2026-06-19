@@ -35,7 +35,7 @@ internal static class HelpText
         await writer.WriteLineAsync("Certificate issue options:");
         await writer.WriteLineAsync("  --name <value>                         Key Vault certificate name.");
         await writer.WriteLineAsync("  --dns-name <value>                     DNS name. Repeatable.");
-        await writer.WriteLineAsync("  --dns-provider <value>                 DNS provider display name.");
+        await writer.WriteLineAsync("  --dns-provider <value>                 DNS provider display name. Required.");
         await writer.WriteLineAsync("  --key-type <RSA|EC>                    Key type. Default: RSA.");
         await writer.WriteLineAsync("  --key-size <2048|3072|4096>            RSA key size. Default: 2048.");
         await writer.WriteLineAsync("  --key-curve <P-256|P-384|P-521|P-256K> EC key curve. Default: P-256.");

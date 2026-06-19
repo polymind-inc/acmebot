@@ -28,6 +28,7 @@ public sealed class AcmebotApiClientTests
                 id = "https://vault.example/certificates/example",
                 name = "example",
                 dnsNames = new[] { "example.com" },
+                dnsProviderName = "Azure DNS",
                 createdOn = "2026-06-01T00:00:00+00:00",
                 expiresOn = "2026-09-01T00:00:00+00:00",
                 enabled = true,
@@ -72,6 +73,7 @@ public sealed class AcmebotApiClientTests
         {
             CertificateName = "example",
             DnsNames = ["example.com"],
+            DnsProviderName = "Azure DNS",
             KeyType = "RSA",
             KeySize = 2048
         }, TestContext.Current.CancellationToken);
@@ -86,6 +88,7 @@ public sealed class AcmebotApiClientTests
         using var document = JsonDocument.Parse(request.Content);
         Assert.Equal("example", document.RootElement.GetProperty("certificateName").GetString());
         Assert.Equal("example.com", document.RootElement.GetProperty("dnsNames")[0].GetString());
+        Assert.Equal("Azure DNS", document.RootElement.GetProperty("dnsProviderName").GetString());
     }
 
     [Fact]

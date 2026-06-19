@@ -120,7 +120,7 @@ const filteredCertificates = computed(() => {
   return props.certificates.filter((certificate) => {
     const category = getCertificateCategory(certificate);
     const status = getCertificateStatus(certificate);
-    const provider = certificate.dnsProviderName ?? noProviderValue;
+    const provider = certificate.dnsProviderName || noProviderValue;
     const matchesCategory = filters.category === 'all' || filters.category === category;
     const matchesStatus = filters.status === 'all' || filters.status === status.kind;
     const matchesProvider = filters.provider === 'all' || filters.provider === provider;

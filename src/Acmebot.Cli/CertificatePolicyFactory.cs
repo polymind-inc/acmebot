@@ -27,6 +27,13 @@ internal static partial class CertificatePolicyFactory
             throw new CliException("At least one '--dns-name' value is required.");
         }
 
+        var dnsProviderName = NormalizeOptionalValue(commandLine.GetOption("dns-provider"));
+
+        if (dnsProviderName is null)
+        {
+            throw new CliException("Option '--dns-provider' is required.");
+        }
+
         var certificateName = commandLine.GetOption("name");
 
         if (certificateName is not null && !CertificateNameRegex().IsMatch(certificateName))
@@ -75,7 +82,7 @@ internal static partial class CertificatePolicyFactory
         {
             CertificateName = certificateName,
             DnsNames = dnsNames,
-            DnsProviderName = NormalizeOptionalValue(commandLine.GetOption("dns-provider")),
+            DnsProviderName = dnsProviderName,
             KeyType = keyType,
             KeySize = keySize,
             KeyCurveName = keyCurveName,

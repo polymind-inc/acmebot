@@ -13,7 +13,7 @@ public class CertificatePolicyItem : IValidatableObject
     public required string[] DnsNames { get; set; }
 
     [JsonPropertyName("dnsProviderName")]
-    public string? DnsProviderName { get; set; }
+    public required string DnsProviderName { get; set; }
 
     [JsonPropertyName("keyType")]
     [RegularExpression("^(RSA|EC)$")]
@@ -45,6 +45,11 @@ public class CertificatePolicyItem : IValidatableObject
         if (DnsNames.Length == 0)
         {
             yield return new ValidationResult($"The {nameof(DnsNames)} is required.", [nameof(DnsNames)]);
+        }
+
+        if (string.IsNullOrWhiteSpace(DnsProviderName))
+        {
+            yield return new ValidationResult($"The {nameof(DnsProviderName)} is required.", [nameof(DnsProviderName)]);
         }
 
         if (KeyType == "RSA")

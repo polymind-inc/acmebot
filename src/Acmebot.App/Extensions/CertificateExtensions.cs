@@ -92,7 +92,7 @@ internal static class CertificateExtensions
         var metadata = new AcmebotCertificateMetadata
         {
             Endpoint = endpoint.Host,
-            DnsProvider = certificatePolicyItem.DnsProviderName ?? "",
+            DnsProvider = certificatePolicyItem.DnsProviderName,
             DnsAlias = string.IsNullOrEmpty(certificatePolicyItem.DnsAlias) ? null : certificatePolicyItem.DnsAlias
         };
 

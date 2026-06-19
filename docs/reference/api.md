@@ -67,7 +67,7 @@ Accept: application/json
 | --- | --- | --- |
 | `certificateName` | No | Key Vault certificate name. If omitted, Acmebot derives it from the first DNS name. |
 | `dnsNames` | Yes | DNS names to include in the certificate. |
-| `dnsProviderName` | No | Provider display name, such as `Azure DNS` or `Cloudflare`. Required when Acmebot cannot infer a single provider. |
+| `dnsProviderName` | Yes | Provider display name, such as `Azure DNS` or `Cloudflare`. |
 | `keyType` | Yes | `RSA` or `EC`. |
 | `keySize` | For RSA | `2048`, `3072`, or `4096`. |
 | `keyCurveName` | For EC | `P-256`, `P-384`, `P-521`, or `P-256K`. |

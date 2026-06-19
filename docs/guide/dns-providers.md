@@ -8,7 +8,7 @@ Configure at least one DNS provider under the `Acmebot` configuration section be
 
 When a certificate is issued, Acmebot lists zones from the configured providers and finds the most specific zone that matches each requested DNS name.
 
-If a certificate request does not specify `dnsProviderName`, Acmebot can infer the provider only when all requested names resolve to zones from a single provider. If multiple providers match, choose the provider explicitly in the dashboard.
+Every certificate request must specify `dnsProviderName`. Choose the provider explicitly in the dashboard or pass it with `--dns-provider` when using the CLI.
 
 ## Credential Storage
 

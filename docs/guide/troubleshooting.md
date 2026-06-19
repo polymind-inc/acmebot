@@ -37,7 +37,7 @@ What to verify:
 
 - DNS zones load successfully in the dashboard.
 - The requested name is under one of the configured zones.
-- `dnsProviderName` is set when multiple providers can match the request.
+- `dnsProviderName` is set to the DNS provider that owns the validation zone.
 - `dnsAlias` has the required CNAME or delegation in place.
 - A TXT record appears at `_acme-challenge.<name>` while the operation runs.
 - `Acmebot__UseSystemNameServer=true` is used only when the validation design requires the platform resolver.

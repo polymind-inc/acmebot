@@ -385,7 +385,7 @@ function submit(): void {
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
-    dnsProviderName: form.dnsProviderName || undefined,
+    dnsProviderName: form.dnsProviderName,
     certificateName: normalizedCertificateName || undefined,
     keyType: form.keyType,
     reuseKey: form.useAdvancedOptions ? form.reuseKey : false,

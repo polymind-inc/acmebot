@@ -54,7 +54,7 @@ public partial class CertificateIssuanceOrchestrator
                 finally
                 {
                     // 作成した DNS レコードを削除
-                    await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName ?? "", challengeResults));
+                    await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName, challengeResults));
                 }
             }
 

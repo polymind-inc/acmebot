@@ -136,7 +136,7 @@ let mockCertificates: CertificateItem[] = [
     id: 'https://mock.vault/certificates/imported-legacy-net',
     name: 'imported-legacy-net',
     dnsNames: ['legacy.net'],
-    dnsProviderName: null,
+    dnsProviderName: '',
     createdOn: dateBefore(120),
     expiresOn: dateFromNow(144),
     x509Thumbprint: 'E42F40A663778F40DA3CCECFB2D908390F0B4119',

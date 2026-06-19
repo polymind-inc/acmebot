@@ -11,7 +11,7 @@ internal sealed class CertificatePolicyItem
     public required string[] DnsNames { get; set; }
 
     [JsonPropertyName("dnsProviderName")]
-    public string? DnsProviderName { get; set; }
+    public required string DnsProviderName { get; set; }
 
     [JsonPropertyName("keyType")]
     public required string KeyType { get; set; }
@@ -44,7 +44,7 @@ internal sealed class CertificateItem
     public required IReadOnlyList<string> DnsNames { get; set; }
 
     [JsonPropertyName("dnsProviderName")]
-    public string? DnsProviderName { get; set; }
+    public required string DnsProviderName { get; set; }
 
     [JsonPropertyName("createdOn")]
     public DateTimeOffset CreatedOn { get; set; }

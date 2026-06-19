@@ -56,7 +56,7 @@ const metadataRows = computed<MetadataRow[]>(() => {
     rows.push({
       key: 'dnsProvider',
       label: 'DNS provider',
-      value: certificate.dnsProviderName || 'Automatic',
+      value: certificate.dnsProviderName || 'Not set',
     });
   }
 

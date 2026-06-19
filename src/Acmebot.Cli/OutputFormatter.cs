@@ -37,7 +37,7 @@ internal static class OutputFormatter
                 certificate.Name,
                 certificate.ExpiresOn.ToString("u"),
                 certificate.Enabled ? "enabled" : "disabled",
-                certificate.DnsProviderName ?? "",
+                certificate.DnsProviderName,
                 string.Join(", ", certificate.DnsNames)
             })
             .ToArray();
