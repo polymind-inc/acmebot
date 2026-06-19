@@ -25,27 +25,26 @@ public sealed class AcmeNonceStoreTests
     }
 
     [Fact]
-    public void Add_TrimsOldestNonceWhenCapacityExceeded()
+    public void Add_KeepsOnlyMostRecentNonce()
     {
         var store = new AcmeNonceStore();
-        var nonces = Enumerable.Range(0, 33)
-            .Select(static value => Base64Url.EncodeToString([(byte)value]))
-            .ToArray();
+        var older = Base64Url.EncodeToString([1]);
+        var newer = Base64Url.EncodeToString([2]);
 
-        foreach (var nonce in nonces)
-        {
-            store.Add(nonce);
-        }
+        store.Add(older);
+        store.Add(newer);
 
-        var taken = new List<string>();
+        Assert.True(store.TryTake(out var nonce));
+        Assert.Equal(newer, nonce);
+        Assert.False(store.TryTake(out _));
+    }
 
-        while (store.TryTake(out var nonce))
-        {
-            taken.Add(nonce);
-        }
+    [Fact]
+    public void TryTake_ReturnsFalseWhenEmpty()
+    {
+        var store = new AcmeNonceStore();
 
-        Assert.Equal(32, taken.Count);
-        Assert.DoesNotContain(nonces[0], taken);
-        Assert.Contains(nonces[^1], taken);
+        Assert.False(store.TryTake(out var nonce));
+        Assert.Null(nonce);
     }
 }

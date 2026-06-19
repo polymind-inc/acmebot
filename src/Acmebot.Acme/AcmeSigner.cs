@@ -8,6 +8,9 @@ namespace Acmebot.Acme;
 
 public sealed class AcmeSigner : IDisposable
 {
+    // ECDsa/RSA instance members are not guaranteed to be thread-safe, and a single signer is shared
+    // across concurrent ACME operations, so access to the underlying key is serialized through this lock.
+    private readonly Lock _syncRoot = new();
     private readonly ECDsa? _ecdsa;
     private readonly RSA? _rsa;
     private readonly HashAlgorithmName _hashAlgorithm;
@@ -69,12 +72,15 @@ public sealed class AcmeSigner : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_ecdsa is not null)
+        lock (_syncRoot)
         {
-            return _ecdsa.SignData(data, _hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-        }
+            if (_ecdsa is not null)
+            {
+                return _ecdsa.SignData(data, _hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            }
 
-        return _rsa!.SignData(data, _hashAlgorithm, RSASignaturePadding.Pkcs1);
+            return _rsa!.SignData(data, _hashAlgorithm, RSASignaturePadding.Pkcs1);
+        }
     }
 
     public string GetThumbprint()
@@ -92,6 +98,14 @@ public sealed class AcmeSigner : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        lock (_syncRoot)
+        {
+            return ExportJsonWebKeyCore();
+        }
+    }
+
+    private AcmeJsonWebKey ExportJsonWebKeyCore()
+    {
         if (_ecdsa is not null)
         {
             var parameters = _ecdsa.ExportParameters(false);

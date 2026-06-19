@@ -1,15 +1,14 @@
 ﻿using System.Buffers.Text;
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Acmebot.Acme.Internal;
 
 internal sealed class AcmeNonceStore
 {
-    private const int MaxNonceCount = 32;
-
-    private readonly ConcurrentQueue<string> _nonces = new();
-    private readonly ConcurrentDictionary<string, byte> _nonceSet = new(StringComparer.Ordinal);
+    // ACME nonces are single-use and expire server-side, so only the most recently received one is
+    // worth keeping. Holding just the latest nonce guarantees a request always uses the freshest one
+    // and a badNonce retry naturally picks up the fresh nonce returned by the error response.
+    private string? _nonce;
 
     public void Add(string? nonce)
     {
@@ -18,34 +17,13 @@ internal sealed class AcmeNonceStore
             return;
         }
 
-        if (!_nonceSet.TryAdd(nonce, 0))
-        {
-            return;
-        }
-
-        _nonces.Enqueue(nonce);
-        Trim();
+        Interlocked.Exchange(ref _nonce, nonce);
     }
 
     public bool TryTake([NotNullWhen(true)] out string? nonce)
     {
-        while (_nonces.TryDequeue(out nonce))
-        {
-            if (_nonceSet.TryRemove(nonce, out _))
-            {
-                return true;
-            }
-        }
+        nonce = Interlocked.Exchange(ref _nonce, null);
 
-        nonce = null;
-        return false;
-    }
-
-    private void Trim()
-    {
-        while (_nonceSet.Count > MaxNonceCount && _nonces.TryDequeue(out var discardedNonce))
-        {
-            _nonceSet.TryRemove(discardedNonce, out _);
-        }
+        return nonce is not null;
     }
 }
