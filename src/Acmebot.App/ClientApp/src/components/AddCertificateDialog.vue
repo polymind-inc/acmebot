@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { CirclePlus, KeyRound, Plus, ShieldPlus, Tag, Trash2, X } from 'lucide-vue-next';
-import { toASCII } from 'punycode/';
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
+import { createDelegatedDnsAlias, readOptionalDnsAlias } from '@/utils/dnsNames';
 
+import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
+import ManagedDnsNameEditor from './ManagedDnsNameEditor.vue';
 import SearchableZoneSelect from './SearchableZoneSelect.vue';
 
 const props = defineProps<{
@@ -21,11 +23,6 @@ const emit = defineEmits<{
   'load-zones': [];
 }>();
 
-interface ValidationOutcome {
-  value: string;
-  message: string;
-}
-
 interface CertificateTagInput {
   id: number;
   key: string;
@@ -37,17 +34,37 @@ interface TagValidationOutcome {
   message: string;
 }
 
+const issueModeOptions = {
+  managed: {
+    editor: ManagedDnsNameEditor,
+    zoneLabel: 'DNS Zone',
+    zoneStepLabel: 'Zone',
+    emptyStatusLabel: 'Select zone',
+    showManualDnsAlias: true,
+    useSelectedZoneProvider: false,
+    useGeneratedDnsAlias: false,
+  },
+  delegated: {
+    editor: DelegatedDnsNameEditor,
+    zoneLabel: 'DNS Alias Zone',
+    zoneStepLabel: 'Alias zone',
+    emptyStatusLabel: 'Select alias zone',
+    showManualDnsAlias: false,
+    useSelectedZoneProvider: true,
+    useGeneratedDnsAlias: true,
+  },
+} as const;
+
+type IssueMode = keyof typeof issueModeOptions;
+
 const selectedZone = ref<SelectableDnsZone | null>(null);
-const validationErrors = reactive({
-  dnsName: '',
-});
 let certificateTagId = 0;
 
 const validKeySizes = [2048, 3072, 4096];
 const validKeyCurves: KeyCurveName[] = ['P-256', 'P-384', 'P-521', 'P-256K'];
 
 const form = reactive({
-  recordName: '',
+  issueMode: 'managed' as IssueMode,
   dnsNames: [] as string[],
   dnsProviderName: '',
   useAdvancedOptions: false,
@@ -60,21 +77,30 @@ const form = reactive({
   tags: [] as CertificateTagInput[],
 });
 
+const emptyValidation = { value: '', message: '' };
+const activeIssueMode = computed(() => issueModeOptions[form.issueMode]);
+const dnsNameEditorComponent = computed(() => activeIssueMode.value.editor);
 const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
-const dnsAliasValidation = computed(() => (form.useAdvancedOptions ? validateOptionalDnsAlias(form.dnsAlias) : { value: '', message: '' }));
+const dnsAliasValidation = computed(() => (form.useAdvancedOptions && activeIssueMode.value.showManualDnsAlias ? readOptionalDnsAlias(form.dnsAlias) : emptyValidation));
 const dnsAliasError = computed(() => dnsAliasValidation.value.message);
 const keyOptionError = computed(() => validateKeyOptions());
 const tagValidation = computed(() => (form.useAdvancedOptions ? validateTags(form.tags) : { tags: {}, message: '' }));
 const tagError = computed(() => tagValidation.value.message);
+const zoneLabel = computed(() => activeIssueMode.value.zoneLabel);
+const zoneStepLabel = computed(() => activeIssueMode.value.zoneStepLabel);
+const delegatedDnsAlias = computed(() => (activeIssueMode.value.useGeneratedDnsAlias && selectedZone.value ? createDelegatedDnsAlias(form.dnsNames, selectedZone.value) : ''));
 const submitValidationMessage = computed(() => {
   if (form.dnsNames.length === 0) {
     return 'Add at least one DNS name.';
   }
 
+  if (activeIssueMode.value.useGeneratedDnsAlias && !delegatedDnsAlias.value) {
+    return 'Select a DNS alias zone.';
+  }
+
   return certificateNameError.value || dnsAliasError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
-const fullDnsName = computed(() => (selectedZone.value ? validateRecordDnsName(form.recordName, selectedZone.value).value || null : null));
 const keySummary = computed(() => (form.keyType === 'RSA' ? `${form.keySize} bit RSA` : `${form.keyCurveName} EC`));
 const issueStatusLabel = computed(() => {
   if (form.dnsNames.length > 0) {
@@ -85,7 +111,7 @@ const issueStatusLabel = computed(() => {
     return 'Add DNS name';
   }
 
-  return 'Select zone';
+  return activeIssueMode.value.emptyStatusLabel;
 });
 const dnsNamesSummary = computed(() => {
   if (form.dnsNames.length === 0) {
@@ -115,6 +141,29 @@ watch(
 );
 
 watch(
+  () => form.issueMode,
+  () => {
+    form.dnsNames = [];
+    form.dnsProviderName = activeIssueMode.value.useSelectedZoneProvider && selectedZone.value ? selectedZone.value.dnsProviderName : '';
+
+    if (!activeIssueMode.value.showManualDnsAlias) {
+      form.dnsAlias = '';
+    }
+  },
+);
+
+watch(
+  selectedZone,
+  (zone) => {
+    if (activeIssueMode.value.useSelectedZoneProvider) {
+      form.dnsProviderName = zone?.dnsProviderName ?? '';
+    } else if (form.dnsNames.length === 0) {
+      form.dnsProviderName = '';
+    }
+  },
+);
+
+watch(
   () => form.useAdvancedOptions,
   (useAdvancedOptions) => {
     if (!useAdvancedOptions) {
@@ -131,8 +180,7 @@ watch(
 
 function resetForm(): void {
   selectedZone.value = null;
-  validationErrors.dnsName = '';
-  form.recordName = '';
+  form.issueMode = 'managed';
   form.dnsNames = [];
   form.dnsProviderName = '';
   form.useAdvancedOptions = false;
@@ -149,125 +197,22 @@ function createTagInput(): CertificateTagInput {
   return { id: ++certificateTagId, key: '', value: '' };
 }
 
-function normalizeRecordName(recordName: string): string {
-  return recordName.trim().replace(/\.+$/, '');
-}
-
-function toAsciiDnsName(value: string): string | null {
-  try {
-    return toASCII(value).toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
 function validateCertificateName(certificateName: string): string {
-  const normalizedCertificateName = certificateName.trim();
+  const trimmedCertificateName = certificateName.trim();
 
-  if (!normalizedCertificateName) {
+  if (!trimmedCertificateName) {
     return '';
   }
 
-  if (normalizedCertificateName.length > 127) {
+  if (trimmedCertificateName.length > 127) {
     return 'Certificate Name must be 127 characters or fewer.';
   }
 
-  if (!/^[0-9a-zA-Z-]+$/.test(normalizedCertificateName)) {
+  if (!/^[0-9a-zA-Z-]+$/.test(trimmedCertificateName)) {
     return 'Certificate Name can contain only letters, numbers, and hyphens.';
   }
 
   return '';
-}
-
-function validateDnsName(value: string, fieldLabel: string, allowWildcard: boolean): ValidationOutcome {
-  const normalizedInput = normalizeRecordName(value);
-
-  if (!normalizedInput) {
-    return { value: '', message: `${fieldLabel} is required.` };
-  }
-
-  const asciiName = toAsciiDnsName(normalizedInput);
-
-  if (!asciiName) {
-    return { value: '', message: `${fieldLabel} contains characters that cannot be converted to a DNS name.` };
-  }
-
-  if (asciiName.length > 253) {
-    return { value: '', message: `${fieldLabel} must be 253 characters or fewer.` };
-  }
-
-  const labels = asciiName.split('.');
-
-  if (labels.length < 2) {
-    return { value: '', message: `${fieldLabel} must include a domain suffix.` };
-  }
-
-  for (const [labelIndex, label] of labels.entries()) {
-    if (!label) {
-      return { value: '', message: `${fieldLabel} cannot contain empty DNS labels.` };
-    }
-
-    if (label.length > 63) {
-      return { value: '', message: 'Each DNS label must be 63 characters or fewer.' };
-    }
-
-    if (label === '*') {
-      if (!allowWildcard) {
-        return { value: '', message: `${fieldLabel} cannot be a wildcard.` };
-      }
-
-      if (labelIndex !== 0) {
-        return { value: '', message: 'A wildcard can only be the leftmost DNS label.' };
-      }
-
-      continue;
-    }
-
-    if (label.includes('*') || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) {
-      return { value: '', message: `${fieldLabel} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.` };
-    }
-  }
-
-  return { value: asciiName, message: '' };
-}
-
-function validateOptionalDnsAlias(dnsAlias: string): ValidationOutcome {
-  if (!dnsAlias.trim()) {
-    return { value: '', message: '' };
-  }
-
-  return validateDnsName(dnsAlias, 'DNS Alias', false);
-}
-
-function validateRecordDnsName(recordName: string, zone: SelectableDnsZone): ValidationOutcome {
-  const zoneValidation = validateDnsName(zone.name, 'DNS zone', false);
-
-  if (zoneValidation.message) {
-    return zoneValidation;
-  }
-
-  const normalizedRecordName = normalizeRecordName(recordName);
-  let candidateDnsName: string;
-
-  if (!normalizedRecordName || normalizedRecordName === '@') {
-    candidateDnsName = zoneValidation.value;
-  } else {
-    const asciiRecordName = toAsciiDnsName(normalizedRecordName);
-
-    if (!asciiRecordName) {
-      return { value: '', message: 'DNS Name contains characters that cannot be converted to a DNS name.' };
-    }
-
-    if (asciiRecordName === zoneValidation.value) {
-      candidateDnsName = zoneValidation.value;
-    } else if (asciiRecordName.endsWith(`.${zoneValidation.value}`)) {
-      candidateDnsName = asciiRecordName;
-    } else {
-      candidateDnsName = `${asciiRecordName}.${zoneValidation.value}`;
-    }
-  }
-
-  return validateDnsName(candidateDnsName, 'DNS Name', true);
 }
 
 function validateKeyOptions(): string {
@@ -302,13 +247,13 @@ function validateTags(items: CertificateTagInput[]): TagValidationOutcome {
       return { tags: {}, message: 'The Acmebot tag is managed by Acmebot.' };
     }
 
-    const normalizedKey = key.toLowerCase();
+    const tagKey = key.toLowerCase();
 
-    if (seenKeys.has(normalizedKey)) {
+    if (seenKeys.has(tagKey)) {
       return { tags: {}, message: 'Tag names must be unique.' };
     }
 
-    seenKeys.add(normalizedKey);
+    seenKeys.add(tagKey);
     tags[key] = value;
   }
 
@@ -327,52 +272,21 @@ function removeTag(id: number): void {
   form.tags = form.tags.filter((tag) => tag.id !== id);
 }
 
-function clearDnsNameError(): void {
-  validationErrors.dnsName = '';
-}
-
-function addDnsName(): void {
-  validationErrors.dnsName = '';
-
-  if (!selectedZone.value) {
-    validationErrors.dnsName = 'Select a DNS zone before adding a DNS name.';
-    return;
-  }
-
-  if (form.dnsProviderName && form.dnsProviderName !== selectedZone.value.dnsProviderName) {
-    validationErrors.dnsName = 'DNS names in one certificate must use the same DNS provider.';
-    return;
-  }
-
-  const dnsNameValidation = validateRecordDnsName(form.recordName, selectedZone.value);
-
-  if (dnsNameValidation.message) {
-    validationErrors.dnsName = dnsNameValidation.message;
-    return;
-  }
-
-  if (form.dnsNames.some((dnsName) => dnsName.toLowerCase() === dnsNameValidation.value)) {
-    validationErrors.dnsName = 'This DNS name is already in the certificate.';
-    return;
-  }
-
-  form.dnsNames.push(dnsNameValidation.value);
-  form.dnsProviderName = selectedZone.value.dnsProviderName;
-  form.recordName = '';
+function addDnsName(dnsName: string, dnsProviderName: string): void {
+  form.dnsNames.push(dnsName);
+  form.dnsProviderName = dnsProviderName;
 }
 
 function removeDnsName(dnsName: string): void {
   form.dnsNames = form.dnsNames.filter((candidate) => candidate !== dnsName);
 
   if (form.dnsNames.length === 0) {
-    form.dnsProviderName = '';
-    validationErrors.dnsName = '';
+    form.dnsProviderName = activeIssueMode.value.useSelectedZoneProvider && selectedZone.value ? selectedZone.value.dnsProviderName : '';
   }
 }
 
 function submit(): void {
   if (form.dnsNames.length === 0) {
-    validationErrors.dnsName = 'Add at least one DNS name before issuing the certificate.';
     return;
   }
 
@@ -380,16 +294,16 @@ function submit(): void {
     return;
   }
 
-  const normalizedCertificateName = form.useAdvancedOptions ? form.certificateName.trim() : '';
-  const normalizedDnsAlias = form.useAdvancedOptions ? dnsAliasValidation.value.value : '';
+  const certificateName = form.useAdvancedOptions ? form.certificateName.trim() : '';
+  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : dnsAliasValidation.value.value;
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
     dnsProviderName: form.dnsProviderName,
-    certificateName: normalizedCertificateName || undefined,
+    certificateName: certificateName || undefined,
     keyType: form.keyType,
     reuseKey: form.useAdvancedOptions ? form.reuseKey : false,
-    dnsAlias: normalizedDnsAlias || undefined,
+    dnsAlias: dnsAlias || undefined,
   };
 
   if (form.keyType === 'RSA') {
@@ -464,7 +378,7 @@ function submit(): void {
                 aria-hidden="true"
               />
               <div class="setup-step__body">
-                <span>Zone</span>
+                <span>{{ zoneStepLabel }}</span>
                 <strong>{{ selectedZone ? displayDnsName(selectedZone.name) : 'Not selected' }}</strong>
                 <small v-if="selectedZone">{{ selectedZone.dnsProviderName }}</small>
               </div>
@@ -515,7 +429,31 @@ function submit(): void {
 
           <div class="wizard-body">
             <div class="form-section">
-              <label class="form-label">DNS Zone</label>
+              <span class="form-label">Issue Mode</span>
+              <div
+                class="segmented-control issue-mode-control"
+                role="group"
+                aria-label="Issue mode"
+              >
+                <button
+                  type="button"
+                  :class="{ 'is-selected': form.issueMode === 'managed' }"
+                  @click="form.issueMode = 'managed'"
+                >
+                  Managed zone
+                </button>
+                <button
+                  type="button"
+                  :class="{ 'is-selected': form.issueMode === 'delegated' }"
+                  @click="form.issueMode = 'delegated'"
+                >
+                  Delegated DNS-01
+                </button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <label class="form-label">{{ zoneLabel }}</label>
               <SearchableZoneSelect
                 v-model:selected="selectedZone"
                 :groups="zones"
@@ -523,69 +461,14 @@ function submit(): void {
               />
             </div>
 
-            <div class="form-section">
-              <label
-                class="form-label"
-                for="record-name"
-              >DNS Name</label>
-              <div class="compound-input">
-                <input
-                  id="record-name"
-                  v-model="form.recordName"
-                  type="text"
-                  placeholder="@, www, api, *"
-                  :disabled="!selectedZone"
-                  :aria-invalid="validationErrors.dnsName ? 'true' : 'false'"
-                  @keydown.enter.prevent="addDnsName"
-                  @input="clearDnsNameError"
-                >
-                <span class="compound-input__suffix">.{{ selectedZone ? displayDnsName(selectedZone.name) : 'zone' }}</span>
-                <button
-                  class="icon-button"
-                  type="button"
-                  :disabled="!selectedZone"
-                  @click="addDnsName"
-                >
-                  <Plus
-                    :size="16"
-                    aria-hidden="true"
-                  />
-                  <span>Add</span>
-                </button>
-              </div>
-              <div
-                v-if="fullDnsName"
-                class="form-result"
-              >
-                <span>Full DNS name</span>
-                <strong>{{ displayDnsName(fullDnsName) }}</strong>
-              </div>
-              <p
-                v-if="validationErrors.dnsName"
-                class="form-error"
-              >
-                {{ validationErrors.dnsName }}
-              </p>
-              <div class="dns-list dns-list--editable">
-                <span
-                  v-for="dnsName in form.dnsNames"
-                  :key="dnsName"
-                  class="dns-chip dns-chip--removable"
-                >
-                  {{ displayDnsName(dnsName) }}
-                  <button
-                    type="button"
-                    title="Remove DNS name"
-                    @click="removeDnsName(dnsName)"
-                  >
-                    <Trash2
-                      :size="13"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </span>
-              </div>
-            </div>
+            <component
+              :is="dnsNameEditorComponent"
+              :selected-zone="selectedZone"
+              :dns-names="form.dnsNames"
+              :dns-provider-name="form.dnsProviderName"
+              @add-dns-name="addDnsName"
+              @remove-dns-name="removeDnsName"
+            />
 
             <div class="form-section form-section--inline">
               <label class="toggle-row">
@@ -659,6 +542,7 @@ function submit(): void {
               </label>
 
               <label
+                v-if="activeIssueMode.showManualDnsAlias"
                 class="form-field"
                 :class="{ 'is-invalid': dnsAliasError }"
               >

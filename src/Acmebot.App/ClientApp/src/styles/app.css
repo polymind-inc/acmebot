@@ -463,6 +463,14 @@ button:disabled {
   color: var(--color-accent);
 }
 
+.issue-mode-control {
+  width: 100%;
+}
+
+.issue-mode-control button {
+  flex: 1 1 0;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -1185,6 +1193,11 @@ button:disabled {
   padding: 0 10px;
 }
 
+.compound-input--plain input {
+  border-right: 1px solid var(--color-border);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
 .compound-input__suffix {
   min-height: 38px;
   max-width: 260px;
@@ -1226,6 +1239,46 @@ button:disabled {
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: 0.86rem;
+}
+
+.delegated-alias {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.cname-list {
+  display: grid;
+  gap: 6px;
+}
+
+.cname-row {
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.cname-row span,
+.cname-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.cname-row span {
+  color: var(--color-muted);
+  font-weight: 650;
+}
+
+.cname-row strong {
+  font-weight: 750;
 }
 
 .toggle-row {
@@ -1690,6 +1743,11 @@ button:disabled {
     max-width: none;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
+  }
+
+  .cname-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .advanced-grid,

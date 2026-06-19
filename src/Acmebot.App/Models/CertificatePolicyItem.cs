@@ -42,7 +42,7 @@ public class CertificatePolicyItem : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (DnsNames.Length == 0)
+        if (DnsNames is not { Length: > 0 })
         {
             yield return new ValidationResult($"The {nameof(DnsNames)} is required.", [nameof(DnsNames)]);
         }
@@ -52,6 +52,19 @@ public class CertificatePolicyItem : IValidatableObject
             yield return new ValidationResult($"The {nameof(DnsProviderName)} is required.", [nameof(DnsProviderName)]);
         }
 
+        foreach (var result in ValidateKeyOptions())
+        {
+            yield return result;
+        }
+
+        foreach (var result in ValidateTags())
+        {
+            yield return result;
+        }
+    }
+
+    private IEnumerable<ValidationResult> ValidateKeyOptions()
+    {
         if (KeyType == "RSA")
         {
             if (KeySize is not (2048 or 3072 or 4096))
@@ -66,30 +79,35 @@ public class CertificatePolicyItem : IValidatableObject
                 yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is EC.", [nameof(KeyCurveName)]);
             }
         }
+    }
 
-        if (Tags is not null)
+    private IEnumerable<ValidationResult> ValidateTags()
+    {
+        if (Tags is null)
         {
-            var tagNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            yield break;
+        }
 
-            foreach (var tag in Tags)
+        var tagNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var tag in Tags)
+        {
+            if (string.IsNullOrWhiteSpace(tag.Key))
             {
-                if (string.IsNullOrWhiteSpace(tag.Key))
-                {
-                    yield return new ValidationResult($"The {nameof(Tags)} contains an empty tag name.", [nameof(Tags)]);
-                    continue;
-                }
+                yield return new ValidationResult($"The {nameof(Tags)} contains an empty tag name.", [nameof(Tags)]);
+                continue;
+            }
 
-                var tagName = tag.Key.Trim();
+            var tagName = tag.Key.Trim();
 
-                if (string.Equals(tagName, "Acmebot", StringComparison.OrdinalIgnoreCase))
-                {
-                    yield return new ValidationResult($"The Acmebot tag is reserved for internal metadata.", [nameof(Tags)]);
-                }
+            if (string.Equals(tagName, "Acmebot", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return new ValidationResult($"The Acmebot tag is reserved for internal metadata.", [nameof(Tags)]);
+            }
 
-                if (!tagNames.Add(tagName))
-                {
-                    yield return new ValidationResult($"The {nameof(Tags)} contains duplicate tag names.", [nameof(Tags)]);
-                }
+            if (!tagNames.Add(tagName))
+            {
+                yield return new ValidationResult($"The {nameof(Tags)} contains duplicate tag names.", [nameof(Tags)]);
             }
         }
     }

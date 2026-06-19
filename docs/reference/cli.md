@@ -140,16 +140,18 @@ acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
 | --- | --- |
 | `--dns-name <value>` | DNS name to include in the certificate. Required and repeatable. Duplicate names are removed case-insensitively. |
 | `--name <value>` | Key Vault certificate name. If omitted, Acmebot derives the name from the first DNS name. Only letters, numbers, and hyphens are allowed. |
-| `--dns-provider <value>` | DNS provider display name, such as `Azure DNS` or `Cloudflare`. Required. |
+| `--dns-provider <value>` | DNS provider display name, such as `Azure DNS` or `Cloudflare`. Required. When `--dns-alias` is set, this provider must manage the DNS alias zone. |
 | `--key-type <type>` | Certificate key type. Valid values are `RSA` and `EC`. Defaults to `RSA`. |
 | `--key-size <size>` | RSA key size. Valid values are `2048`, `3072`, and `4096`. Defaults to `2048`. Valid only with `--key-type RSA`. |
 | `--key-curve <curve>` | EC key curve. Valid values are `P-256`, `P-384`, `P-521`, and `P-256K`. Defaults to `P-256`. Valid only with `--key-type EC`. |
 | `--reuse-key` | Reuse the existing Key Vault certificate key. |
-| `--dns-alias <value>` | DNS-01 validation alias. |
+| `--dns-alias <value>` | DNS-01 validation alias. Omit the `_acme-challenge` prefix. |
 | `--tag <name=value>` | Key Vault certificate tag. Repeatable. The `Acmebot` tag name is reserved. |
 | `--no-wait` | Return after the operation is accepted instead of polling until completion. |
 
 By default, `certificate issue` waits for the Durable Functions operation to complete and prints the operation instance ID. Use `--no-wait` for asynchronous scripts.
+
+For delegated DNS-01 validation, pass full certificate DNS names with `--dns-name`, pass a unique alias record with `--dns-alias`, and create CNAME records from `_acme-challenge.<dns-name>` to `_acme-challenge.<dns-alias>` before issuing.
 
 ### `certificate renew`
 

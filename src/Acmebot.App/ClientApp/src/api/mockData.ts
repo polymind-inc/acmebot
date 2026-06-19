@@ -154,7 +154,7 @@ let mockCertificates: CertificateItem[] = [
 const mockDnsZoneGroups: DnsZoneGroup[] = [
   {
     dnsProviderName: 'Azure DNS',
-    dnsZones: [{ name: 'example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }],
+    dnsZones: [{ name: 'example.com' }, { name: 'acme.example.com' }, { name: 'example.co.jp' }, { name: 'www.example.co.jp' }, { name: 'example.org' }, { name: 'fabrikam.net' }],
   },
   {
     dnsProviderName: 'Cloudflare',

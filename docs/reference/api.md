@@ -67,13 +67,15 @@ Accept: application/json
 | --- | --- | --- |
 | `certificateName` | No | Key Vault certificate name. If omitted, Acmebot derives it from the first DNS name. |
 | `dnsNames` | Yes | DNS names to include in the certificate. |
-| `dnsProviderName` | Yes | Provider display name, such as `Azure DNS` or `Cloudflare`. |
+| `dnsProviderName` | Yes | Provider display name, such as `Azure DNS` or `Cloudflare`. When `dnsAlias` is set, this provider must manage the DNS alias zone. |
 | `keyType` | Yes | `RSA` or `EC`. |
 | `keySize` | For RSA | `2048`, `3072`, or `4096`. |
 | `keyCurveName` | For EC | `P-256`, `P-384`, `P-521`, or `P-256K`. |
 | `reuseKey` | No | Whether Key Vault should reuse the certificate key. |
-| `dnsAlias` | No | Alternate domain used for DNS-01 validation. |
+| `dnsAlias` | No | Alternate domain used for DNS-01 validation. Acmebot writes TXT records at `_acme-challenge.<dnsAlias>`, so omit the `_acme-challenge` prefix from this value. |
 | `tags` | No | Custom Key Vault certificate tags. `Acmebot` is reserved. |
+
+For delegated DNS-01 validation, set `dnsNames` to the certificate names and set `dnsAlias` to a unique record in a zone Acmebot can update. For each DNS name, create a CNAME from `_acme-challenge.<dnsName>` to `_acme-challenge.<dnsAlias>` in the authoritative DNS provider for the certificate domain.
 
 ## List Certificates
 

@@ -48,9 +48,13 @@ The default is RSA 2048. Use EC only when the downstream service supports the se
 
 Certificate names can contain letters, numbers, and hyphens. If omitted, Acmebot derives a name from the first DNS name by replacing `*` with `wildcard` and dots with hyphens.
 
+### Delegated DNS-01
+
+Use the delegated DNS-01 issue mode when the DNS provider selected in Acmebot manages only the validation zone, not the certificate's public DNS zone. Enter full DNS names for the certificate, select the DNS alias zone that Acmebot can update, and create the displayed CNAME records in the authoritative DNS provider before submitting.
+
 ### DNS Alias
 
-Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then validates through `_acme-challenge.<dnsAlias>`. This is useful when you delegate validation to a separate zone; confirm the required CNAME or delegation exists before submitting.
+Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then writes TXT records at `_acme-challenge.<dnsAlias>` with the selected DNS provider. The alias value must not include the `_acme-challenge` prefix. In delegated DNS-01 mode, the dashboard generates a unique alias record in the selected alias zone and shows the CNAME records to create in the certificate domain's DNS provider.
 
 ### Tags
 
