@@ -111,7 +111,11 @@ public partial class AcmeOrderActivities(
             var certificatePolicy = certificatePolicyItem.ToCertificatePolicy();
             var tags = certificatePolicyItem.ToCertificateTags(_options.Endpoint);
 
-            var certificateOperation = await certificateClient.StartCreateCertificateAsync(certificatePolicyItem.CertificateName, certificatePolicy, tags: tags);
+            var certificateOperation = await certificateClient.StartCreateCertificateAsync(
+                certificatePolicyItem.CertificateName,
+                certificatePolicy,
+                tags: tags,
+                preserveCertificateOrder: true);
 
             csr = certificateOperation.Properties.Csr;
         }
@@ -163,7 +167,12 @@ public partial class AcmeOrderActivities(
 
         var mergeCertificateOptions = new MergeCertificateOptions(
             certificateName,
-            [x509Certificates.Export(X509ContentType.Pfx)]
+            // Key Vault exports the merged chain in reverse order, so submit it root-first to produce leaf-first PFX/PEM output.
+            x509Certificates
+                .Cast<X509Certificate2>()
+                .Reverse()
+                .Select(static certificate => certificate.RawData)
+                .ToArray()
         );
 
         var mergedCertificate = (await certificateClient.MergeCertificateAsync(mergeCertificateOptions)).Value;
