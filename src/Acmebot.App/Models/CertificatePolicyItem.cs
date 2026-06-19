@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -7,11 +6,8 @@ namespace Acmebot.App.Models;
 
 public partial class CertificatePolicyItem : IValidatableObject
 {
-    private static readonly IdnMapping s_idnMapping = new();
-
     [JsonPropertyName("certificateName")]
-    [RegularExpression("^[0-9A-Za-z-]{1,127}$")]
-    public string? CertificateName { get; set; }
+    public required string CertificateName { get; set; }
 
     [JsonPropertyName("dnsNames")]
     public required string[] DnsNames { get; set; }
@@ -51,6 +47,11 @@ public partial class CertificatePolicyItem : IValidatableObject
             yield return new ValidationResult($"The {nameof(DnsNames)} is required.", [nameof(DnsNames)]);
         }
 
+        foreach (var result in ValidateCertificateName())
+        {
+            yield return result;
+        }
+
         if (string.IsNullOrWhiteSpace(DnsProviderName))
         {
             yield return new ValidationResult($"The {nameof(DnsProviderName)} is required.", [nameof(DnsProviderName)]);
@@ -77,6 +78,23 @@ public partial class CertificatePolicyItem : IValidatableObject
         }
     }
 
+    private IEnumerable<ValidationResult> ValidateCertificateName()
+    {
+        if (string.IsNullOrWhiteSpace(CertificateName))
+        {
+            yield return new ValidationResult($"The {nameof(CertificateName)} is required.", [nameof(CertificateName)]);
+            yield break;
+        }
+
+        if (!CertificateNameRegex().IsMatch(CertificateName))
+        {
+            yield return new ValidationResult($"The {nameof(CertificateName)} must be 1 to 127 characters and contain only letters, numbers, and hyphens.", [nameof(CertificateName)]);
+        }
+    }
+
+    [GeneratedRegex("^[0-9A-Za-z-]{1,127}$")]
+    private static partial Regex CertificateNameRegex();
+
     private IEnumerable<ValidationResult> ValidateDnsNames()
     {
         if (DnsNames is not { Length: > 0 })
@@ -97,7 +115,7 @@ public partial class CertificatePolicyItem : IValidatableObject
 
     private IEnumerable<ValidationResult> ValidateDnsAlias()
     {
-        if (string.IsNullOrWhiteSpace(DnsAlias))
+        if (string.IsNullOrEmpty(DnsAlias))
         {
             yield break;
         }
@@ -110,23 +128,24 @@ public partial class CertificatePolicyItem : IValidatableObject
         }
     }
 
-    private static string? ValidateDnsName(string value, string fieldName, bool allowWildcard)
+    private static string? ValidateDnsName(string? value, string fieldName, bool allowWildcard)
     {
-        var input = value.Trim().TrimEnd('.');
-
-        if (input.Length == 0)
+        if (string.IsNullOrEmpty(value))
         {
             return $"The {fieldName} contains an empty DNS name.";
         }
 
-        var rawLabels = input.Split('.');
+        if (value.Length > 253)
+        {
+            return $"The {fieldName} must be 253 characters or fewer.";
+        }
+
+        var rawLabels = value.Split('.');
 
         if (rawLabels.Length < 2)
         {
             return $"The {fieldName} must include a domain suffix.";
         }
-
-        var asciiLabels = new string[rawLabels.Length];
 
         for (var labelIndex = 0; labelIndex < rawLabels.Length; labelIndex++)
         {
@@ -149,43 +168,25 @@ public partial class CertificatePolicyItem : IValidatableObject
                     return "A wildcard can only be the leftmost DNS label.";
                 }
 
-                asciiLabels[labelIndex] = rawLabel;
                 continue;
             }
 
-            string asciiLabel;
-
-            try
-            {
-                asciiLabel = s_idnMapping.GetAscii(rawLabel).ToLowerInvariant();
-            }
-            catch (ArgumentException)
-            {
-                return $"The {fieldName} contains characters that cannot be converted to a DNS name.";
-            }
-
-            if (asciiLabel.Length > 63)
+            if (rawLabel.Length > 63)
             {
                 return "Each DNS label must be 63 characters or fewer.";
             }
 
-            if (asciiLabel.Contains('*') || !DnsLabelRegex().IsMatch(asciiLabel))
+            if (rawLabel.Contains('*') || !DnsLabelRegex().IsMatch(rawLabel))
             {
-                return $"The {fieldName} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.";
+                return $"The {fieldName} must be an ASCII DNS name containing only letters, numbers, hyphens, dots, and a leftmost wildcard.";
             }
 
-            asciiLabels[labelIndex] = asciiLabel;
-        }
-
-        if (string.Join('.', asciiLabels).Length > 253)
-        {
-            return $"The {fieldName} must be 253 characters or fewer.";
         }
 
         return null;
     }
 
-    [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")]
+    [GeneratedRegex("^[0-9A-Za-z](?:[0-9A-Za-z-]{0,61}[0-9A-Za-z])?$")]
     private static partial Regex DnsLabelRegex();
 
     private IEnumerable<ValidationResult> ValidateKeyOptions()

@@ -37,7 +37,7 @@ export interface SelectableDnsZone extends DnsZoneItem {
 }
 
 export interface CertificatePolicyItem {
-  certificateName?: string;
+  certificateName: string;
   dnsNames: string[];
   dnsProviderName: string;
   keyType: KeyType;

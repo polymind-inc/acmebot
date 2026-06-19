@@ -21,6 +21,7 @@ public sealed class CertificatePolicyTests
             "owner=platform"
         ]));
 
+        Assert.Equal("example-com", policy.CertificateName);
         Assert.Equal(["example.com"], policy.DnsNames);
         Assert.Equal("Azure DNS", policy.DnsProviderName);
         Assert.Equal("RSA", policy.KeyType);
@@ -28,6 +29,59 @@ public sealed class CertificatePolicyTests
         Assert.Null(policy.KeyCurveName);
         Assert.NotNull(policy.Tags);
         Assert.Equal("platform", policy.Tags["owner"]);
+    }
+
+    [Fact]
+    public void Create_WithCertificateName_UsesProvidedName()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--name",
+            "custom-example",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS"
+        ]));
+
+        Assert.Equal("custom-example", policy.CertificateName);
+    }
+
+    [Fact]
+    public void Create_WithUnicodeDnsName_CanonicalizesDnsName()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "Café.Example.JP.",
+            "--dns-provider",
+            "Azure DNS"
+        ]));
+
+        Assert.Equal("xn--caf-dma-example-jp", policy.CertificateName);
+        Assert.Equal(["xn--caf-dma.example.jp"], policy.DnsNames);
+    }
+
+    [Fact]
+    public void Create_WithDnsAlias_CanonicalizesDnsAlias()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--dns-alias",
+            "Alias.Example.NET."
+        ]));
+
+        Assert.Equal("alias.example.net", policy.DnsAlias);
     }
 
     [Fact]
@@ -106,6 +160,22 @@ public sealed class CertificatePolicyTests
         ])));
 
         Assert.Equal("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_WithTooLongGeneratedCertificateName_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            $"{new string('a', 63)}.{new string('b', 63)}.example.com",
+            "--dns-provider",
+            "Azure DNS"
+        ])));
+
+        Assert.Equal("Generated certificate name must be 1 to 127 characters and contain only letters, numbers, and hyphens. Specify '--name' to use a shorter name.", ex.Message);
     }
 
     [Fact]

@@ -37,11 +37,6 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, Ap
             return ValidationProblem(ModelState);
         }
 
-        if (string.IsNullOrEmpty(certificatePolicyItem.CertificateName))
-        {
-            certificatePolicyItem.CertificateName = certificatePolicyItem.DnsNames[0].Replace("*", "wildcard").Replace(".", "-");
-        }
-
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
 

@@ -139,7 +139,7 @@ acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
 | Option | Description |
 | --- | --- |
 | `--dns-name <value>` | DNS name to include in the certificate. Required and repeatable. Duplicate names are removed case-insensitively. |
-| `--name <value>` | Key Vault certificate name. If omitted, Acmebot derives the name from the first DNS name. Only letters, numbers, and hyphens are allowed. |
+| `--name <value>` | Key Vault certificate name. If omitted, the CLI derives the name from the first DNS name before calling the API. Only letters, numbers, and hyphens are allowed. |
 | `--dns-provider <value>` | DNS provider display name, such as `Azure DNS` or `Cloudflare`. Required. When `--dns-alias` is set, this provider must manage the DNS alias zone. |
 | `--key-type <type>` | Certificate key type. Valid values are `RSA` and `EC`. Defaults to `RSA`. |
 | `--key-size <size>` | RSA key size. Valid values are `2048`, `3072`, and `4096`. Defaults to `2048`. Valid only with `--key-type RSA`. |

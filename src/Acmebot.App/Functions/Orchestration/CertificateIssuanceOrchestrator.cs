@@ -14,11 +14,6 @@ public partial class CertificateIssuanceOrchestrator
     {
         var logger = context.CreateReplaySafeLogger<CertificateIssuanceOrchestrator>();
 
-        if (string.IsNullOrEmpty(certificatePolicyItem.CertificateName))
-        {
-            return;
-        }
-
         LogCertificateIssuanceStarted(logger, certificatePolicyItem.CertificateName, string.Join(",", certificatePolicyItem.DnsNames));
 
         try

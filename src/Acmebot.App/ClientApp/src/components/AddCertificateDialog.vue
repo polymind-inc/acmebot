@@ -4,7 +4,7 @@ import { CirclePlus, KeyRound, Plus, ShieldPlus, Tag, Trash2, X } from 'lucide-v
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
-import { createDelegatedDnsAlias, validateOptionalDnsAlias } from '@/utils/dnsNames';
+import { createCertificateName, createDelegatedDnsAlias, validateOptionalDnsAlias } from '@/utils/dnsNames';
 
 import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
 import ManagedDnsNameEditor from './ManagedDnsNameEditor.vue';
@@ -79,7 +79,10 @@ const form = reactive({
 
 const activeIssueMode = computed(() => issueModeOptions[form.issueMode]);
 const dnsNameEditorComponent = computed(() => activeIssueMode.value.editor);
-const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
+const customCertificateName = computed(() => form.certificateName.trim());
+const defaultCertificateName = computed(() => (form.dnsNames.length > 0 ? createCertificateName(form.dnsNames[0]) : ''));
+const effectiveCertificateName = computed(() => (form.useAdvancedOptions && customCertificateName.value ? customCertificateName.value : defaultCertificateName.value));
+const certificateNameError = computed(() => (effectiveCertificateName.value ? validateCertificateName(effectiveCertificateName.value) : ''));
 const keyOptionError = computed(() => validateKeyOptions());
 const tagValidation = computed(() => (form.useAdvancedOptions ? validateTags(form.tags) : { tags: {}, message: '' }));
 const tagError = computed(() => tagValidation.value.message);
@@ -289,13 +292,12 @@ function submit(): void {
     return;
   }
 
-  const certificateName = form.useAdvancedOptions ? form.certificateName.trim() : '';
   const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : dnsAliasValidation.value.value;
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
     dnsProviderName: form.dnsProviderName,
-    certificateName: certificateName || undefined,
+    certificateName: effectiveCertificateName.value,
     keyType: form.keyType,
     reuseKey: form.useAdvancedOptions ? form.reuseKey : false,
     dnsAlias: dnsAlias || undefined,
@@ -487,7 +489,7 @@ function submit(): void {
                 <input
                   v-model="form.certificateName"
                   type="text"
-                  placeholder="Optional certificate name"
+                  placeholder="Defaults to first DNS name"
                   :aria-invalid="certificateNameError ? 'true' : 'false'"
                 >
                 <span

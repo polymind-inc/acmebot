@@ -5,7 +5,7 @@ namespace Acmebot.Cli;
 internal sealed class CertificatePolicyItem
 {
     [JsonPropertyName("certificateName")]
-    public string? CertificateName { get; set; }
+    public required string CertificateName { get; set; }
 
     [JsonPropertyName("dnsNames")]
     public required string[] DnsNames { get; set; }

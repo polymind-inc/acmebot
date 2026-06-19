@@ -46,7 +46,7 @@ The default is RSA 2048. Use EC only when the downstream service supports the se
 
 ### Certificate Name
 
-Certificate names can contain letters, numbers, and hyphens. If omitted, Acmebot derives a name from the first DNS name by replacing `*` with `wildcard` and dots with hyphens.
+Certificate names can contain letters, numbers, and hyphens. If omitted in the dashboard, the dashboard derives a name from the first DNS name by replacing `*` with `wildcard` and dots with hyphens before sending the request.
 
 ### Delegated DNS-01
 

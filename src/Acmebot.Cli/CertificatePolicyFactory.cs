@@ -5,6 +5,7 @@ namespace Acmebot.Cli;
 
 internal static partial class CertificatePolicyFactory
 {
+    private static readonly IdnMapping s_idnMapping = new();
     private static readonly HashSet<int> s_rsaKeySizes = [2048, 3072, 4096];
     private static readonly Dictionary<string, string> s_ecKeyCurves = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -17,8 +18,9 @@ internal static partial class CertificatePolicyFactory
     public static CertificatePolicyItem Create(CommandLine commandLine)
     {
         var dnsNames = commandLine.GetOptions("dns-name")
-            .Select(dnsName => dnsName.Trim())
-            .Where(dnsName => dnsName.Length > 0)
+            .Select(dnsName => NormalizeDnsNameOption(dnsName, "--dns-name"))
+            .Where(dnsName => dnsName is not null)
+            .Select(dnsName => dnsName!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
@@ -34,11 +36,14 @@ internal static partial class CertificatePolicyFactory
             throw new CliException("Option '--dns-provider' is required.");
         }
 
-        var certificateName = commandLine.GetOption("name");
+        var customCertificateName = NormalizeOptionalValue(commandLine.GetOption("name"));
+        var certificateName = customCertificateName ?? CreateCertificateName(dnsNames[0]);
 
-        if (certificateName is not null && !CertificateNameRegex().IsMatch(certificateName))
+        if (!CertificateNameRegex().IsMatch(certificateName))
         {
-            throw new CliException("Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.");
+            throw new CliException(customCertificateName is null
+                ? "Generated certificate name must be 1 to 127 characters and contain only letters, numbers, and hyphens. Specify '--name' to use a shorter name."
+                : "Option '--name' must be 1 to 127 characters and contain only letters, numbers, and hyphens.");
         }
 
         var keyType = commandLine.GetOption("key-type")?.ToUpperInvariant() ?? "RSA";
@@ -87,7 +92,7 @@ internal static partial class CertificatePolicyFactory
             KeySize = keySize,
             KeyCurveName = keyCurveName,
             ReuseKey = commandLine.HasOption("reuse-key") ? commandLine.GetFlag("reuse-key") : null,
-            DnsAlias = NormalizeOptionalValue(commandLine.GetOption("dns-alias")),
+            DnsAlias = NormalizeDnsNameOption(commandLine.GetOption("dns-alias"), "--dns-alias"),
             Tags = ParseTags(commandLine.GetOptions("tag"))
         };
     }
@@ -148,6 +153,46 @@ internal static partial class CertificatePolicyFactory
     }
 
     private static string? NormalizeOptionalValue(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? NormalizeDnsNameOption(string? value, string optionName)
+    {
+        var normalizedValue = NormalizeOptionalValue(value);
+
+        if (normalizedValue is null)
+        {
+            return null;
+        }
+
+        var dnsName = normalizedValue.TrimEnd('.');
+
+        if (dnsName.Length == 0)
+        {
+            throw new CliException($"Option '{optionName}' cannot be empty.");
+        }
+
+        var labels = dnsName.Split('.');
+
+        for (var index = 0; index < labels.Length; index++)
+        {
+            if (labels[index] == "*")
+            {
+                continue;
+            }
+
+            try
+            {
+                labels[index] = s_idnMapping.GetAscii(labels[index]).ToLowerInvariant();
+            }
+            catch (ArgumentException)
+            {
+                throw new CliException($"Option '{optionName}' contains characters that cannot be converted to a DNS name.");
+            }
+        }
+
+        return string.Join('.', labels);
+    }
+
+    private static string CreateCertificateName(string dnsName) => dnsName.Replace("*", "wildcard").Replace(".", "-");
 
     private static string? NormalizeEcKeyCurve(string? value)
     {

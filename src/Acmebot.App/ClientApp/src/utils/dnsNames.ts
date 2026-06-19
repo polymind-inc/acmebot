@@ -39,6 +39,10 @@ export function createManagedDnsName(recordName: string, zone: SelectableDnsZone
   return `${record}.${zoneName}`;
 }
 
+export function createCertificateName(dnsName: string): string {
+  return dnsName.replaceAll('*', 'wildcard').replaceAll('.', '-');
+}
+
 function validateDnsName(value: string, fieldLabel: string, allowWildcard: boolean): ValidationOutcome {
   const input = value.trim().replace(/\.+$/, '');
 
@@ -114,7 +118,7 @@ export function createDelegatedDnsAlias(dnsNames: string[], zone: SelectableDnsZ
     return '';
   }
 
-  const zoneName = zone.name.trim();
+  const zoneName = toAsciiDnsName(zone.name);
 
   if (!zoneName) {
     return '';

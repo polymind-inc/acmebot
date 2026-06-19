@@ -33,7 +33,7 @@ internal static class HelpText
         await writer.WriteLineAsync("  --timeout <seconds>                    Operation wait timeout. Default: 1800.");
         await writer.WriteLineAsync();
         await writer.WriteLineAsync("Certificate issue options:");
-        await writer.WriteLineAsync("  --name <value>                         Key Vault certificate name.");
+        await writer.WriteLineAsync("  --name <value>                         Key Vault certificate name. Defaults from first DNS name.");
         await writer.WriteLineAsync("  --dns-name <value>                     DNS name. Repeatable.");
         await writer.WriteLineAsync("  --dns-provider <value>                 DNS provider display name. Required.");
         await writer.WriteLineAsync("  --key-type <RSA|EC>                    Key type. Default: RSA.");
