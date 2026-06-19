@@ -1,3 +1,5 @@
+import { toASCII } from 'punycode/';
+
 import type { SelectableDnsZone } from '@/api/types';
 
 export interface ValidationOutcome {
@@ -11,24 +13,100 @@ export interface CnameInstruction {
 }
 
 export function readDnsNameInput(value: string, fieldLabel: string): ValidationOutcome {
-  const dnsName = value.trim();
+  return validateDnsName(value, fieldLabel, true);
+}
 
-  if (!dnsName) {
-    return { value: '', message: `${fieldLabel} is required.` };
+export function validateOptionalDnsAlias(dnsAlias: string): ValidationOutcome {
+  if (!dnsAlias.trim()) {
+    return { value: '', message: '' };
   }
 
-  return { value: dnsName, message: '' };
+  return validateDnsName(dnsAlias, 'DNS Alias', false);
 }
 
 export function createManagedDnsName(recordName: string, zone: SelectableDnsZone): string {
-  const record = recordName.trim();
-  const zoneName = zone.name.trim();
+  const zoneName = toAsciiDnsName(zone.name);
+  const record = toAsciiDnsName(recordName);
 
   if (!record || record === '@') {
     return zoneName;
   }
 
+  if (record === zoneName || record.endsWith(`.${zoneName}`)) {
+    return record;
+  }
+
   return `${record}.${zoneName}`;
+}
+
+function validateDnsName(value: string, fieldLabel: string, allowWildcard: boolean): ValidationOutcome {
+  const input = value.trim().replace(/\.+$/, '');
+
+  if (!input) {
+    return { value: '', message: `${fieldLabel} is required.` };
+  }
+
+  const asciiName = toAsciiOrNull(input);
+
+  if (asciiName === null) {
+    return { value: '', message: `${fieldLabel} contains characters that cannot be converted to a DNS name.` };
+  }
+
+  if (asciiName.length > 253) {
+    return { value: '', message: `${fieldLabel} must be 253 characters or fewer.` };
+  }
+
+  const labels = asciiName.split('.');
+
+  if (labels.length < 2) {
+    return { value: '', message: `${fieldLabel} must include a domain suffix.` };
+  }
+
+  for (const [labelIndex, label] of labels.entries()) {
+    if (!label) {
+      return { value: '', message: `${fieldLabel} cannot contain empty DNS labels.` };
+    }
+
+    if (label.length > 63) {
+      return { value: '', message: 'Each DNS label must be 63 characters or fewer.' };
+    }
+
+    if (label === '*') {
+      if (!allowWildcard) {
+        return { value: '', message: `${fieldLabel} cannot be a wildcard.` };
+      }
+
+      if (labelIndex !== 0) {
+        return { value: '', message: 'A wildcard can only be the leftmost DNS label.' };
+      }
+
+      continue;
+    }
+
+    if (label.includes('*') || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) {
+      return { value: '', message: `${fieldLabel} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.` };
+    }
+  }
+
+  return { value: asciiName, message: '' };
+}
+
+function toAsciiDnsName(value: string): string {
+  const normalized = value.trim().replace(/\.+$/, '');
+
+  try {
+    return toASCII(normalized).toLowerCase();
+  } catch {
+    return normalized.toLowerCase();
+  }
+}
+
+function toAsciiOrNull(value: string): string | null {
+  try {
+    return toASCII(value).toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 export function createDelegatedDnsAlias(dnsNames: string[], zone: SelectableDnsZone): string {
