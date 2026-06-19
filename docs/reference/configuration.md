@@ -185,11 +185,11 @@ TransIP signs requests with an Azure Key Vault key under `Acmebot__VaultBaseUrl`
 
 ## Dashboard Authorization Setting
 
-Issue and revoke operations can optionally require Microsoft Entra app roles.
+Issue, manual renewal, and revoke operations can optionally require Microsoft Entra app roles.
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `Acmebot__RequireAppRoles` | `false` | When `true`, issue operations require `Acmebot.IssueCertificate` and revoke operations require `Acmebot.RevokeCertificate`. |
+| `Acmebot__RequireAppRoles` | `false` | When `true`, issue and manual renewal operations require `Acmebot.IssueCertificate`, and revoke operations require `Acmebot.RevokeCertificate`. |
 
 This value is read at startup, so restart the Function App after changing it.
 

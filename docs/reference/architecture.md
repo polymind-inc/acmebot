@@ -40,14 +40,13 @@ The scheduled renewal timer runs daily and starts the renewal orchestrator.
 The orchestrator:
 
 1. Lists certificates in the configured Key Vault.
-2. Filters to certificates tagged as Acmebot-managed.
+2. Filters to enabled certificates tagged as Acmebot-managed.
 3. Filters to the current ACME endpoint.
-4. Uses ACME renewal information when available for the certificate.
-5. Falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
-6. Adds random jitter up to 600 seconds.
-7. Reissues each due certificate with its stored Key Vault policy.
+4. Uses ACME renewal information when available, selecting the next check from the CA's suggested window and `Retry-After` timing.
+5. Renews after the suggested window has started, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
+6. Reissues each due certificate with its stored Key Vault policy.
 
-Persistent DNS-related ACME validation errors can be retried by the renewal workflow. Other failures are logged and the orchestrator continues with the next due certificate.
+Automatic renewal failures put the certificate scheduler into a retrying state. The scheduler waits six hours, then evaluates that certificate again.
 
 ## State Storage
 
@@ -115,6 +114,6 @@ Monitor:
 
 - The Function App HTTP triggers use anonymous trigger authorization but application code requires an authenticated user.
 - Dashboard access should be enforced with App Service Authentication.
-- Optional app roles can restrict issue and revoke operations.
+- Optional app roles can restrict issue, manual renewal, and revoke operations.
 - Key Vault access is handled through Azure identity and RBAC.
 - DNS provider secrets are app settings and should be scoped and rotated like other operational credentials.

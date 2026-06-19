@@ -12,7 +12,7 @@ The HTTP triggers are configured with anonymous trigger authorization so App Ser
 
 ## App Roles
 
-By default, any authenticated dashboard user can issue and revoke certificates. To require app roles for sensitive operations, set:
+By default, any authenticated dashboard user can issue, manually renew, and revoke certificates. To require app roles for sensitive operations, set:
 
 ```text
 Acmebot__RequireAppRoles=true
@@ -33,7 +33,7 @@ Listing certificates and DNS zones still requires authentication.
 2. Assign the roles to users, groups, or service principals that should operate Acmebot.
 3. Set `Acmebot__RequireAppRoles=true` on the Function App.
 4. Restart the Function App so the new configuration value is applied.
-5. Confirm a caller without the role receives `403` for issue or revoke operations.
+5. Confirm a caller without the role receives `403` for issue, manual renewal, or revoke operations.
 
 ## Managed Identity
 

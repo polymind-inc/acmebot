@@ -14,7 +14,7 @@ The dashboard lists certificates from the configured Key Vault and marks each on
 - Managed by Acmebot but issued for another ACME endpoint.
 - Not managed by Acmebot.
 
-Only certificates with Acmebot metadata for the current endpoint are selected for scheduled renewal.
+Only enabled certificates with Acmebot metadata for the current endpoint are selected for scheduled renewal.
 
 ## DNS Zone List
 
@@ -64,7 +64,7 @@ Custom tags are written to the Key Vault certificate. The `Acmebot` tag is reser
 
 Manual renewal reuses the existing Key Vault certificate policy and starts a new issuance orchestration. Use it to rotate a certificate before its scheduled renewal window.
 
-Scheduled renewals run daily and add a random delay of up to 600 seconds before processing due certificates.
+Scheduled renewals run daily. Certificates with ACME renewal information use the CA's suggested window and `Retry-After` timing; certificates without renewal information use the configured fallback threshold.
 
 ## Revoke a Certificate
 

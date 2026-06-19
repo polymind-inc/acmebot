@@ -186,7 +186,7 @@ const zoneGroups = computed<ZoneGroup[]>(() => {
     }
   }
 
-  return groups;
+  return groups.toSorted((left, right) => left.zoneName.localeCompare(right.zoneName));
 });
 
 const allZoneGroupsCollapsed = computed(() => zoneGroups.value.length > 0 && zoneGroups.value.every((group) => collapsedZones.value.has(group.zoneName)));

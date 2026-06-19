@@ -2,7 +2,7 @@
 
 ## How does automatic renewal work?
 
-The `RenewCertificates` timer runs daily for enabled managed certificates. When ACME renewal information is available, Acmebot renews after the CA reports that the renewal window has opened. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
+The `RenewCertificates` timer runs daily for enabled managed certificates. When ACME renewal information is available, Acmebot uses the CA's suggested renewal window and `Retry-After` timing to decide the next check, then renews after the suggested window has started. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
 
 ```text
 Acmebot__RenewBeforeExpiry=30

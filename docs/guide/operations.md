@@ -4,12 +4,15 @@ This page covers day-to-day operation after Acmebot has been deployed.
 
 ## Scheduled Renewal
 
-The `RenewCertificates` timer runs once per day. It lists Key Vault certificates and selects those that:
+The `RenewCertificates` timer runs once per day. It lists Key Vault certificates and starts renewal schedulers for certificates that:
 
+- Are enabled.
 - Are tagged as issued by Acmebot.
 - Match the currently configured ACME endpoint.
-- Are inside the ACME renewal information window, when renewal information is available for the certificate.
-- Have no more than `Acmebot__RenewBeforeExpiry` percent of their lifetime remaining (used when renewal information is unavailable for the certificate).
+
+When ACME renewal information is available, Acmebot follows the certificate authority's `suggestedWindow` when choosing the next check. It selects a random time inside that window, but checks renewal information again first when `Retry-After` is earlier. When a scheduler evaluation runs after the suggested window starts, Acmebot renews the certificate.
+
+When renewal information is unavailable for a certificate, Acmebot falls back to `Acmebot__RenewBeforeExpiry`.
 
 The default fallback renewal threshold is 30% of the certificate lifetime:
 
@@ -19,9 +22,9 @@ Acmebot__RenewBeforeExpiry=30
 
 For example, a 90-day certificate is renewed when about 27 days remain. Use a larger value when downstream distribution takes longer or your organization requires a longer safety margin.
 
-## Renewal Jitter
+No separate pre-processing delay is added before due certificates are renewed.
 
-Before processing due certificates, the renewal orchestrator waits for a random delay of up to 600 seconds. This reduces simultaneous renewal starts across deployments.
+If automatic renewal fails, the certificate scheduler records a retrying state and checks again after six hours.
 
 ## Durable Functions History
 
@@ -79,7 +82,7 @@ The most frequent operational issues are:
 - **Name server precondition fails**: the domain is not delegated to the provider's name servers.
 - **TXT record is not found**: propagation is slow, or the validation design requires an internal resolver (`Acmebot__UseSystemNameServer=true`).
 - **ACME order becomes invalid**: review the ACME problem details; persistent configuration errors require a new operation after the DNS issue is fixed.
-- **Certificate is not renewed**: the certificate lacks Acmebot metadata, was issued for a different endpoint, is outside the renewal window, or is not readable by the Function App identity.
+- **Certificate is not renewed**: the certificate is disabled, lacks Acmebot metadata, was issued for a different endpoint, is outside the renewal window, or is not readable by the Function App identity.
 - **Endpoint still serves the old certificate**: the certificate is current in Key Vault, but the consuming Azure service has not synced it.
 
 See [Troubleshooting](./troubleshooting) for the full decision tree, and [Azure Service Integration](./service-integration) for downstream sync behavior.

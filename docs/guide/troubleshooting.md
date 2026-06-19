@@ -66,7 +66,7 @@ What to verify:
 Typical symptoms:
 
 - The dashboard or an API call returns `401`.
-- A signed-in caller can list data but cannot issue or revoke certificates.
+- A signed-in caller can list data but cannot issue, manually renew, or revoke certificates.
 - Azure CLI token acquisition fails with `AADSTS65001` or `consent_required`.
 
 What to verify:
@@ -74,7 +74,7 @@ What to verify:
 - App Service Authentication is configured for the Function App.
 - Requests reach the app with an authenticated principal.
 - Microsoft Entra ID uses the intended tenant and application registration.
-- When `Acmebot__RequireAppRoles=true`, the token contains `Acmebot.IssueCertificate` or `Acmebot.RevokeCertificate`.
+- When `Acmebot__RequireAppRoles=true`, the token contains `Acmebot.IssueCertificate` for issue or manual renewal operations, or `Acmebot.RevokeCertificate` for revoke operations.
 - For Azure CLI-backed automation, the application registration used by App Service Authentication exposes a `user_impersonation` scope and pre-authorizes the Microsoft Azure CLI client ID `04b07795-8ddb-461a-bbee-02f9e1bf7b46`.
 
 The HTTP triggers use anonymous trigger authorization so App Service Authentication can populate the user identity before application code runs. A Functions host key alone does not satisfy the authenticated-user requirement for the v5 dashboard and API. See [Security](../reference/security) for the authorization model.
@@ -87,6 +87,7 @@ Typical causes:
 
 - The certificate was not issued by Acmebot, or no longer has Acmebot metadata.
 - The certificate was issued against a different ACME endpoint than the configured one.
+- The certificate is disabled.
 - The certificate is not inside the renewal window.
 - The timer host is stopped or the Function App is unhealthy.
 - DNS or Key Vault permissions changed after first issuance.

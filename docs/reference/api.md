@@ -26,6 +26,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 | `POST` | `/api/certificates/{certificateName}/renew` | Start manual renewal. |
 | `POST` | `/api/certificates/{certificateName}/revoke` | Revoke a certificate through the ACME certificate authority. |
 | `GET` | `/api/dns-zones` | List DNS zones from configured providers. |
+| `GET` | `/api/renewals` | List automatic renewal status for certificates. |
 | `GET` | `/api/operations/{instanceId}` | Poll an issuance or renewal operation. |
 
 ## Operation Lifecycle
@@ -125,6 +126,28 @@ Accept: application/json
     "dnsZones": [
       { "name": "example.com" }
     ]
+  }
+]
+```
+
+## List Renewal Status
+
+```http
+GET /api/renewals
+Accept: application/json
+```
+
+Returns automatic renewal status for certificates visible to Acmebot.
+
+```json
+[
+  {
+    "certificateName": "wildcard-example-com",
+    "status": "Scheduled",
+    "statusKind": "scheduled",
+    "message": "Renewal is scheduled within the certificate authority's suggested renewal window.",
+    "nextCheck": "2026-06-20T00:00:00+00:00",
+    "lastCheckedAt": "2026-06-19T00:00:00+00:00"
   }
 ]
 ```

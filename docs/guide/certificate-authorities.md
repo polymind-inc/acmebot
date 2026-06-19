@@ -85,7 +85,7 @@ Acmebot tags each certificate with the endpoint that issued it and renews only c
 
 ## Renewal Behavior
 
-During scheduled renewal, Acmebot checks each managed certificate in Key Vault. When the ACME directory supports renewal information, it uses the server-provided renewal window; otherwise it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent. See [Operations](./operations) for the full renewal schedule.
+During scheduled renewal, Acmebot checks each enabled managed certificate in Key Vault. When the ACME directory supports renewal information, it uses the server-provided `suggestedWindow` and `Retry-After` timing; otherwise it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent. See [Operations](./operations) for the full renewal schedule.
 
 ## CA Selection Guidance
 

@@ -54,7 +54,7 @@ When possible, store provider secrets in Key Vault and reference them from Funct
 
 The dashboard and HTTP API require authenticated requests. Configure App Service Authentication on the Function App and require sign-in before requests reach the app. A typical setup uses Microsoft Entra ID as the identity provider.
 
-After authentication is enabled, browse to the Function App URL and sign in. To require app roles for issue and revoke operations, see [Security](../reference/security).
+After authentication is enabled, browse to the Function App URL and sign in. To require app roles for issue, manual renewal, and revoke operations, see [Security](../reference/security).
 
 ## 5. Issue Your First Certificate
 
@@ -80,7 +80,7 @@ After the operation completes:
 
 ## 7. Let Renewals Run
 
-The `RenewCertificates` timer runs daily. When ACME renewal information is available for a certificate, Acmebot renews after the suggested renewal window starts. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30).
+The `RenewCertificates` timer runs daily. When ACME renewal information is available for a certificate, Acmebot evaluates the certificate authority's suggested renewal window and `Retry-After` timing before renewing. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30).
 
 See [Operations](./operations) for monitoring and troubleshooting guidance.
 
