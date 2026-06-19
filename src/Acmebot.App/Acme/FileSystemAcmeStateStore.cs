@@ -64,14 +64,12 @@ internal sealed class FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
 
     private static void TryDeleteFile(string path)
     {
+        // Best-effort cleanup of the temp file; never let a cleanup failure mask the original error.
         try
         {
             File.Delete(path);
         }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
+        catch
         {
         }
     }

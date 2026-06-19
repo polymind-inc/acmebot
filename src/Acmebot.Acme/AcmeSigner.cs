@@ -70,10 +70,10 @@ public sealed class AcmeSigner : IDisposable
 
     public byte[] SignData(ReadOnlySpan<byte> data)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         lock (_syncRoot)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_ecdsa is not null)
             {
                 return _ecdsa.SignData(data, _hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
@@ -85,8 +85,6 @@ public sealed class AcmeSigner : IDisposable
 
     public string GetThumbprint()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         var jwk = ExportJsonWebKey();
         var jsonBytes = Encoding.UTF8.GetBytes(jwk.ToThumbprintJson());
         var hash = SHA256.HashData(jsonBytes);
@@ -96,10 +94,10 @@ public sealed class AcmeSigner : IDisposable
 
     internal AcmeJsonWebKey ExportJsonWebKey()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         lock (_syncRoot)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             return ExportJsonWebKeyCore();
         }
     }
@@ -139,17 +137,22 @@ public sealed class AcmeSigner : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        // Hold the same lock as the key operations so disposal cannot race with an in-progress
+        // SignData/ExportJsonWebKey call and dispose the key out from under it.
+        lock (_syncRoot)
         {
-            return;
-        }
+            if (_disposed)
+            {
+                return;
+            }
 
-        _disposed = true;
+            _disposed = true;
 
-        if (_ownsKey)
-        {
-            _ecdsa?.Dispose();
-            _rsa?.Dispose();
+            if (_ownsKey)
+            {
+                _ecdsa?.Dispose();
+                _rsa?.Dispose();
+            }
         }
     }
 
