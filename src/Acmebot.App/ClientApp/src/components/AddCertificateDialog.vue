@@ -4,7 +4,7 @@ import { CirclePlus, KeyRound, Plus, ShieldPlus, Tag, Trash2, X } from 'lucide-v
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
-import { createDelegatedDnsAlias, readOptionalDnsAlias } from '@/utils/dnsNames';
+import { createDelegatedDnsAlias } from '@/utils/dnsNames';
 
 import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
 import ManagedDnsNameEditor from './ManagedDnsNameEditor.vue';
@@ -77,12 +77,9 @@ const form = reactive({
   tags: [] as CertificateTagInput[],
 });
 
-const emptyValidation = { value: '', message: '' };
 const activeIssueMode = computed(() => issueModeOptions[form.issueMode]);
 const dnsNameEditorComponent = computed(() => activeIssueMode.value.editor);
 const certificateNameError = computed(() => (form.useAdvancedOptions ? validateCertificateName(form.certificateName) : ''));
-const dnsAliasValidation = computed(() => (form.useAdvancedOptions && activeIssueMode.value.showManualDnsAlias ? readOptionalDnsAlias(form.dnsAlias) : emptyValidation));
-const dnsAliasError = computed(() => dnsAliasValidation.value.message);
 const keyOptionError = computed(() => validateKeyOptions());
 const tagValidation = computed(() => (form.useAdvancedOptions ? validateTags(form.tags) : { tags: {}, message: '' }));
 const tagError = computed(() => tagValidation.value.message);
@@ -94,11 +91,7 @@ const submitValidationMessage = computed(() => {
     return 'Add at least one DNS name.';
   }
 
-  if (activeIssueMode.value.useGeneratedDnsAlias && !delegatedDnsAlias.value) {
-    return 'Select a DNS alias zone.';
-  }
-
-  return certificateNameError.value || dnsAliasError.value || keyOptionError.value || tagError.value;
+  return certificateNameError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
 const keySummary = computed(() => (form.keyType === 'RSA' ? `${form.keySize} bit RSA` : `${form.keyCurveName} EC`));
@@ -295,7 +288,7 @@ function submit(): void {
   }
 
   const certificateName = form.useAdvancedOptions ? form.certificateName.trim() : '';
-  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : dnsAliasValidation.value.value;
+  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : form.dnsAlias;
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
@@ -544,19 +537,13 @@ function submit(): void {
               <label
                 v-if="activeIssueMode.showManualDnsAlias"
                 class="form-field"
-                :class="{ 'is-invalid': dnsAliasError }"
               >
                 <span class="form-label">DNS Alias</span>
                 <input
                   v-model="form.dnsAlias"
                   type="text"
                   placeholder="alias.example.com"
-                  :aria-invalid="dnsAliasError ? 'true' : 'false'"
                 >
-                <span
-                  v-if="dnsAliasError"
-                  class="form-error"
-                >{{ dnsAliasError }}</span>
               </label>
 
               <label class="toggle-row advanced-grid__toggle">

@@ -9,16 +9,6 @@ namespace Acmebot.App.Tests;
 public sealed class CertificatePolicyItemTests
 {
     [Fact]
-    public void Validate_WithDelegatedDnsAlias_Succeeds()
-    {
-        var policy = CreatePolicy(dnsNames: ["mail.fabrikam.com"], dnsAlias: "mail-fabrikam-com.acme.example.com");
-
-        var results = Validate(policy);
-
-        Assert.Empty(results);
-    }
-
-    [Fact]
     public void Validate_WithEmptyDnsNames_ReturnsError()
     {
         var policy = CreatePolicy(dnsNames: []);

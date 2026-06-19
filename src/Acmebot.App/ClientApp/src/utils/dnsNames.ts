@@ -20,10 +20,6 @@ export function readDnsNameInput(value: string, fieldLabel: string): ValidationO
   return { value: dnsName, message: '' };
 }
 
-export function readOptionalDnsAlias(dnsAlias: string): ValidationOutcome {
-  return { value: dnsAlias.trim(), message: '' };
-}
-
 export function createManagedDnsName(recordName: string, zone: SelectableDnsZone): string {
   const record = recordName.trim();
   const zoneName = zone.name.trim();
