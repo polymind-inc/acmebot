@@ -88,7 +88,11 @@ function validateDnsName(value: string, fieldLabel: string, allowWildcard: boole
     }
 
     if (label.includes('*') || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) {
-      return { value: '', message: `${fieldLabel} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.` };
+      const message = allowWildcard
+        ? `${fieldLabel} can contain only letters, numbers, hyphens, dots, and a leftmost wildcard.`
+        : `${fieldLabel} can contain only letters, numbers, hyphens, and dots.`;
+
+      return { value: '', message };
     }
   }
 

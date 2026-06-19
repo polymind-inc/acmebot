@@ -178,7 +178,9 @@ public partial class CertificatePolicyItem : IValidatableObject
 
             if (rawLabel.Contains('*') || !DnsLabelRegex().IsMatch(rawLabel))
             {
-                return $"The {fieldName} must be an ASCII DNS name containing only letters, numbers, hyphens, dots, and a leftmost wildcard.";
+                return allowWildcard
+                    ? $"The {fieldName} must be an ASCII DNS name containing only letters, numbers, hyphens, dots, and a leftmost wildcard."
+                    : $"The {fieldName} must be an ASCII DNS name containing only letters, numbers, hyphens, and dots.";
             }
 
         }

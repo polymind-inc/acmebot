@@ -18,7 +18,7 @@ internal static partial class CertificatePolicyFactory
     public static CertificatePolicyItem Create(CommandLine commandLine)
     {
         var dnsNames = commandLine.GetOptions("dns-name")
-            .Select(dnsName => NormalizeDnsNameOption(dnsName, "--dns-name"))
+            .Select(dnsName => NormalizeDnsNameOption(dnsName, "--dns-name", allowWildcard: true))
             .Where(dnsName => dnsName is not null)
             .Select(dnsName => dnsName!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -92,7 +92,7 @@ internal static partial class CertificatePolicyFactory
             KeySize = keySize,
             KeyCurveName = keyCurveName,
             ReuseKey = commandLine.HasOption("reuse-key") ? commandLine.GetFlag("reuse-key") : null,
-            DnsAlias = NormalizeDnsNameOption(commandLine.GetOption("dns-alias"), "--dns-alias"),
+            DnsAlias = NormalizeDnsNameOption(commandLine.GetOption("dns-alias"), "--dns-alias", allowWildcard: false),
             Tags = ParseTags(commandLine.GetOptions("tag"))
         };
     }
@@ -154,7 +154,7 @@ internal static partial class CertificatePolicyFactory
 
     private static string? NormalizeOptionalValue(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static string? NormalizeDnsNameOption(string? value, string optionName)
+    private static string? NormalizeDnsNameOption(string? value, string optionName, bool allowWildcard)
     {
         var normalizedValue = NormalizeOptionalValue(value);
 
@@ -176,6 +176,16 @@ internal static partial class CertificatePolicyFactory
         {
             if (labels[index] == "*")
             {
+                if (!allowWildcard)
+                {
+                    throw new CliException($"Option '{optionName}' cannot be a wildcard.");
+                }
+
+                if (index != 0)
+                {
+                    throw new CliException("A wildcard can only be the leftmost DNS label.");
+                }
+
                 continue;
             }
 

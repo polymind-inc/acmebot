@@ -114,7 +114,7 @@ public sealed class CertificatePolicyItemTests
 
         var result = Assert.Single(Validate(policy));
 
-        Assert.Equal("The DnsAlias must be an ASCII DNS name containing only letters, numbers, hyphens, dots, and a leftmost wildcard.", result.ErrorMessage);
+        Assert.Equal("The DnsAlias must be an ASCII DNS name containing only letters, numbers, hyphens, and dots.", result.ErrorMessage);
     }
 
     [Fact]

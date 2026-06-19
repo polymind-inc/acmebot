@@ -85,6 +85,40 @@ public sealed class CertificatePolicyTests
     }
 
     [Fact]
+    public void Create_WithWildcardDnsAlias_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--dns-alias",
+            "*.example.net"
+        ])));
+
+        Assert.Equal("Option '--dns-alias' cannot be a wildcard.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_WithNonLeftmostWildcardDnsName_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "sub.*.example.com",
+            "--dns-provider",
+            "Azure DNS"
+        ])));
+
+        Assert.Equal("A wildcard can only be the leftmost DNS label.", ex.Message);
+    }
+
+    [Fact]
     public void Create_WithEcDefaultsToP256()
     {
         var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
