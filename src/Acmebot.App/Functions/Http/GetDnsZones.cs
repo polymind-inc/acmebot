@@ -18,7 +18,7 @@ public partial class GetDnsZones(
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/dns-zones")] HttpRequest req)
     {
-        if (!User.Identity?.IsAuthenticated ?? false)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

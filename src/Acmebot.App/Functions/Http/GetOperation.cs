@@ -16,7 +16,7 @@ public partial class GetOperation(IHttpContextAccessor httpContextAccessor, ILog
         string instanceId,
         [DurableClient] DurableTaskClient starter)
     {
-        if (!User.Identity?.IsAuthenticated ?? false)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

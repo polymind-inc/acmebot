@@ -22,7 +22,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, Ap
         [FromBody] CertificatePolicyItem certificatePolicyItem,
         [DurableClient] DurableTaskClient starter)
     {
-        if (!User.Identity?.IsAuthenticated ?? false)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }
