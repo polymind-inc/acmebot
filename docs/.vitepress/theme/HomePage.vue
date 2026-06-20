@@ -30,7 +30,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <span class="hero-stat-label">DNS provider integrations</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat-value">7+</span>
+            <span class="hero-stat-value">9+</span>
             <span class="hero-stat-label">Azure service integrations</span>
           </div>
         </div>
@@ -157,6 +157,20 @@ function scrollToSection(event: MouseEvent, selector: string) {
             </div>
             <span>API Management</span>
             <small>Custom domains</small>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">
+              <img src="/images/azure-web-pubsub.svg" alt="Azure Web PubSub" width="36" height="36">
+            </div>
+            <span>Web PubSub</span>
+            <small>Premium tier</small>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">
+              <img src="/images/azure-event-grid.svg" alt="Azure Event Grid Namespaces" width="36" height="36">
+            </div>
+            <span>Event Grid Namespaces</span>
+            <small>HTTP / MQTT custom domains</small>
           </div>
           <div class="service-card">
             <div class="service-icon">
@@ -657,48 +671,55 @@ function scrollToSection(event: MouseEvent, selector: string) {
 }
 
 .services-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .service-card {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  text-align: center;
-  padding: 28px 20px;
+  column-gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);  width: calc(25% - 15px);
-  min-width: 200px;
+  border-radius: var(--radius);
+  min-width: 0;
+  min-height: 76px;
 }
 
 .service-icon {
-  width: 48px;
-  height: 48px;
+  grid-row: 1 / span 2;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary);
-  margin-bottom: 12px;
+  margin: 0;
 }
 
 .service-icon svg,
 .service-icon img {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
 }
 
 .service-card span {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.25;
 }
 
 .service-card small {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
-  margin-top: 4px;
+  line-height: 1.35;
+  margin-top: 2px;
 }
 
 .providers-grid {
@@ -1072,12 +1093,8 @@ function scrollToSection(event: MouseEvent, selector: string) {
   }
 
   .services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-  }
-
-  .service-card {
-    width: calc(50% - 6px);
-    min-width: 0;
   }
 
   .deploy-grid {
@@ -1133,7 +1150,12 @@ function scrollToSection(event: MouseEvent, selector: string) {
   }
 
   .service-card {
-    width: 100%;
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
   }
 
   .features-grid,

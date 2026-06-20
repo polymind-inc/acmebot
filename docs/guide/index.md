@@ -71,6 +71,8 @@ Certificates live in Key Vault, so Azure services that consume a Key Vault certi
 - Azure Front Door Standard and Premium.
 - Azure Application Gateway v2.
 - Azure API Management.
+- Azure Web PubSub Premium.
+- Azure Event Grid Namespaces.
 - Azure SignalR Service Premium.
 - Virtual Machines and other workloads that can read certificates from Key Vault.
 

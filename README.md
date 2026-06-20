@@ -4,7 +4,7 @@
 <p align="center">
   ACME SSL/TLS certificate automation for Microsoft Azure, built around DNS-01 validation and Azure Key Vault
   <br>
-  (App Service / Container Apps / Application Gateway / Front Door / others)
+  (App Service / Container Apps / Application Gateway / Front Door / Web PubSub / Event Grid / others)
 </p>
 <p align="center">
   <a href="https://github.com/polymind-inc/acmebot/actions/workflows/build.yml" rel="nofollow"><img src="https://github.com/polymind-inc/acmebot/workflows/Build/badge.svg" alt="Build" style="max-width: 100%;"></a>
@@ -48,6 +48,8 @@ Acmebot is designed for teams that need to:
   - Front Door (Standard / Premium)
   - Application Gateway v2
   - API Management
+  - Azure Web PubSub (Premium)
+  - Azure Event Grid Namespaces
   - SignalR Service (Premium)
   - Virtual Machine
 

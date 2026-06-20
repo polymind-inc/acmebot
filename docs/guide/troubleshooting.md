@@ -118,7 +118,7 @@ If Key Vault has the new certificate version, ACME issuance succeeded. Continue 
 - App Service: confirm the imported Key Vault certificate's sync state and binding.
 - Front Door: confirm the secret uses `Latest` rather than a pinned version.
 - Application Gateway: confirm it references a versionless Key Vault secret and can access Key Vault.
-- API Management, SignalR, Container Apps, and VM workloads: verify their service-specific import or sync behavior.
+- API Management, Web PubSub, Event Grid Namespaces, SignalR, Container Apps, and VM workloads: verify their service-specific import or sync behavior.
 
 See [Azure Service Integration](./service-integration).
 
