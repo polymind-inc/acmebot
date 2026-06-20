@@ -23,7 +23,7 @@ public partial class RenewCertificate(
         string certificateName,
         [DurableClient] DurableTaskClient starter)
     {
-        if (!User.Identity?.IsAuthenticated ?? false)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

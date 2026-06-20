@@ -18,7 +18,7 @@ public partial class GetCertificates(
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/certificates")] HttpRequest req)
     {
-        if (!User.Identity?.IsAuthenticated ?? false)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

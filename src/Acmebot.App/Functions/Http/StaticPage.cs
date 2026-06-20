@@ -12,7 +12,7 @@ public class StaticPage(IHttpContextAccessor httpContextAccessor) : HttpFunction
     public IActionResult Serve(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path}")] HttpRequest req)
     {
-        if (!IsAuthenticationEnabled || !(User.Identity?.IsAuthenticated ?? false))
+        if (!IsAuthenticationEnabled || User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }
