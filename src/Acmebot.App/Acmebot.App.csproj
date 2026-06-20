@@ -12,8 +12,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Akamai.EdgeGrid.Auth" Version="1.0.0-preview" />
-    <PackageReference Include="AWSSDK.Route53" Version="4.0.9.5" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.7.5" />
+    <PackageReference Include="AWSSDK.Route53" Version="4.0.9.7" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.7.7" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.8.1" />
     <PackageReference Include="Azure.ResourceManager.Dns" Version="1.1.1" />
@@ -26,12 +26,12 @@
     <PackageReference Include="Google.Apis.Auth" Version="1.75.0" />
     <PackageReference Include="Google.Apis.Dns.v1" Version="1.74.0.4128" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.16.5" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.17.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
-    <PackageReference Include="Microsoft.DurableTask.Generators" Version="2.1.0-preview.1" />
+    <PackageReference Include="Microsoft.DurableTask.Generators" Version="2.1.0-preview.2" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
   </ItemGroup>
