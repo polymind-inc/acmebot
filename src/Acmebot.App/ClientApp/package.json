@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
-    "@types/node": "25.9.3",
+    "@types/node": "25.9.4",
     "@vitejs/plugin-vue": "6.0.7",
     "eslint": "10.5.0",
     "eslint-plugin-vue": "10.9.2",
