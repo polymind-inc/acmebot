@@ -167,7 +167,7 @@ public partial class AcmeOrderActivities(
 
         var mergeCertificateOptions = new MergeCertificateOptions(
             certificateName,
-            // Key Vault exports the merged chain in reverse order, so submit it root-first to produce leaf-first PFX/PEM output.
+            // Key Vault exports the merged chain in reverse order, so submit it issuer-most-first to produce leaf-first PFX/PEM output.
             x509Certificates
                 .Cast<X509Certificate2>()
                 .Reverse()
