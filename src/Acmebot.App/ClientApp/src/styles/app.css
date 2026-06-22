@@ -813,7 +813,7 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.table-empty svg {
+.table-empty > svg {
   color: var(--color-faint);
 }
 
