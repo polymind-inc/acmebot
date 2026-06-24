@@ -71,7 +71,12 @@ public class Route53Provider(Route53Options options, TokenCredential tokenCreden
 
         var listResponse = await _amazonRoute53Client.ListResourceRecordSetsAsync(listRequest, cancellationToken);
 
-        var changes = (listResponse.ResourceRecordSets ?? [])
+        if (listResponse.ResourceRecordSets is null)
+        {
+            return;
+        }
+
+        var changes = listResponse.ResourceRecordSets
                                   .Where(x => x.Name == recordName && x.Type == RRType.TXT)
                                   .Select(x => new Change { Action = ChangeAction.DELETE, ResourceRecordSet = x })
                                   .ToList();
