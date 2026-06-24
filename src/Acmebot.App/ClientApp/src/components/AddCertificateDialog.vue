@@ -71,6 +71,7 @@ const form = reactive({
   keySize: 2048,
   keyCurveName: 'P-256' as KeyCurveName,
   reuseKey: false,
+  profile: '',
   tags: [] as CertificateTagInput[],
 });
 
@@ -161,6 +162,7 @@ watch(
       form.keySize = 2048;
       form.keyCurveName = 'P-256';
       form.reuseKey = false;
+      form.profile = '';
       form.tags = [];
     }
   },
@@ -177,6 +179,7 @@ function resetForm(): void {
   form.keySize = 2048;
   form.keyCurveName = 'P-256';
   form.reuseKey = false;
+  form.profile = '';
   form.tags = [];
 }
 
@@ -284,6 +287,10 @@ function submit(): void {
 
   if (form.useAdvancedOptions && tagCount.value > 0) {
     policy.tags = tagValidation.value.tags;
+  }
+
+  if (form.useAdvancedOptions && form.profile.trim()) {
+    policy.profile = form.profile.trim();
   }
 
   emit('submit', policy);
@@ -457,6 +464,7 @@ function submit(): void {
               v-model:key-size="form.keySize"
               v-model:key-curve-name="form.keyCurveName"
               v-model:reuse-key="form.reuseKey"
+              v-model:profile="form.profile"
               v-model:tags="form.tags"
               :certificate-name-error="certificateNameError"
               :key-option-error="keyOptionError"

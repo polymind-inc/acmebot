@@ -26,12 +26,13 @@ public partial class AcmeOrderActivities(
     private readonly AcmebotOptions _options = options.Value;
 
     [Function(nameof(Order))]
-    public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?) input)
+    public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?, string?) input)
     {
-        var (dnsNames, requestedReplaces) = input;
+        var (dnsNames, requestedReplaces, requestedProfile) = input;
 
         var acmeContext = await acmeClientFactory.CreateClientAsync();
         var replaces = acmeContext.Directory.RenewalInfo is not null ? requestedReplaces : null;
+        var profile = NormalizeProfile(requestedProfile) ?? NormalizeProfile(_options.PreferredProfile);
 
         var result = await acmeContext.Client.CreateOrderAsync(
             acmeContext.Account,
@@ -40,7 +41,7 @@ public partial class AcmeOrderActivities(
                 Type = AcmeIdentifierTypes.Dns,
                 Value = x
             }).ToArray(),
-            profile: _options.PreferredProfile,
+            profile: profile,
             replaces: replaces);
 
         return OrderDetails.FromResult(result);
@@ -189,4 +190,6 @@ public partial class AcmeOrderActivities(
 
     [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]
     private static partial void LogAcmeDomainValidationError(ILogger logger, string problemDetailsJson);
+
+    private static string? NormalizeProfile(string? profile) => string.IsNullOrWhiteSpace(profile) ? null : profile.Trim();
 }

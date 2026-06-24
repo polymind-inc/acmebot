@@ -23,6 +23,7 @@ internal static class CliOptionNames
         "key-size",
         "key-curve",
         "dns-alias",
+        "profile",
         "tag"
     };
 

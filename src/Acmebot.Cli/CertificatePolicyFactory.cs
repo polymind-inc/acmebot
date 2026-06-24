@@ -93,6 +93,7 @@ internal static partial class CertificatePolicyFactory
             KeyCurveName = keyCurveName,
             ReuseKey = commandLine.HasOption("reuse-key") ? commandLine.GetFlag("reuse-key") : null,
             DnsAlias = NormalizeDnsNameOption(commandLine.GetOption("dns-alias"), "--dns-alias", allowWildcard: false),
+            Profile = NormalizeOptionalValue(commandLine.GetOption("profile")),
             Tags = ParseTags(commandLine.GetOptions("tag"))
         };
     }

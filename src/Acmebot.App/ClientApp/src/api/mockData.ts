@@ -114,6 +114,7 @@ let mockCertificates: CertificateItem[] = [
     isSameEndpoint: true,
     acmeEndpoint: 'https://acme-v02.api.letsencrypt.org/directory',
     dnsAlias: 'dns-alias.fabrikam.net',
+    profile: 'tlsserver',
   },
   {
     id: 'https://mock.vault/certificates/portal-example-org',

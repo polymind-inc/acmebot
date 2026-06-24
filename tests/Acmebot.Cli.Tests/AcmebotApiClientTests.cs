@@ -75,7 +75,8 @@ public sealed class AcmebotApiClientTests
             DnsNames = ["example.com"],
             DnsProviderName = "Azure DNS",
             KeyType = "RSA",
-            KeySize = 2048
+            KeySize = 2048,
+            Profile = "tlsserver"
         }, TestContext.Current.CancellationToken);
 
         Assert.Equal(new Uri("https://acmebot.example/api/operations/abc"), location);
@@ -89,6 +90,7 @@ public sealed class AcmebotApiClientTests
         Assert.Equal("example", document.RootElement.GetProperty("certificateName").GetString());
         Assert.Equal("example.com", document.RootElement.GetProperty("dnsNames")[0].GetString());
         Assert.Equal("Azure DNS", document.RootElement.GetProperty("dnsProviderName").GetString());
+        Assert.Equal("tlsserver", document.RootElement.GetProperty("profile").GetString());
     }
 
     [Fact]

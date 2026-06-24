@@ -32,6 +32,9 @@ public partial class CertificatePolicyItem : IValidatableObject
     [JsonPropertyName("dnsAlias")]
     public string? DnsAlias { get; set; }
 
+    [JsonPropertyName("profile")]
+    public string? Profile { get; set; }
+
     [JsonPropertyName("tags")]
     public IDictionary<string, string>? Tags { get; set; }
 

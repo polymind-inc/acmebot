@@ -85,6 +85,24 @@ public sealed class CertificatePolicyTests
     }
 
     [Fact]
+    public void Create_WithProfile_SetsProfile()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--profile",
+            " tlsserver "
+        ]));
+
+        Assert.Equal("tlsserver", policy.Profile);
+    }
+
+    [Fact]
     public void Create_WithWildcardDnsAlias_Throws()
     {
         var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(

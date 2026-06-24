@@ -146,6 +146,7 @@ acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
 | `--key-curve <curve>` | EC key curve. Valid values are `P-256`, `P-384`, `P-521`, and `P-256K`. Defaults to `P-256`. Valid only with `--key-type EC`. |
 | `--reuse-key` | Reuse the existing Key Vault certificate key. |
 | `--dns-alias <value>` | DNS-01 validation alias. Omit the `_acme-challenge` prefix. |
+| `--profile <value>` | ACME profile to request for this certificate. If omitted, Acmebot uses the deployment-level preferred profile when configured. |
 | `--tag <name=value>` | Key Vault certificate tag. Repeatable. The `Acmebot` tag name is reserved. |
 | `--no-wait` | Return after the operation is accepted instead of polling until completion. |
 

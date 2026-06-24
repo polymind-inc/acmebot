@@ -63,13 +63,15 @@ If no matching alternate chain is found, Acmebot uses the default chain returned
 
 ## Preferred Profile
 
-If the ACME server advertises certificate profiles, use `PreferredProfile` to request one.
+If the ACME server advertises certificate profiles, use `PreferredProfile` to request one by default.
 
 ```text
 Acmebot__PreferredProfile=<profile-name>
 ```
 
-Acmebot validates advertised profiles before using them. If the profile is not advertised by the directory, certificate issuance fails early.
+You can override the deployment default for a single certificate by setting an ACME profile in the dashboard advanced options, passing `--profile <profile-name>` to `acmebot certificate issue`, or sending the `profile` field to `POST /api/certificates`.
+
+Acmebot sends the requested profile to the CA when creating the order. If the CA does not recognize the profile, it rejects the order and issuance fails. Per-certificate profiles are saved in Acmebot metadata and reused during manual and scheduled renewal.
 
 ## Staging and Production
 

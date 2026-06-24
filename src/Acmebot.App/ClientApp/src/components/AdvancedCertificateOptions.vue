@@ -17,6 +17,7 @@ const props = defineProps<{
   keySize: number;
   keyCurveName: KeyCurveName;
   reuseKey: boolean;
+  profile: string;
   tags: CertificateTagInput[];
   tagError: string;
 }>();
@@ -27,6 +28,7 @@ const emit = defineEmits<{
   'update:keySize': [value: number];
   'update:keyCurveName': [value: KeyCurveName];
   'update:reuseKey': [value: boolean];
+  'update:profile': [value: string];
   'update:tags': [value: CertificateTagInput[]];
 }>();
 
@@ -163,6 +165,16 @@ function updateReuseKey(event: Event): void {
         <option value="false">No</option>
         <option value="true">Yes</option>
       </select>
+    </label>
+
+    <label class="form-field">
+      <span class="form-label">ACME Profile</span>
+      <input
+        :value="profile"
+        type="text"
+        placeholder="Deployment default"
+        @input="emit('update:profile', readFieldValue($event))"
+      >
     </label>
 
     <div class="tag-editor advanced-grid__wide">

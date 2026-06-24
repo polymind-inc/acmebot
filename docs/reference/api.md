@@ -56,6 +56,7 @@ Accept: application/json
   "keySize": 2048,
   "reuseKey": false,
   "dnsAlias": "acme-validation.example.net",
+  "profile": "tlsserver",
   "tags": {
     "owner": "platform"
   }
@@ -74,6 +75,7 @@ Accept: application/json
 | `keyCurveName` | For EC | `P-256`, `P-384`, `P-521`, or `P-256K`. |
 | `reuseKey` | No | Whether Key Vault should reuse the certificate key. |
 | `dnsAlias` | No | Alternate ASCII/punycode domain used for DNS-01 validation. Acmebot writes TXT records at `_acme-challenge.<dnsAlias>`, so omit the `_acme-challenge` prefix and trailing dot from this value. |
+| `profile` | No | ACME profile to request for this certificate. When omitted, Acmebot uses `Acmebot__PreferredProfile` if configured. |
 | `tags` | No | Custom Key Vault certificate tags. `Acmebot` is reserved. |
 
 For delegated DNS-01 validation, set `dnsNames` to the certificate names and set `dnsAlias` to a unique record in a zone Acmebot can update. For each DNS name, create a CNAME from `_acme-challenge.<dnsName>` to `_acme-challenge.<dnsAlias>` in the authoritative DNS provider for the certificate domain.
@@ -159,7 +161,7 @@ POST /api/certificates/wildcard-example-com/renew
 Accept: application/json
 ```
 
-Returns `202 Accepted` with a `Location` header for operation polling.
+Returns `202 Accepted` with a `Location` header for operation polling. Renewal restores the per-certificate ACME profile saved in Acmebot metadata; certificates without one use the deployment-level `Acmebot__PreferredProfile` setting when configured.
 
 ## Revocation
 

@@ -56,6 +56,10 @@ Use the delegated DNS-01 issue mode when the DNS provider selected in Acmebot ma
 
 Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then writes TXT records at `_acme-challenge.<dnsAlias>` with the selected DNS provider. The alias value must not include the `_acme-challenge` prefix. In delegated DNS-01 mode, the dashboard generates a unique alias record in the selected alias zone and shows the CNAME records to create in the certificate domain's DNS provider.
 
+### ACME Profile
+
+Set ACME Profile when the certificate should use a specific profile advertised by the configured ACME directory. If omitted, Acmebot uses the deployment-level `Acmebot__PreferredProfile` setting when configured. The selected profile is saved with the certificate metadata and reused during renewal.
+
 ### Tags
 
 Custom tags are written to the Key Vault certificate. The `Acmebot` tag is reserved for internal metadata and cannot be set manually.

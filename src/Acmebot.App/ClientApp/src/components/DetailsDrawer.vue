@@ -69,6 +69,14 @@ const metadataRows = computed<MetadataRow[]>(() => {
     });
   }
 
+  if (certificate.profile) {
+    rows.push({
+      key: 'profile',
+      label: 'ACME profile',
+      value: certificate.profile,
+    });
+  }
+
   return rows;
 });
 

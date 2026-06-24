@@ -41,6 +41,7 @@ internal static class HelpText
         await writer.WriteLineAsync("  --key-curve <P-256|P-384|P-521|P-256K> EC key curve. Default: P-256.");
         await writer.WriteLineAsync("  --reuse-key                            Reuse the Key Vault certificate key.");
         await writer.WriteLineAsync("  --dns-alias <value>                    DNS-01 validation alias.");
+        await writer.WriteLineAsync("  --profile <value>                      ACME certificate profile.");
         await writer.WriteLineAsync("  --tag <name=value>                     Certificate tag. Repeatable.");
         await writer.WriteLineAsync("  --no-wait                              Return after the operation is accepted.");
     }

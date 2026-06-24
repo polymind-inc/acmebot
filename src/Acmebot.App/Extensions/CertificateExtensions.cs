@@ -48,6 +48,7 @@ internal static class CertificateExtensions
             Enabled = certificate.Properties.Enabled != false,
             AcmeEndpoint = !string.IsNullOrEmpty(metadata?.Endpoint) ? NormalizeEndpoint(metadata.Endpoint) : "",
             DnsAlias = metadata?.DnsAlias ?? "",
+            Profile = metadata?.Profile,
             Tags = certificate.Properties.Tags.GetCustomCertificateTags()
         };
     }
@@ -67,6 +68,7 @@ internal static class CertificateExtensions
             KeyCurveName = certificate.Policy.KeyCurveName?.ToString(),
             ReuseKey = certificate.Policy.ReuseKey,
             DnsAlias = metadata?.DnsAlias ?? "",
+            Profile = metadata?.Profile,
             CertificateId = metadata?.CertificateId,
             Tags = certificate.Properties.Tags.GetCustomCertificateTags()
         };
@@ -93,7 +95,8 @@ internal static class CertificateExtensions
         {
             Endpoint = endpoint.Host,
             DnsProvider = certificatePolicyItem.DnsProviderName,
-            DnsAlias = string.IsNullOrEmpty(certificatePolicyItem.DnsAlias) ? null : certificatePolicyItem.DnsAlias
+            DnsAlias = string.IsNullOrEmpty(certificatePolicyItem.DnsAlias) ? null : certificatePolicyItem.DnsAlias,
+            Profile = string.IsNullOrWhiteSpace(certificatePolicyItem.Profile) ? null : certificatePolicyItem.Profile.Trim()
         };
 
         tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
@@ -191,6 +194,9 @@ internal static class CertificateExtensions
 
         [JsonPropertyName("dnsAlias")]
         public string? DnsAlias { get; init; }
+
+        [JsonPropertyName("profile")]
+        public string? Profile { get; init; }
 
         [JsonPropertyName("certificateId")]
         public string? CertificateId { get; set; }
