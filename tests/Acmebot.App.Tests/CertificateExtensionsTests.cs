@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using Acmebot.App.Extensions;
 using Acmebot.App.Models;
