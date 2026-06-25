@@ -2,104 +2,152 @@ name: Release
 
 on:
   push:
-    tags: [ v* ]
+    tags: [v*]
 
 env:
   DOTNET_VERSION: 10.0.x
   NODE_VERSION: 24.x
   RELEASE_ASSET_NAME: acmebot.zip
 
+permissions: {}
+
 jobs:
-  release:
+  validate-draft-release:
+    name: Validate draft release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "::error::Draft release $TAG_NAME does not exist. Create the tag and draft release manually before this workflow runs."
+            exit 1
+          fi
+
+          IS_DRAFT=$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft')
+
+          if [ "$IS_DRAFT" != "true" ]; then
+            echo "::error::Release $TAG_NAME is not a draft. Release assets must be uploaded before publishing immutable releases."
+            exit 1
+          fi
+
+  build:
+    name: Build release artifacts
+    needs: validate-draft-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/Acmebot.App/ClientApp/package-lock.json
+
+      - name: Set release version
+        id: setup_version
+        run: |
+          FULL_VERSION=${GITHUB_REF_NAME#v}
+          echo "version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build dashboard
+        working-directory: ./src/Acmebot.App/ClientApp
+        env:
+          ACMEBOT_VERSION: ${{ steps.setup_version.outputs.version }}
+          ACMEBOT_COMMIT_HASH: ${{ github.sha }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish backend
+        run: dotnet publish -c Release -o ./dist -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot.App
+
+      - name: Pack CLI
+        run: dotnet pack -c Release -o ./nupkg -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot.Cli
+
+      - name: Archive release asset
+        run: 7z a -mx=9 ${{ env.RELEASE_ASSET_NAME }} ./dist/* ./dist/.[^.]*
+
+      - name: Upload release asset artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-asset
+          path: ${{ env.RELEASE_ASSET_NAME }}
+
+      - name: Upload CLI package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-package
+          path: ./nupkg/*.nupkg
+
+  upload-release-asset:
+    name: Upload release asset
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    steps:
+      - name: Download release asset artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: release-asset
+          path: .
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release upload "$TAG_NAME" "${{ env.RELEASE_ASSET_NAME }}" --clobber
+
+  publish-cli:
+    name: Publish CLI package
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
       id-token: write
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Use .NET ${{ env.DOTNET_VERSION }}
-      uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Download CLI package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: cli-package
+          path: ./nupkg
 
-    - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: npm
-        cache-dependency-path: src/Acmebot.App/ClientApp/package-lock.json
+      - name: Sign in to NuGet
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        id: nuget_login
+        with:
+          user: shibayan
 
-    - name: Setup Version
-      id: setup_version
-      run: |
-        FULL_VERSION=${GITHUB_REF_NAME#v}
-        echo "version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Publish CLI package to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-    - name: Build Dashboard
-      working-directory: ./src/Acmebot.App/ClientApp
-      env:
-        ACMEBOT_VERSION: ${{ steps.setup_version.outputs.version }}
-        ACMEBOT_COMMIT_HASH: ${{ github.sha }}
-      run: |
-        npm ci
-        npm run build
-
-    - name: Publish Backend
-      run: dotnet publish -c Release -o ./dist -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot.App
-
-    - name: Pack CLI
-      run: dotnet pack -c Release -o ./nupkg -p:Version=${{ steps.setup_version.outputs.version }} ./src/Acmebot.Cli
-
-    - name: Archive artifacts
-      run: 7z a -mx=9 ${{ env.RELEASE_ASSET_NAME }} ./dist/* ./dist/.[^.]*
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: dist
-        path: ${{ env.RELEASE_ASSET_NAME }}
-
-    - name: Upload CLI package artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: cli-nuget
-        path: ./nupkg/*.nupkg
-
-    - name: Validate draft release
-      env:
-        GH_TOKEN: ${{ github.token }}
-        TAG_NAME: ${{ github.ref_name }}
-      run: |
-        if ! gh release view "$TAG_NAME" > /dev/null 2>&1; then
-          echo "::error::Draft release $TAG_NAME does not exist. Create the tag and draft release manually before this workflow runs."
-          exit 1
-        fi
-
-        IS_DRAFT=$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft')
-
-        if [ "$IS_DRAFT" != "true" ]; then
-          echo "::error::Release $TAG_NAME is not a draft. Release assets must be uploaded before publishing immutable releases."
-          exit 1
-        fi
-
-    - name: Upload release asset
-      env:
-        GH_TOKEN: ${{ github.token }}
-        TAG_NAME: ${{ github.ref_name }}
-      run: gh release upload "$TAG_NAME" "${{ env.RELEASE_ASSET_NAME }}" --clobber
-
-    - name: NuGet login
-      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
-      id: nuget_login
-      with:
-        user: shibayan
-
-    - name: Publish CLI package to NuGet
-      run: dotnet nuget push ./nupkg/*.nupkg --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
-
-    - name: Publish draft release
-      env:
-        GH_TOKEN: ${{ github.token }}
-        TAG_NAME: ${{ github.ref_name }}
-      run: gh release edit "$TAG_NAME" --draft=false
+  publish-release:
+    name: Publish release
+    needs: [upload-release-asset, publish-cli]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release edit "$TAG_NAME" --draft=false

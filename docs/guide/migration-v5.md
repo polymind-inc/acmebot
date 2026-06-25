@@ -14,8 +14,11 @@ The in-place migration updates only the existing Function App worker setting, .N
 | .NET site runtime | `netFrameworkVersion=v8.0` | `netFrameworkVersion=v10.0` |
 | Run From Package | `WEBSITE_RUN_FROM_PACKAGE=https://stacmebotprod.blob.core.windows.net/keyvault-acmebot/v4/latest.zip` | `WEBSITE_RUN_FROM_PACKAGE=1` |
 | Package deployment | Package URL stored in app settings | GitHub Release asset deployed by ARM OneDeploy or ZIP deploy |
+| `Acmebot:Endpoint` | `https://acme-v02.api.letsencrypt.org/` | `https://acme-v02.api.letsencrypt.org/directory` |
 
 v5 does not store the package URL in `WEBSITE_RUN_FROM_PACKAGE`. The v5 GitHub Release asset URL is used only as the deployment source for the ARM template or `az webapp deploy`.
+
+Unlike v4, the v5 ACME client requires the full directory URL in `Acmebot:Endpoint`. Update the setting to include the `/directory` path. For Let's Encrypt the correct value is `https://acme-v02.api.letsencrypt.org/directory`.
 
 The migration preserves existing app settings. Do not remove `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING` or `WEBSITE_CONTENTSHARE` during an in-place migration; when those settings exist, v5 continues to use the existing Azure Files content share for ACME account state.
 
