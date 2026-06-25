@@ -1,4 +1,4 @@
-name: Publish
+name: Release
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   RELEASE_ASSET_NAME: acmebot.zip
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
