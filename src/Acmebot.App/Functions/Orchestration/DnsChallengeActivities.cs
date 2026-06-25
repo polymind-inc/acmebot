@@ -48,7 +48,7 @@ public class DnsChallengeActivities(
             var queryResult = await lookupClient.QueryAsync(zone.Name, QueryType.NS);
 
             var expectedNameServers = zone.NameServers
-                                          .Select<string, string>(x => x.TrimEnd('.'))
+                                          .Select(x => x.TrimEnd('.'))
                                           .ToArray();
 
             var actualNameServers = queryResult.Answers

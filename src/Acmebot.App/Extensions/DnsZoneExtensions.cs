@@ -9,7 +9,37 @@ internal static class DnsZoneExtensions
 
     public static DnsZone? FindDnsZone(this IEnumerable<DnsZone> dnsZones, string dnsName)
     {
-        return dnsZones.Where(x => string.Equals(dnsName, x.Name, StringComparison.OrdinalIgnoreCase) || dnsName.EndsWith($".{x.Name}", StringComparison.OrdinalIgnoreCase))
-                       .MaxBy(x => x.Name.Length);
+        DnsZone? bestMatch = null;
+
+        foreach (var dnsZone in dnsZones)
+        {
+            if (!IsInZone(dnsName, dnsZone.Name))
+            {
+                continue;
+            }
+
+            if (bestMatch is null || dnsZone.Name.Length > bestMatch.Name.Length)
+            {
+                bestMatch = dnsZone;
+            }
+        }
+
+        return bestMatch;
+    }
+
+    private static bool IsInZone(string dnsName, string zoneName)
+    {
+        if (dnsName.Length < zoneName.Length)
+        {
+            return false;
+        }
+
+        if (!dnsName.EndsWith(zoneName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return dnsName.Length == zoneName.Length ||
+               dnsName[dnsName.Length - zoneName.Length - 1] == '.';
     }
 }
