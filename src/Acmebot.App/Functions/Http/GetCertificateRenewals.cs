@@ -43,7 +43,7 @@ public partial class GetCertificateRenewals(
         return Ok(output);
     }
 
-    private static async Task<RenewalScheduleSnapshot?> GetRenewalSchedule(DurableTaskClient starter, string certificateName, CancellationToken cancellationToken)
+    private static async Task<CertificateRenewalScheduleSnapshot?> GetRenewalSchedule(DurableTaskClient starter, string certificateName, CancellationToken cancellationToken)
     {
         var instanceId = CertificateRenewalSchedulerOrchestrator.GetInstanceId(certificateName);
 
@@ -54,16 +54,16 @@ public partial class GetCertificateRenewals(
             return null;
         }
 
-        return new RenewalScheduleSnapshot(
+        return new CertificateRenewalScheduleSnapshot(
             ReadSchedulerStatus(metadata),
             metadata.RuntimeStatus,
             metadata.FailureDetails?.ErrorMessage,
             metadata.LastUpdatedAt);
     }
 
-    private static CertificateRenewalItem CreateRenewalItem(CertificateRenewalTarget certificate, RenewalScheduleSnapshot? schedule)
+    private static CertificateRenewalItem CreateRenewalItem(CertificateRenewalTarget certificate, CertificateRenewalScheduleSnapshot? schedule)
     {
-        var state = GetRenewalState(certificate, schedule);
+        var state = CertificateRenewalStateEvaluator.GetRenewalState(certificate, schedule);
 
         return new CertificateRenewalItem
         {
@@ -73,41 +73,6 @@ public partial class GetCertificateRenewals(
             Message = state.Message,
             NextCheck = state.NextCheck,
             LastCheckedAt = state.LastCheckedAt
-        };
-    }
-
-    private static RenewalState GetRenewalState(CertificateRenewalTarget certificate, RenewalScheduleSnapshot? schedule)
-    {
-        var lastCheckedAt = schedule?.Status?.UpdatedAt ?? schedule?.LastUpdatedAt;
-
-        if (!certificate.Enabled)
-        {
-            return new RenewalState("Disabled", "disabled", "Automatic renewal is paused because this certificate is disabled.", null, lastCheckedAt);
-        }
-
-        if (!certificate.IsIssuedByAcmebot || !certificate.IsSameEndpoint)
-        {
-            return new RenewalState("Not managed", "neutral", "This certificate is not managed by this Acmebot endpoint.", null, lastCheckedAt);
-        }
-
-        if (schedule is null)
-        {
-            return new RenewalState("Not scheduled", "pending", "Automatic renewal will start after the daily renewal check runs.", null, null);
-        }
-
-        if (schedule.RuntimeStatus is OrchestrationRuntimeStatus.Failed or OrchestrationRuntimeStatus.Terminated or OrchestrationRuntimeStatus.Suspended)
-        {
-            return new RenewalState("Needs attention", "attention", schedule.FailureMessage ?? "Automatic renewal is not running.", null, schedule.LastUpdatedAt);
-        }
-
-        return schedule.Status switch
-        {
-            { State: "Scheduled" } status => new RenewalState("Scheduled", "scheduled", status.Reason, status.NextCheck, status.UpdatedAt),
-            { State: "Renewing" } status => new RenewalState("Renewing", "active", status.Reason, null, status.UpdatedAt),
-            { State: "Retrying" } status => new RenewalState("Retrying", "attention", status.Reason, status.NextCheck, status.UpdatedAt),
-            { State: "Stopped" } status => new RenewalState("Stopped", "attention", status.Reason, null, status.UpdatedAt),
-            { State: "Checking" } status => new RenewalState("Checking", "pending", status.Reason, null, status.UpdatedAt),
-            _ => new RenewalState("Checking", "pending", "Automatic renewal status is being refreshed.", null, schedule.LastUpdatedAt)
         };
     }
 
@@ -127,19 +92,6 @@ public partial class GetCertificateRenewals(
             return null;
         }
     }
-
-    private sealed record RenewalScheduleSnapshot(
-        CertificateRenewalSchedulerStatus? Status,
-        OrchestrationRuntimeStatus RuntimeStatus,
-        string? FailureMessage,
-        DateTimeOffset LastUpdatedAt);
-
-    private sealed record RenewalState(
-        string Status,
-        string StatusKind,
-        string Message,
-        DateTimeOffset? NextCheck,
-        DateTimeOffset? LastCheckedAt);
 
     [LoggerMessage(LogLevel.Information, "Certificate renewals retrieved. Count: {Count}")]
     private static partial void LogCertificateRenewalsRetrieved(ILogger logger, int count);

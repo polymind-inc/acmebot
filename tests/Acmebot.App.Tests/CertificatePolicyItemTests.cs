@@ -125,20 +125,103 @@ public sealed class CertificatePolicyItemTests
         Assert.Empty(Validate(policy));
     }
 
+    [Theory]
+    [InlineData(2048)]
+    [InlineData(3072)]
+    [InlineData(4096)]
+    public void Validate_WithValidRsaKeySize_ReturnsNoError(int keySize)
+    {
+        var policy = CreatePolicy(keySize: keySize);
+
+        Assert.Empty(Validate(policy));
+    }
+
+    [Fact]
+    public void Validate_WithInvalidRsaKeySize_ReturnsError()
+    {
+        var policy = CreatePolicy(keySize: 1024);
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The KeySize must be 2048, 3072, or 4096 when KeyType is RSA.", result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("P-256")]
+    [InlineData("P-384")]
+    [InlineData("P-521")]
+    [InlineData("P-256K")]
+    public void Validate_WithValidEcCurve_ReturnsNoError(string keyCurveName)
+    {
+        var policy = CreatePolicy(keyType: "EC", keySize: null, keyCurveName: keyCurveName);
+
+        Assert.Empty(Validate(policy));
+    }
+
+    [Fact]
+    public void Validate_WithEcKeyMissingCurve_ReturnsError()
+    {
+        var policy = CreatePolicy(keyType: "EC", keySize: null, keyCurveName: null);
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The KeyCurveName must be P-256, P-384, P-521, or P-256K when KeyType is EC.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WithReservedAcmebotTag_ReturnsError()
+    {
+        var policy = CreatePolicy(tags: new Dictionary<string, string> { ["Acmebot"] = "metadata" });
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The Acmebot tag is reserved for internal metadata.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WithEmptyTagName_ReturnsError()
+    {
+        var policy = CreatePolicy(tags: new Dictionary<string, string> { [" "] = "value" });
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The Tags contains an empty tag name.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_WithDuplicateTagNames_ReturnsError()
+    {
+        var policy = CreatePolicy(tags: new Dictionary<string, string>
+        {
+            ["Environment"] = "production",
+            [" environment "] = "staging"
+        });
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The Tags contains duplicate tag names.", result.ErrorMessage);
+    }
+
     private static CertificatePolicyItem CreatePolicy(
         string certificateName = "example-com",
         string[]? dnsNames = null,
         string dnsProviderName = "Azure DNS",
-        string? dnsAlias = null)
+        string? dnsAlias = null,
+        string keyType = "RSA",
+        int? keySize = 2048,
+        string? keyCurveName = null,
+        IDictionary<string, string>? tags = null)
     {
         return new CertificatePolicyItem
         {
             CertificateName = certificateName,
             DnsNames = dnsNames ?? ["example.com"],
             DnsProviderName = dnsProviderName,
-            KeyType = "RSA",
-            KeySize = 2048,
-            DnsAlias = dnsAlias
+            KeyType = keyType,
+            KeySize = keySize,
+            KeyCurveName = keyCurveName,
+            DnsAlias = dnsAlias,
+            Tags = tags
         };
     }
 

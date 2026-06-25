@@ -94,7 +94,7 @@ public class CertificateActivities(
                     return new CertificateRenewalEvaluation
                     {
                         IsActive = true,
-                        ShouldRenew = CheckShouldRenew(properties, now),
+                        ShouldRenew = CertificateRenewalScheduleEvaluator.ShouldRenew(properties.NotBefore, properties.CreatedOn, properties.ExpiresOn, _options.RenewBeforeExpiry, now),
                         NextCheck = now.Add(s_renewalInfoCheckInterval),
                         Reason = "Renewal information is temporarily unavailable. Using the configured schedule and rechecking soon."
                     };
@@ -105,7 +105,7 @@ public class CertificateActivities(
         return new CertificateRenewalEvaluation
         {
             IsActive = true,
-            ShouldRenew = CheckShouldRenew(properties, now),
+            ShouldRenew = CertificateRenewalScheduleEvaluator.ShouldRenew(properties.NotBefore, properties.CreatedOn, properties.ExpiresOn, _options.RenewBeforeExpiry, now),
             NextCheck = now.AddDays(1),
             Reason = "Renewal is scheduled based on the configured renewal threshold."
         };
@@ -114,39 +114,8 @@ public class CertificateActivities(
     [Function(nameof(GetCertificatePolicy))]
     public Task<CertificatePolicyItem> GetCertificatePolicy([ActivityTrigger] string certificateName) => certificateOperationService.GetCertificatePolicyAsync(certificateName);
 
-    private bool CheckShouldRenew(CertificateProperties properties, DateTimeOffset now)
-    {
-        if (properties.ExpiresOn is not { } expiresOn)
-        {
-            return false;
-        }
-
-        var notBefore = properties.NotBefore ?? properties.CreatedOn;
-
-        if (expiresOn <= now)
-        {
-            return true;
-        }
-
-        if (notBefore is null || notBefore.Value > expiresOn)
-        {
-            return false;
-        }
-
-        var lifetime = expiresOn - notBefore.Value;
-        var renewalThreshold = TimeSpan.FromTicks((long)(lifetime.Ticks * (_options.RenewBeforeExpiry / 100d)));
-        var suggestedWindowStart = expiresOn - renewalThreshold;
-
-        return suggestedWindowStart <= now;
-    }
-
     private static DateTimeOffset SelectNextCheck(DateTimeOffset now, DateTimeOffset suggestedWindowStart, DateTimeOffset suggestedWindowEnd, TimeSpan? retryAfter)
     {
-        var window = suggestedWindowEnd - suggestedWindowStart;
-
-        var randomRenewalTime = suggestedWindowStart.AddTicks(Random.Shared.NextInt64(window.Ticks));
-        var nextRenewalInfoCheck = now.Add(retryAfter ?? s_renewalInfoCheckInterval);
-
-        return randomRenewalTime <= nextRenewalInfoCheck ? randomRenewalTime : nextRenewalInfoCheck;
+        return CertificateRenewalScheduleEvaluator.SelectNextCheck(now, suggestedWindowStart, suggestedWindowEnd, retryAfter, s_renewalInfoCheckInterval);
     }
 }
