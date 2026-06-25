@@ -81,6 +81,7 @@ public sealed class DnsZoneQueryServiceTests
 
         var zone = Assert.Single(zones);
         Assert.Equal("example.com", zone.Name);
+        Assert.Same(provider, zone.DnsProvider);
     }
 
     private static DnsZone CreateZone(string id, string name)

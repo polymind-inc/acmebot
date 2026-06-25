@@ -2,7 +2,7 @@
 
 namespace Acmebot.App.Tests;
 
-internal sealed class TestDnsProvider(string name, IReadOnlyList<DnsZone>? zones = null, Exception? exception = null, TimeSpan? propagationDelay = null) : IDnsProvider
+internal sealed class TestDnsProvider(string name, IReadOnlyList<DnsZone>? zoneDefinitions = null, Exception? exception = null, TimeSpan? propagationDelay = null) : IDnsProvider
 {
     public string Name { get; } = name;
 
@@ -17,10 +17,20 @@ internal sealed class TestDnsProvider(string name, IReadOnlyList<DnsZone>? zones
             throw exception;
         }
 
-        return Task.FromResult(zones ?? []);
+        return Task.FromResult<IReadOnlyList<DnsZone>>(zoneDefinitions?.Select(CreateZone).ToArray() ?? []);
     }
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    private DnsZone CreateZone(DnsZone zoneDefinition)
+    {
+        return new DnsZone(this)
+        {
+            Id = zoneDefinition.Id,
+            Name = zoneDefinition.Name,
+            NameServers = zoneDefinition.NameServers
+        };
+    }
 }

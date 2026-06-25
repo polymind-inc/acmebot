@@ -7,20 +7,22 @@ namespace Acmebot.App.Tests;
 
 public sealed class DnsZoneExtensionsTests
 {
-    [Fact]
-    public void FindDnsZone_WithNestedZones_ReturnsLongestSuffixMatch()
+    [Theory]
+    [InlineData("staging.example.com")]
+    [InlineData("www.staging.example.com")]
+    public void FindDnsZone_WithParentAndChildZones_ReturnsMostSpecificZone(string dnsName)
     {
         var provider = new TestDnsProvider("Test DNS");
         var zones = new[]
         {
             CreateZone(provider, "root", "example.com"),
-            CreateZone(provider, "sub", "api.example.com")
+            CreateZone(provider, "staging", "staging.example.com")
         };
 
-        var zone = zones.FindDnsZone("www.api.example.com");
+        var zone = zones.FindDnsZone(dnsName);
 
         Assert.NotNull(zone);
-        Assert.Equal("api.example.com", zone.Name);
+        Assert.Equal("staging.example.com", zone.Name);
     }
 
     [Fact]
