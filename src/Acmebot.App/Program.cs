@@ -47,10 +47,7 @@ builder.Services.Configure<JsonSerializerOptions>(options =>
 // Add Options
 builder.Services.AddOptions<AcmebotOptions>()
        .Bind(builder.Configuration.GetSection("Acmebot"))
-       .ValidateDataAnnotations()
-       .Validate(
-           options => options.Endpoint.AbsolutePath is not ("/" or ""),
-           "Acmebot:Endpoint must include the full ACME directory path. For Let's Encrypt, use 'https://acme-v02.api.letsencrypt.org/directory' instead of 'https://acme-v02.api.letsencrypt.org/'.");
+       .ValidateDataAnnotations();
 
 // Add Services
 builder.Services.AddHttpClient();
