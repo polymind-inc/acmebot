@@ -45,12 +45,17 @@ const guideSidebar = [
   }
 ];
 
+const hostname = "https://acmebot.dev";
+
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
   description: "ACME SSL/TLS certificate automation for Microsoft Azure.",
   lastUpdated: true,
   srcExclude: ["README.md"],
+  sitemap: {
+    hostname
+  },
   head: [
     ["meta", { name: "theme-color", content: "#0078d4" }],
     ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
