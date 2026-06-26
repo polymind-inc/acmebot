@@ -112,7 +112,19 @@ public class CertificateActivities(
     }
 
     [Function(nameof(GetCertificatePolicy))]
-    public Task<CertificatePolicyItem> GetCertificatePolicy([ActivityTrigger] string certificateName) => certificateOperationService.GetCertificatePolicyAsync(certificateName);
+    public async Task<CertificatePolicyItem> GetCertificatePolicy([ActivityTrigger] string certificateName)
+    {
+        try
+        {
+            return await certificateOperationService.GetCertificatePolicyAsync(certificateName);
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            // The certificate was deleted after renewal evaluation. Surface this as a precondition failure
+            // so the scheduler can stop instead of treating it as a retriable renewal error.
+            throw new PreconditionException("Certificate was not found.", ex);
+        }
+    }
 
     private static DateTimeOffset SelectNextCheck(DateTimeOffset now, DateTimeOffset suggestedWindowStart, DateTimeOffset suggestedWindowEnd, TimeSpan? retryAfter)
     {

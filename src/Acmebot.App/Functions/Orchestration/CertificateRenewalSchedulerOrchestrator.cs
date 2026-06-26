@@ -34,11 +34,24 @@ public partial class CertificateRenewalSchedulerOrchestrator
         {
             SetSchedulerStatus(context, certificateName, "Renewing", null, "Automatic renewal is in progress.");
 
+            CertificatePolicyItem certificatePolicyItem;
+
+            try
+            {
+                certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
+            }
+            catch (TaskFailedException ex) when (ex.FailureDetails.IsCausedBy<PreconditionException>())
+            {
+                // The certificate was deleted between evaluation and policy retrieval, so stop the scheduler
+                // immediately instead of entering the retry loop.
+                SetSchedulerStatus(context, certificateName, "Stopped", null, "Certificate was not found.");
+                LogCertificateRenewalSchedulerStopped(logger, certificateName, "Certificate was not found.");
+                return;
+            }
+
             try
             {
                 LogCertificateRenewalStarted(logger, certificateName, evaluation.Reason);
-
-                var certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
 
                 await context.CallSubOrchestratorAsync(
                     nameof(CertificateIssuanceOrchestrator.IssueCertificate),
