@@ -8,6 +8,7 @@ env:
   DOTNET_VERSION: 10.0.x
   NODE_VERSION: 24.x
   RELEASE_ASSET_NAME: acmebot.zip
+  GH_REPO: ${{ github.repository }}
 
 permissions: {}
 
