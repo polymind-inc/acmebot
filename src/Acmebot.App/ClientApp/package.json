@@ -14,8 +14,8 @@
     "@tanstack/vue-table": "8.21.3",
     "lucide-vue-next": "1.0.0",
     "punycode": "2.3.1",
-    "reka-ui": "2.10.0",
-    "vue": "3.5.38"
+    "reka-ui": "2.10.1",
+    "vue": "3.5.39"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
