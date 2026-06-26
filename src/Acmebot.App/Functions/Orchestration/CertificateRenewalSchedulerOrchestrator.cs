@@ -48,6 +48,13 @@ public partial class CertificateRenewalSchedulerOrchestrator
                 LogCertificateRenewalSchedulerStopped(logger, certificateName, "Certificate was not found.");
                 return;
             }
+            catch (Exception ex)
+            {
+                // Any other policy retrieval failure (e.g. transient Key Vault or network errors) should fall back
+                // to the same retry path as a failed renewal rather than failing the orchestration outright.
+                await ScheduleRenewalRetryAsync(context, certificateName, logger, ex);
+                return;
+            }
 
             try
             {
@@ -60,14 +67,7 @@ public partial class CertificateRenewalSchedulerOrchestrator
             }
             catch (Exception ex)
             {
-                LogCertificateRenewalFailed(logger, ex, certificateName);
-
-                var nextCheck = context.CurrentUtcDateTime.Add(s_failedRenewalRetryInterval);
-                SetSchedulerStatus(context, certificateName, "Retrying", nextCheck, "Automatic renewal failed. Retrying later.");
-
-                await context.CreateTimer(nextCheck, CancellationToken.None);
-                context.ContinueAsNew(certificateName);
-
+                await ScheduleRenewalRetryAsync(context, certificateName, logger, ex);
                 return;
             }
 
@@ -91,6 +91,17 @@ public partial class CertificateRenewalSchedulerOrchestrator
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableOrchestratorException>()
     };
+
+    private async Task ScheduleRenewalRetryAsync(TaskOrchestrationContext context, string certificateName, ILogger logger, Exception exception)
+    {
+        LogCertificateRenewalFailed(logger, exception, certificateName);
+
+        var nextCheck = context.CurrentUtcDateTime.Add(s_failedRenewalRetryInterval);
+        SetSchedulerStatus(context, certificateName, "Retrying", nextCheck, "Automatic renewal failed. Retrying later.");
+
+        await context.CreateTimer(nextCheck, CancellationToken.None);
+        context.ContinueAsNew(certificateName);
+    }
 
     private static void SetSchedulerStatus(TaskOrchestrationContext context, string certificateName, string state, DateTimeOffset? nextCheck, string reason)
     {
