@@ -8,7 +8,6 @@ env:
   DOTNET_VERSION: 10.0.x
   NODE_VERSION: 24.x
   RELEASE_ASSET_NAME: acmebot.zip
-  GH_REPO: ${{ github.repository }}
 
 permissions: {}
 
@@ -22,6 +21,7 @@ jobs:
       - name: Check draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           if ! gh release view "$TAG_NAME" > /dev/null 2>&1; then
@@ -110,6 +110,7 @@ jobs:
       - name: Upload release asset
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.ref_name }}
         run: gh release upload "$TAG_NAME" "${{ env.RELEASE_ASSET_NAME }}" --clobber
 
@@ -150,5 +151,6 @@ jobs:
       - name: Publish draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.ref_name }}
         run: gh release edit "$TAG_NAME" --draft=false
