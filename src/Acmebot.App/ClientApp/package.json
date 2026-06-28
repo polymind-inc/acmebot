@@ -22,7 +22,7 @@
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "26.0.1",
     "@vitejs/plugin-vue": "6.0.7",
-    "eslint": "10.5.0",
+    "eslint": "10.6.0",
     "eslint-plugin-vue": "10.9.2",
     "globals": "17.7.0",
     "typescript": "6.0.3",
