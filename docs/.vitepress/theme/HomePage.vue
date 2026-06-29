@@ -18,7 +18,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
         <p class="hero-description">Acmebot issues and renews ACME certificates with DNS-01 validation, stores private keys in Azure Key Vault, and gives your team one dashboard, API, and CLI.</p>
         <div class="hero-actions">
           <a href="#deploy" class="btn btn-primary" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
-          <a href="/guide/getting-started.html" class="btn btn-outline">Get Started</a>
+          <a href="/guide/getting-started" class="btn btn-outline">Get Started</a>
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
@@ -294,7 +294,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
           </div>
         </div>
         <div class="steps-cta">
-          <a href="/guide/getting-started.html" class="btn btn-primary">Read the Documentation</a>
+          <a href="/guide/getting-started" class="btn btn-primary">Read the Documentation</a>
         </div>
       </div>
     </section>
@@ -356,7 +356,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <div class="footer-col">
               <h4>Resources</h4>
               <a href="/guide/">Documentation</a>
-              <a href="/guide/getting-started.html">Getting Started</a>
+              <a href="/guide/getting-started">Getting Started</a>
               <a href="https://github.com/polymind-inc/acmebot/discussions">Discussions</a>
             </div>
             <div class="footer-col">
