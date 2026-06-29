@@ -1,3 +1,7 @@
+---
+description: "Acmebot configuration reference: required and optional app settings for ACME endpoints, DNS providers, Key Vault, and renewal."
+---
+
 # Configuration
 
 Acmebot reads its settings from the `Acmebot` configuration section. In Azure App Service and Azure Functions app settings, nested settings are expressed with double underscores.

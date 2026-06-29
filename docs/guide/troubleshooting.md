@@ -1,3 +1,7 @@
+---
+description: "Troubleshoot Acmebot issuance, renewal, revocation, authentication, DNS-01 validation, and Azure service integration issues."
+---
+
 # Troubleshooting
 
 Use this page when issuance, renewal, revocation, authentication, DNS validation, or downstream Azure service integration does not behave as expected.

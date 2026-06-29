@@ -1,3 +1,7 @@
+---
+description: "Frequently asked questions about Acmebot: automatic renewal, DNS-01 validation, Azure Key Vault storage, and certificate lifecycle."
+---
+
 # FAQ
 
 ## How does automatic renewal work?

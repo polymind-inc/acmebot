@@ -1,3 +1,7 @@
+---
+description: "Acmebot architecture: how the Function App coordinates ACME orders, DNS-01 validation, Key Vault operations, and scheduled renewal."
+---
+
 # Architecture
 
 Acmebot is a Function App that coordinates ACME certificate orders, DNS-01 validation, Key Vault certificate operations, scheduled renewal, and optional notifications.

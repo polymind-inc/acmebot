@@ -1,3 +1,7 @@
+---
+description: "Support options for Acmebot: community support via GitHub and optional commercial support for Acmebot v5 from Polymind Inc."
+---
+
 # Support
 
 Acmebot is an open source project released under the Apache License 2.0. Community support remains available through GitHub, and optional commercial support for Acmebot v5 is available from Polymind Inc.

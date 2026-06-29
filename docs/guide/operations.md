@@ -1,3 +1,7 @@
+---
+description: "Day-to-day operation of Acmebot: issuing, renewing, and revoking ACME certificates in Azure Key Vault after deployment."
+---
+
 # Operations
 
 This page covers day-to-day operation after Acmebot has been deployed.

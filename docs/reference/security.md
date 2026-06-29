@@ -1,3 +1,7 @@
+---
+description: "Acmebot security model: Azure identity, Key Vault access, DNS provider credentials, and dashboard authentication boundaries."
+---
+
 # Security
 
 Acmebot relies on Azure identity, Key Vault, DNS provider credentials, and dashboard authentication. This page summarizes the security model and recommended operational boundaries.

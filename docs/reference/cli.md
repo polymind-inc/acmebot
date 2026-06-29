@@ -1,3 +1,7 @@
+---
+description: "Acmebot CLI reference: the acmebot .NET tool that wraps the HTTP API for scriptable certificate automation in CI and runbooks."
+---
+
 # CLI Reference
 
 The Acmebot CLI is a .NET tool named `acmebot` that wraps the authenticated HTTP API for automation. Use it from local shells, CI jobs, or runbooks when you want scriptable certificate operations without calling the API directly.

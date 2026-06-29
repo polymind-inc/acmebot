@@ -1,3 +1,7 @@
+---
+description: "Step-by-step guide to deploy Acmebot and issue your first Let's Encrypt certificate into Azure Key Vault with DNS-01 validation."
+---
+
 # Getting Started
 
 This walkthrough deploys a new Acmebot v5 environment and issues a certificate into Azure Key Vault.

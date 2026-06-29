@@ -1,3 +1,7 @@
+---
+description: "Migrate Acmebot from v4 to v5, moving to the .NET isolated worker while keeping existing certificates, Key Vault, and DNS settings in place."
+---
+
 # Migrating from v4 to v5
 
 Acmebot v5 moves the application from the .NET in-process worker to the .NET isolated worker. Existing certificates, Key Vault, DNS provider settings, managed identity, and monitoring resources can stay in place.

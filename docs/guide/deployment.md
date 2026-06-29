@@ -1,3 +1,7 @@
+---
+description: "Deploy Acmebot v5 to Azure Functions Flex Consumption, storing ACME state in Azure Storage and certificates in Azure Key Vault."
+---
+
 # Deployment
 
 Acmebot v5 is generally available and is the current release for new deployments. It runs on Azure Functions Flex Consumption with the .NET isolated worker and stores ACME state in Azure Storage. The standard deployment template targets the Azure public cloud.

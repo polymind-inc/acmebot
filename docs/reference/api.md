@@ -1,3 +1,7 @@
+---
+description: "Acmebot HTTP API reference: the same-origin endpoints behind the dashboard for issuing, renewing, and managing certificates."
+---
+
 # HTTP API
 
 The dashboard uses these same-origin HTTP endpoints. They define the integration surface and operation lifecycle.

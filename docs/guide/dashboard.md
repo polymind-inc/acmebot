@@ -1,3 +1,7 @@
+---
+description: "Manage Acmebot certificates from the built-in dashboard served by the Function App, backed by the same-origin HTTP API."
+---
+
 # Dashboard
 
 The dashboard is the primary interface for Acmebot. The Function App serves the dashboard, and the dashboard calls the same-origin `/api/*` endpoints.
