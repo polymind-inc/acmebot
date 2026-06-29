@@ -50,7 +50,7 @@ const hostname = "https://acmebot.dev";
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
-  description: "ACME SSL/TLS certificate automation for Microsoft Azure.",
+  description: "ACME SSL/TLS certificate automation for Microsoft Azure, built around DNS-01 validation, ARI-aware renewal, and Azure Key Vault.",
   lastUpdated: true,
   srcExclude: ["README.md"],
   cleanUrls: true,
