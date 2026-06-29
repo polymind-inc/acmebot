@@ -15,7 +15,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
       <div class="container">
         <div class="hero-badge">Acmebot v5 &mdash; Production Ready</div>
         <h1 class="hero-title">Automated TLS certificates<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
-        <p class="hero-description">Acmebot issues and renews ACME certificates with DNS-01 validation, stores private keys in Azure Key Vault, and gives your team one dashboard, API, and CLI.</p>
+        <p class="hero-description">Acmebot issues and renews ACME certificates with DNS-01 validation, ARI-aware renewal scheduling, and Azure Key Vault private key storage.</p>
         <div class="hero-actions">
           <a href="#deploy" class="btn btn-primary" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
           <a href="/guide/getting-started" class="btn btn-outline">Get Started</a>
@@ -53,8 +53,8 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <div class="feature-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></svg>
             </div>
-            <h3>Make renewal predictable</h3>
-            <p>The daily renewal job finds managed certificates, respects ACME renewal windows when available, and renews before expiry.</p>
+            <h3>Operate certificate fleets</h3>
+            <p>Each managed certificate keeps its own renewal state, next check time, CA-guided timing when available, and fallback behavior.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -105,7 +105,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
             </div>
             <h3>Use one operation model</h3>
-            <p>Issue, renew, revoke, and track operations through the same model whether you use the dashboard, HTTP API, or CLI.</p>
+            <p>Issue, renew, revoke, and track operations through the same model whether you use the dashboard, HTTP API, CLI, or scheduled renewal.</p>
           </div>
           <div class="v5-card">
             <div class="v5-icon">
@@ -257,6 +257,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
             <p>Provision the Function App, storage, monitoring resources, application settings, and optional Key Vault for a new Acmebot environment.</p>
             <ul class="deploy-features">
               <li>Scheduled renewals</li>
+              <li>ARI-aware timing</li>
               <li>Key Vault storage</li>
               <li>Private network support</li>
               <li>Azure Monitor telemetry</li>

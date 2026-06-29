@@ -1,18 +1,24 @@
 ---
-description: "Frequently asked questions about Acmebot: automatic renewal, DNS-01 validation, Azure Key Vault storage, and certificate lifecycle."
+description: "Frequently asked questions about Acmebot: ARI-aware automatic renewal, DNS-01 validation, Azure Key Vault storage, and certificate lifecycle."
 ---
 
 # FAQ
 
 ## How does automatic renewal work?
 
-The `RenewCertificates` timer runs daily for enabled managed certificates. When ACME renewal information is available, Acmebot uses the CA's suggested renewal window and `Retry-After` timing to decide the next check, then renews after the suggested window has started. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
+The `RenewCertificates` timer runs daily for enabled managed certificates. Each managed certificate keeps its own renewal state and next check time.
+
+When ACME Renewal Information (ARI) is available, Acmebot uses the CA's suggested renewal window and `Retry-After` timing to decide the next check for that certificate, then renews after the suggested window has started. Otherwise, that certificate falls back to the configured lifetime threshold and renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
 
 ```text
 Acmebot__RenewBeforeExpiry=30
 ```
 
 Azure Functions timer schedules run in UTC unless the hosting plan supports `WEBSITE_TIME_ZONE`.
+
+## What makes Acmebot's ARI support useful for many certificates?
+
+Acmebot applies ARI per certificate. A certificate can wait for its CA-provided renewal window, retry after a temporary failure, or fall back to the configured threshold without changing the renewal state for other certificates.
 
 ## Can I use an existing Key Vault?
 

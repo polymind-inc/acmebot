@@ -1,5 +1,5 @@
 ---
-description: "Manage Acmebot certificates from the built-in dashboard served by the Function App, backed by the same-origin HTTP API."
+description: "Manage Acmebot certificates and ARI-aware renewal status from the built-in dashboard served by the Function App."
 ---
 
 # Dashboard
@@ -18,7 +18,7 @@ The dashboard lists certificates from the configured Key Vault and marks each on
 - Managed by Acmebot but issued for another ACME endpoint.
 - Not managed by Acmebot.
 
-Only enabled certificates with Acmebot metadata for the current endpoint are selected for scheduled renewal.
+Only enabled certificates with Acmebot metadata for the current endpoint are selected for scheduled renewal. Renewal status is tracked per managed certificate, including its current state, next check time, and last check time.
 
 ## DNS Zone List
 
@@ -72,7 +72,7 @@ Custom tags are written to the Key Vault certificate. The `Acmebot` tag is reser
 
 Manual renewal reuses the existing Key Vault certificate policy and starts a new issuance orchestration. Use it to rotate a certificate before its scheduled renewal window.
 
-Scheduled renewals run daily. Certificates with ACME renewal information use the CA's suggested window and `Retry-After` timing; certificates without renewal information use the configured fallback threshold.
+Scheduled renewals run daily. Each managed certificate keeps its own renewal state and next check time. Certificates with ACME Renewal Information (ARI) use the CA's suggested window and `Retry-After` timing; certificates without renewal information use the configured fallback threshold.
 
 ## Revoke a Certificate
 

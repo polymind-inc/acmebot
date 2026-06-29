@@ -1,5 +1,5 @@
 ---
-description: "Acmebot architecture: how the Function App coordinates ACME orders, DNS-01 validation, Key Vault operations, and scheduled renewal."
+description: "Acmebot architecture: how the Function App coordinates ACME orders, DNS-01 validation, Key Vault operations, and ARI-aware scheduled renewal."
 ---
 
 # Architecture
@@ -39,18 +39,19 @@ DNS records are always cleaned up after challenge processing, even when an opera
 
 ## Renewal Flow
 
-The scheduled renewal timer runs daily and starts the renewal orchestrator.
+The scheduled renewal timer runs daily and starts certificate-level renewal evaluation.
 
-The orchestrator:
+The renewal flow:
 
 1. Lists certificates in the configured Key Vault.
 2. Filters to enabled certificates tagged as Acmebot-managed.
 3. Filters to the current ACME endpoint.
-4. Uses ACME renewal information when available, selecting the next check from the CA's suggested window and `Retry-After` timing.
-5. Renews after the suggested window has started, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
-6. Reissues each due certificate with its stored Key Vault policy.
+4. Maintains independent renewal state and next check time for each certificate.
+5. Uses ACME Renewal Information (ARI) when available, selecting that certificate's next check from the CA's suggested window and `Retry-After` timing.
+6. Renews after the suggested window has started, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
+7. Reissues each due certificate with its stored Key Vault policy and sends the previous certificate identifier as `replaces` when ARI is available.
 
-Automatic renewal failures put the certificate scheduler into a retrying state. The scheduler waits six hours, then evaluates that certificate again.
+Automatic renewal failures put only that certificate into a retrying state. It waits six hours, then evaluates that certificate again.
 
 ## State Storage
 

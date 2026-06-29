@@ -1,5 +1,5 @@
 ---
-description: "Step-by-step guide to deploy Acmebot and issue your first Let's Encrypt certificate into Azure Key Vault with DNS-01 validation."
+description: "Step-by-step guide to deploy Acmebot and issue your first certificate into Azure Key Vault with DNS-01 validation and ARI-aware renewal."
 ---
 
 # Getting Started
@@ -84,7 +84,7 @@ After the operation completes:
 
 ## 7. Let Renewals Run
 
-The `RenewCertificates` timer runs daily. When ACME renewal information is available for a certificate, Acmebot evaluates the certificate authority's suggested renewal window and `Retry-After` timing before renewing. Otherwise, it renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30).
+The `RenewCertificates` timer runs daily and maintains renewal state per managed certificate. When ACME Renewal Information (ARI) is available for a certificate, Acmebot evaluates the certificate authority's suggested renewal window and `Retry-After` timing before renewing. Otherwise, only that certificate falls back to the configured lifetime threshold, `Acmebot__RenewBeforeExpiry` percent (default 30).
 
 See [Operations](./operations) for monitoring and troubleshooting guidance.
 

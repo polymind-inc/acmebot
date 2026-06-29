@@ -1,5 +1,5 @@
 ---
-description: "Day-to-day operation of Acmebot: issuing, renewing, and revoking ACME certificates in Azure Key Vault after deployment."
+description: "Day-to-day operation of Acmebot: issuing, ARI-aware renewal scheduling, and revoking ACME certificates in Azure Key Vault after deployment."
 ---
 
 # Operations
@@ -14,9 +14,11 @@ The `RenewCertificates` timer runs once per day. It lists Key Vault certificates
 - Are tagged as issued by Acmebot.
 - Match the currently configured ACME endpoint.
 
-When ACME renewal information is available, Acmebot follows the certificate authority's `suggestedWindow` when choosing the next check. It selects a random time inside that window, but checks renewal information again first when `Retry-After` is earlier. When a scheduler evaluation runs after the suggested window starts, Acmebot renews the certificate.
+Each managed certificate has its own renewal state, next check time, and retry behavior. A certificate that is waiting, retrying, or falling back to an expiry-based policy does not reset the renewal schedule for other certificates.
 
-When renewal information is unavailable for a certificate, Acmebot falls back to `Acmebot__RenewBeforeExpiry`.
+Acmebot supports ACME Renewal Information (ARI). When the CA provides renewal information for a certificate, Acmebot follows the certificate authority's `suggestedWindow` when choosing the next check. It selects a random time inside that window, but checks renewal information again first when `Retry-After` is earlier. When a renewal evaluation runs after the suggested window starts, Acmebot renews the certificate and marks the new order as replacing the previous certificate when the CA supports it.
+
+When renewal information is unavailable for a certificate, only that certificate falls back to `Acmebot__RenewBeforeExpiry`.
 
 The default fallback renewal threshold is 30% of the certificate lifetime:
 
@@ -28,7 +30,7 @@ For example, a 90-day certificate is renewed when about 27 days remain. Use a la
 
 No separate pre-processing delay is added before due certificates are renewed.
 
-If automatic renewal fails, the certificate scheduler records a retrying state and checks again after six hours.
+If automatic renewal fails, that certificate records a retrying state and checks again after six hours.
 
 ## Durable Functions History
 

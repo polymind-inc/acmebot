@@ -1,12 +1,12 @@
 ---
-description: "Overview of how Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure using DNS-01 validation and Azure Key Vault."
+description: "Overview of how Acmebot automates ACME SSL/TLS certificate issuance and ARI-aware renewal on Microsoft Azure using DNS-01 validation and Azure Key Vault."
 ---
 
 # Guide
 
 Acmebot automates ACME SSL/TLS certificate issuance and renewal on Microsoft Azure. It runs as a Function App, proves domain ownership with DNS-01 challenges, and stores private keys and issued certificates in Azure Key Vault.
 
-Use this guide to deploy Acmebot, connect DNS providers, issue certificates from the dashboard, and operate scheduled renewals over time.
+Use this guide to deploy Acmebot, connect DNS providers, issue certificates from the dashboard, and operate certificate-level renewals over time.
 
 ## What Acmebot Does
 
@@ -14,7 +14,8 @@ Use this guide to deploy Acmebot, connect DNS providers, issue certificates from
 - Creates ACME orders for zone apex, wildcard, and multi-domain certificates.
 - Adds and removes DNS-01 TXT records through one or more configured DNS providers.
 - Requests certificates in Key Vault and merges the issued chain back into the same Key Vault certificate.
-- Tags managed certificates so scheduled renewals can find them later.
+- Tags managed certificates so each certificate can keep its own renewal state, next check time, and fallback behavior.
+- Uses ACME Renewal Information (ARI) when the CA provides it, including suggested renewal windows and `Retry-After` timing.
 - Sends webhook notifications for successful and failed operations when a webhook is configured.
 
 ## Runtime Workflow
@@ -41,6 +42,10 @@ Acmebot uses DNS-01 validation only. This supports wildcard certificates and wor
 
 Acmebot works with ACME v2 directory endpoints. The deployment form offers common endpoints such as Let's Encrypt, GlobalSign, Google Trust Services, SSL.com, and ZeroSSL, and also accepts a custom ACME directory URL.
 
+### ARI-Aware Renewal
+
+Each managed certificate has its own renewal lifecycle. When the ACME CA provides renewal information, Acmebot follows that certificate's suggested renewal window and `Retry-After` timing. If renewal information is unavailable, only that certificate falls back to the configured expiry-based renewal threshold.
+
 ### Dashboard
 
 The dashboard is a same-origin web app served by the Function App. It calls the `/api/*` endpoints to list, issue, renew, and revoke certificates, and to list DNS zones.
@@ -55,7 +60,7 @@ The dashboard is a same-origin web app served by the Function App. It calls the 
 | Issue, renew, or revoke a certificate | [Dashboard](./dashboard) |
 | Configure Azure DNS, Cloudflare, Route 53, or another DNS provider | [DNS Providers](./dns-providers) |
 | Use EAB or a CA other than Let's Encrypt | [Certificate Authorities](./certificate-authorities) |
-| Monitor renewals and troubleshoot failures | [Operations](./operations) |
+| Monitor certificate-level renewals and troubleshoot failures | [Operations](./operations) |
 | Connect renewed certificates to Azure services | [Azure Service Integration](./service-integration) |
 | Diagnose failed issuance, renewal, or service sync | [Troubleshooting](./troubleshooting) |
 | Answer common deployment and operations questions | [FAQ](./faq) |

@@ -27,7 +27,7 @@ Acmebot is designed for teams that need to:
 
 - Store SSL/TLS certificates securely in Azure Key Vault
 - Centralize certificates for multiple Azure services and domains
-- Automate issuance and renewal with predictable operational behavior
+- Automate certificate fleets with per-certificate renewal state and predictable operational behavior
 - Monitor certificate operations through Application Insights and webhooks
 - Keep DNS provider credentials and Azure access scoped to the resources Acmebot manages
 
@@ -35,7 +35,8 @@ Acmebot is designed for teams that need to:
 
 - Issue certificates for zone apex names, wildcards, and SANs (multiple domains)
 - Dedicated dashboard for certificate management
-- Automated certificate renewal
+- ARI-aware renewal scheduling for each managed certificate, with CA-provided renewal windows, `Retry-After` timing, and an expiry-based fallback
+- Independent renewal state and next-check timing per certificate, built for long-running certificate fleets
 - Support for ACME v2 compliant Certification Authorities
   - [Let's Encrypt](https://letsencrypt.org/)
   - [GlobalSign](https://www.globalsign.com/) (Requires EAB Credentials)
