@@ -53,6 +53,7 @@ export default defineConfig({
   description: "ACME SSL/TLS certificate automation for Microsoft Azure.",
   lastUpdated: true,
   srcExclude: ["README.md"],
+  cleanUrls: true,
   sitemap: {
     hostname
   },
