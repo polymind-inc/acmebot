@@ -16,7 +16,6 @@
     <PackageId>Acmebot.Cli</PackageId>
     <Title>Acmebot CLI</Title>
     <Description>Command-line client for Acmebot HTTP API automation.</Description>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>acme;azure;key-vault;certificates;cli</PackageTags>
   </PropertyGroup>

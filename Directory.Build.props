@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Copyright>Copyright 2018-2025 Polymind Inc.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
