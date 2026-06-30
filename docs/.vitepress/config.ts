@@ -92,7 +92,7 @@ export default defineConfig({
     },
     footer: {
       message: "Released under the Apache License 2.0.",
-      copyright: "Copyright (c) 2026 Acmebot Project"
+      copyright: "Copyright (c) 2026 Polymind Inc."
     }
   }
 });

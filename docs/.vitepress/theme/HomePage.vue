@@ -368,7 +368,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 Acmebot Project. Licensed under Apache License 2.0.</p>
+          <p>&copy; 2026 Polymind Inc. Licensed under Apache License 2.0.</p>
         </div>
       </div>
     </footer>
