@@ -8,8 +8,13 @@
   },
   "extensions": {
     "durableTask": {
-      "useGracefulShutdown": true,
-      "useTablePartitionManagement": true
+      "storageProvider": {
+        "maxQueuePollingInterval": "00:00:30"
+      },
+      "tracing": {
+        "distributedTracingEnabled": true,
+        "version": "V2"
+      }
     },
     "http": {
       "routePrefix": "",

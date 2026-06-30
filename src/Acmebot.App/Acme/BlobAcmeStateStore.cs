@@ -33,14 +33,17 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
+            if (ex.ErrorCode == BlobErrorCode.ContainerNotFound)
+            {
+                await containerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+            }
+
             return default;
         }
     }
 
     public async Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
     {
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
-
         var blobClient = containerClient.GetBlobClient(CreateBlobName(path));
         var content = BinaryData.FromObjectAsJson(value, s_jsonSerializerOptions);
 
