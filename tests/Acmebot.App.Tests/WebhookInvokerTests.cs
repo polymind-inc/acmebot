@@ -4,7 +4,6 @@ using Acmebot.App.Notifications;
 using Acmebot.App.Options;
 
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 using Xunit;
 
@@ -55,7 +54,7 @@ public sealed class WebhookInvokerTests
         return new WebhookInvoker(
             payloadBuilder,
             new StubHttpClientFactory(httpClient),
-            Options.Create(new AcmebotOptions
+            Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
             {
                 Contacts = "admin@example.com",
                 Endpoint = new Uri("https://acme.example/directory"),
