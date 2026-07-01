@@ -34,17 +34,7 @@ public partial class AcmeOrderActivities(
         var replaces = acmeContext.Directory.RenewalInfo is not null ? requestedReplaces : null;
         var profile = NormalizeProfile(requestedProfile) ?? NormalizeProfile(_options.PreferredProfile);
 
-        var result = await acmeContext.Client.CreateOrderAsync(
-            acmeContext.Account,
-            dnsNames.Select(x => new AcmeIdentifier
-            {
-                Type = AcmeIdentifierTypes.Dns,
-                Value = x
-            }).ToArray(),
-            profile: profile,
-            replaces: replaces);
-
-        return OrderDetails.FromResult(result);
+        return await CreateOrderAsync(acmeContext, dnsNames, profile, replaces, logger);
     }
 
     [Function(nameof(AnswerChallenges))]
@@ -190,6 +180,41 @@ public partial class AcmeOrderActivities(
 
     [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]
     private static partial void LogAcmeDomainValidationError(ILogger logger, string problemDetailsJson);
+
+    [LoggerMessage(LogLevel.Warning, "ACME order replacement was already consumed by another order. Retrying without ARI replaces hint. CertificateId: {CertificateId}")]
+    private static partial void LogAlreadyReplacedRetry(ILogger logger, string certificateId);
+
+    internal static async Task<OrderDetails> CreateOrderAsync(AcmeClientContext acmeContext, IReadOnlyList<string> dnsNames, string? profile, string? replaces, ILogger logger)
+    {
+        var identifiers = dnsNames.Select(x => new AcmeIdentifier
+        {
+            Type = AcmeIdentifierTypes.Dns,
+            Value = x
+        }).ToArray();
+
+        try
+        {
+            var result = await acmeContext.Client.CreateOrderAsync(
+                acmeContext.Account,
+                identifiers,
+                profile: profile,
+                replaces: replaces);
+
+            return OrderDetails.FromResult(result);
+        }
+        catch (AcmeProtocolException ex) when (!string.IsNullOrEmpty(replaces) && ex.IsAlreadyReplaced)
+        {
+            LogAlreadyReplacedRetry(logger, replaces);
+
+            var result = await acmeContext.Client.CreateOrderAsync(
+                acmeContext.Account,
+                identifiers,
+                profile: profile,
+                replaces: null);
+
+            return OrderDetails.FromResult(result);
+        }
+    }
 
     private static string? NormalizeProfile(string? profile) => string.IsNullOrWhiteSpace(profile) ? null : profile.Trim();
 }

@@ -28,4 +28,6 @@ public sealed class AcmeProtocolException(
     public IReadOnlyList<AcmeLinkHeader> Links { get; } = links ?? [];
 
     public bool IsBadNonce => Problem?.Type == AcmeProblemTypes.BadNonce;
+
+    public bool IsAlreadyReplaced => Problem?.Type == AcmeProblemTypes.AlreadyReplaced;
 }
