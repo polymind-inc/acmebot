@@ -9,7 +9,7 @@ public sealed record AcmeAccountResource
     public required AcmeAccountStatus Status { get; init; }
 
     [JsonPropertyName("contact")]
-    public IReadOnlyList<string> Contact { get; init; } = [];
+    public IReadOnlyList<string>? Contact { get; init; }
 
     [JsonPropertyName("termsOfServiceAgreed")]
     public bool? TermsOfServiceAgreed { get; init; }

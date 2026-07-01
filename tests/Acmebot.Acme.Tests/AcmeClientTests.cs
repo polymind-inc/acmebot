@@ -136,7 +136,30 @@ public sealed class AcmeClientTests
         var request = Assert.Single(handler.Requests, x => x.Method == HttpMethod.Post);
         Assert.Equal(account.AccountUrl, request.RequestUri);
         Assert.Equal(string.Empty, request.GetSignedMessage().Payload);
-        Assert.Equal("mailto:updated@example.com", Assert.Single(result.Account.Contact));
+        Assert.Equal("mailto:updated@example.com", Assert.Single(result.Account.Contact!));
+    }
+
+    [Fact]
+    public async Task GetAccountAsync_PreservesNullContactResponse()
+    {
+        var directoryUrl = new Uri("https://example.com/acme/directory");
+        using var signer = AcmeSigner.CreateP256();
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmeClient(httpClient, directoryUrl);
+        var account = AcmeTestSupport.CreateAccountHandle(signer);
+
+        AcmeTestSupport.EnqueueDirectory(handler);
+        AcmeTestSupport.EnqueueNonce(handler);
+        handler.Enqueue(_ => AcmeTestSupport.CreateJsonResponse(HttpStatusCode.OK, new
+        {
+            status = "valid",
+            contact = (string[]?)null
+        }, replayNonce: "bm9uY2Uy"));
+
+        var result = await client.GetAccountAsync(account, TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Account.Contact);
     }
 
     [Fact]
@@ -164,7 +187,7 @@ public sealed class AcmeClientTests
         using var protectedHeader = request.GetProtectedHeaderJson();
         Assert.Equal("mailto:new@example.com", Assert.Single(payload.RootElement.GetProperty("contact").EnumerateArray()).GetString());
         Assert.Equal(account.AccountUrl.OriginalString, protectedHeader.RootElement.GetProperty("kid").GetString());
-        Assert.Equal("mailto:new@example.com", Assert.Single(result.Account.Contact));
+        Assert.Equal("mailto:new@example.com", Assert.Single(result.Account.Contact!));
     }
 
     [Fact]

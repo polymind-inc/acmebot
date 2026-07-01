@@ -103,19 +103,6 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
             accountHandle = account.ToAccountHandle(signer);
         }
 
-        if (!ContactsEqual(accountHandle.Account.Contact, contacts))
-        {
-            accountHandle = await client.UpdateAccountAsync(
-                accountHandle,
-                new AcmeUpdateAccountRequest
-                {
-                    Contact = contacts
-                });
-            account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
-
-            await stateStore.SaveAsync(account, "account.json");
-        }
-
         return new AcmeClientContext
         {
             Client = client,
@@ -139,7 +126,4 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
     }
 
     private string[] GetContacts() => [$"mailto:{_options.Contacts}"];
-
-    private static bool ContactsEqual(IReadOnlyList<string>? actualContacts, IReadOnlyList<string> expectedContacts)
-        => actualContacts is not null && actualContacts.SequenceEqual(expectedContacts, StringComparer.Ordinal);
 }
