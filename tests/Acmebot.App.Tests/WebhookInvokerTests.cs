@@ -55,7 +55,7 @@ public sealed class WebhookInvokerTests
         return new WebhookInvoker(
             payloadBuilder,
             new StubHttpClientFactory(httpClient),
-            Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
+            Options.Create(new AcmebotOptions
             {
                 Contacts = "admin@example.com",
                 Endpoint = new Uri("https://acme.example/directory"),
