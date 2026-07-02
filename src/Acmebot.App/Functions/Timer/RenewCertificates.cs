@@ -1,11 +1,12 @@
-﻿using Acmebot.App.Services;
+﻿using Acmebot.App.Functions.Orchestration;
+using Acmebot.App.Services;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
-namespace Acmebot.App.Functions.Orchestration;
+namespace Acmebot.App.Functions.Timer;
 
 public partial class RenewCertificates(
     CertificateQueryService certificateQueryService,

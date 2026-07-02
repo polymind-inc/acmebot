@@ -2,7 +2,7 @@
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
-namespace Acmebot.App.Functions.Orchestration;
+namespace Acmebot.App.Functions.Timer;
 
 public partial class PurgeInstanceHistory(ILogger<PurgeInstanceHistory> logger)
 {

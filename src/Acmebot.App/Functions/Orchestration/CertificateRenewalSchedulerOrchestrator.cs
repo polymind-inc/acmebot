@@ -21,7 +21,19 @@ public partial class CertificateRenewalSchedulerOrchestrator
 
         SetSchedulerStatus(context, certificateName, "Checking", null, "Automatic renewal status is being refreshed.");
 
-        var evaluation = await context.CallEvaluateCertificateRenewalAsync(certificateName);
+        CertificateRenewalEvaluation evaluation;
+
+        try
+        {
+            evaluation = await context.CallEvaluateCertificateRenewalAsync(certificateName);
+        }
+        catch (Exception ex)
+        {
+            // Evaluation touches Key Vault, ACME account state, and the ACME directory. Treat those
+            // failures as transient so a single outage does not stop the per-certificate scheduler.
+            await ScheduleRenewalRetryAsync(context, certificateName, logger, ex);
+            return;
+        }
 
         if (!evaluation.IsActive)
         {
