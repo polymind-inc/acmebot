@@ -50,7 +50,7 @@ const hostname = "https://acmebot.dev";
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
-  description: "ACME SSL/TLS certificate automation for Microsoft Azure, built around DNS-01 validation, ARI-aware renewal, and Azure Key Vault.",
+  description: "Automate free SSL/TLS certificates on Microsoft Azure with Let's Encrypt and other ACME CAs. DNS-01 validation, wildcard certificates, ARI-aware renewal, and Azure Key Vault storage.",
   lastUpdated: true,
   srcExclude: ["README.md"],
   cleanUrls: true,
@@ -63,7 +63,7 @@ export default defineConfig({
     ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
     ["link", { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" }],
     ["meta", { property: "og:title", content: "Acmebot — Automated TLS certificates for Microsoft Azure" }],
-    ["meta", { property: "og:description", content: "ACME SSL/TLS certificate automation for Microsoft Azure, built around DNS-01 validation, ARI-aware renewal, and Azure Key Vault." }],
+    ["meta", { property: "og:description", content: "Automate free SSL/TLS certificates on Microsoft Azure with Let's Encrypt and other ACME CAs. DNS-01 validation, wildcard certificates, ARI-aware renewal, and Azure Key Vault storage." }],
     ["meta", { property: "og:image", content: "https://acmebot.dev/images/ogp.png" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }]

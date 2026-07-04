@@ -15,7 +15,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
       <div class="container">
         <div class="hero-badge">Acmebot v5 &mdash; Production Ready</div>
         <h1 class="hero-title">Automated TLS certificates<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
-        <p class="hero-description">Acmebot issues and renews ACME certificates with DNS-01 validation, ARI-aware renewal scheduling, and Azure Key Vault private key storage.</p>
+        <p class="hero-description">Acmebot issues and renews free certificates from Let's Encrypt and other ACME CAs — DNS-01 validation, wildcard support, ARI-aware renewal scheduling, and Azure Key Vault private key storage.</p>
         <div class="hero-actions">
           <a href="#deploy" class="btn btn-primary" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
           <a href="/guide/getting-started" class="btn btn-outline">Get Started</a>
