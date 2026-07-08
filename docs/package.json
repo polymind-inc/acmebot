@@ -9,6 +9,6 @@
     "preview": "vitepress preview --host 127.0.0.1"
   },
   "devDependencies": {
-    "vitepress": "2.0.0-alpha.17"
+    "vitepress": "2.0.0-alpha.18"
   }
 }
