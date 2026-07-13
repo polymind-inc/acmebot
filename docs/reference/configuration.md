@@ -25,7 +25,9 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `Acmebot__Webhook` | Empty | Webhook URL for certificate operation notifications. |
+| `Acmebot__Webhook__Endpoint` | Empty | Webhook URL for certificate operation notifications. |
+| `Acmebot__Webhook__Events` | `All` | Events that send webhook notifications. Supported values are `Completed`, `Failed`, `All`, and `None`. Combine individual values with a comma. |
+| `Acmebot__Webhook__PayloadType` | `Auto` | Webhook payload format. Supported values are `Auto`, `Generic`, `Teams`, and `Slack`. |
 | `Acmebot__PreferredChain` | Empty | Preferred issuer chain name when the ACME CA offers alternate chains. |
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Percentage of certificate lifetime remaining at which scheduled renewal runs, used when ACME renewal information is unavailable for the certificate. Valid range is 0 to 100. |
@@ -219,5 +221,9 @@ Acmebot__Environment=AzureCloud
 Acmebot__AzureDns__SubscriptionId=00000000-0000-0000-0000-000000000000
 Acmebot__AzureDns__ManagedIdentityClientId=
 Acmebot__RenewBeforeExpiry=30
-Acmebot__Webhook=https://example.com/webhook
+Acmebot__Webhook__Endpoint=https://example.com/webhook
+Acmebot__Webhook__PayloadType=Generic
+Acmebot__Webhook__Events=Failed
 ```
+
+The legacy scalar setting `Acmebot__Webhook=https://example.com/webhook` remains supported. It is equivalent to configuring `Webhook__Endpoint` with the default `Auto` payload type and `All` events.

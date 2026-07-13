@@ -50,13 +50,13 @@ Function execution logs, dependency telemetry, and exception telemetry are the m
 
 ## Webhook Notifications
 
-Set `Acmebot__Webhook` to receive notification events:
+Set `Acmebot__Webhook__Endpoint` to receive notification events:
 
 ```text
-Acmebot__Webhook=https://example.com/webhook
+Acmebot__Webhook__Endpoint=https://example.com/webhook
 ```
 
-The payload format is selected from the webhook host:
+By default, the payload format is selected from the webhook host:
 
 | Host | Payload |
 | --- | --- |
@@ -64,6 +64,19 @@ The payload format is selected from the webhook host:
 | `.logic.azure.com` | Teams-style Adaptive Card payload. |
 | `.environment.api.powerplatform.com` | Teams-style Adaptive Card payload. |
 | Other hosts | Generic JSON payload. |
+
+Set `Acmebot__Webhook__PayloadType` to `Generic`, `Teams`, or `Slack` to override automatic detection. Explicitly select `Generic` when sending to a custom Logic App because Teams Workflows and custom Logic Apps can both use `.logic.azure.com` endpoints.
+
+Use `Acmebot__Webhook__Events` to select which certificate operation events send notifications. The default is `All`.
+
+```text
+# Send only failure notifications with a generic JSON payload.
+Acmebot__Webhook__Endpoint=https://example.com/webhook
+Acmebot__Webhook__PayloadType=Generic
+Acmebot__Webhook__Events=Failed
+```
+
+Supported event values are `Completed`, `Failed`, `All`, and `None`. Combine `Completed` and `Failed` with a comma when listing them explicitly. The legacy `Acmebot__Webhook=https://example.com/webhook` setting remains supported with automatic payload detection and all events enabled.
 
 Webhook failures are logged as warnings and never roll back certificate issuance.
 

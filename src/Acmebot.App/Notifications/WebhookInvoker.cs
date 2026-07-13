@@ -8,23 +8,33 @@ using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Notifications;
 
-public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpClientFactory httpClientFactory, IOptions<AcmebotOptions> options, ILogger<WebhookInvoker> logger)
+public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpClientFactory httpClientFactory, IOptions<WebhookOptions> options, ILogger<WebhookInvoker> logger)
 {
-    private readonly AcmebotOptions _options = options.Value;
+    private readonly WebhookOptions _options = options.Value;
 
     public Task SendCompletedEventAsync(string certificateName, DateTimeOffset? expirationDate, IEnumerable<string> dnsNames, string acmeEndpoint)
     {
+        if ((_options.Events & WebhookEvents.Completed) == 0)
+        {
+            return Task.CompletedTask;
+        }
+
         return SendEventAsync(() => webhookPayloadBuilder.BuildCompleted(certificateName, expirationDate, dnsNames, acmeEndpoint));
     }
 
     public Task SendFailedEventAsync(string certificateName, IEnumerable<string> dnsNames)
     {
+        if ((_options.Events & WebhookEvents.Failed) == 0)
+        {
+            return Task.CompletedTask;
+        }
+
         return SendEventAsync(() => webhookPayloadBuilder.BuildFailed(certificateName, dnsNames));
     }
 
     private async Task SendEventAsync(Func<object> payloadFactory)
     {
-        if (_options.Webhook is null)
+        if (_options.Endpoint is null)
         {
             return;
         }
@@ -34,7 +44,7 @@ public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder
             var payload = payloadFactory();
             var httpClient = httpClientFactory.CreateClient();
 
-            using var response = await httpClient.PostAsJsonAsync(_options.Webhook, payload);
+            using var response = await httpClient.PostAsJsonAsync(_options.Endpoint, payload);
 
             if (!response.IsSuccessStatusCode)
             {

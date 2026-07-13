@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text.Json;
 
 using Acmebot.App.Notifications;
 using Acmebot.App.Options;
@@ -49,17 +50,71 @@ public sealed class WebhookInvokerTests
         await invoker.SendFailedEventAsync("example-com", ["example.com"]);
     }
 
-    private static WebhookInvoker CreateInvoker(HttpClient httpClient, IWebhookPayloadBuilder payloadBuilder)
+    [Fact]
+    public async Task SendCompletedEventAsync_PostsJsonBody()
+    {
+        using var handler = new CapturingHttpMessageHandler();
+        using var httpClient = new HttpClient(handler);
+        var invoker = CreateInvoker(httpClient, new StubWebhookPayloadBuilder());
+
+        await invoker.SendCompletedEventAsync(
+            "example-com",
+            DateTimeOffset.Parse("2026-07-01T00:00:00Z"),
+            ["example.com"],
+            "acme.example");
+
+        Assert.Equal("application/json", handler.ContentType);
+        Assert.NotNull(handler.Body);
+
+        using var body = JsonDocument.Parse(handler.Body);
+        Assert.Equal("example-com", body.RootElement.GetProperty("certificateName").GetString());
+    }
+
+    [Fact]
+    public async Task SendCompletedEventAsync_WhenCompletedEventDisabled_DoesNotPost()
+    {
+        var requestCount = 0;
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }));
+        var invoker = CreateInvoker(httpClient, new ThrowingWebhookPayloadBuilder(), WebhookEvents.Failed);
+
+        await invoker.SendCompletedEventAsync(
+            "example-com",
+            DateTimeOffset.Parse("2026-07-01T00:00:00Z"),
+            ["example.com"],
+            "acme.example");
+
+        Assert.Equal(0, requestCount);
+    }
+
+    [Fact]
+    public async Task SendFailedEventAsync_WhenOnlyFailedEventEnabled_Posts()
+    {
+        var requestCount = 0;
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }));
+        var invoker = CreateInvoker(httpClient, new StubWebhookPayloadBuilder(), WebhookEvents.Failed);
+
+        await invoker.SendFailedEventAsync("example-com", ["example.com"]);
+
+        Assert.Equal(1, requestCount);
+    }
+
+    private static WebhookInvoker CreateInvoker(HttpClient httpClient, IWebhookPayloadBuilder payloadBuilder, WebhookEvents events = WebhookEvents.All)
     {
         return new WebhookInvoker(
             payloadBuilder,
             new StubHttpClientFactory(httpClient),
-            Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
+            Microsoft.Extensions.Options.Options.Create(new WebhookOptions
             {
-                Contacts = "admin@example.com",
-                Endpoint = new Uri("https://acme.example/directory"),
-                VaultBaseUrl = "https://vault.example/",
-                Webhook = new Uri("https://webhook.example/")
+                Endpoint = new Uri("https://webhook.example/"),
+                Events = events
             }),
             NullLogger<WebhookInvoker>.Instance);
     }
@@ -74,6 +129,21 @@ public sealed class WebhookInvokerTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return Task.FromResult(responseFactory(request));
+        }
+    }
+
+    private sealed class CapturingHttpMessageHandler : HttpMessageHandler
+    {
+        public string? Body { get; private set; }
+
+        public string? ContentType { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Body = await request.Content!.ReadAsStringAsync(cancellationToken);
+            ContentType = request.Content.Headers.ContentType?.MediaType;
+
+            return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
 

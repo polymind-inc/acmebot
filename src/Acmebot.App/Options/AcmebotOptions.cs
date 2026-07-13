@@ -18,8 +18,6 @@ public class AcmebotOptions
     [Required]
     public required string VaultBaseUrl { get; set; }
 
-    public Uri? Webhook { get; set; }
-
     // ACME CA settings
     [Required]
     public required string Contacts { get; set; }

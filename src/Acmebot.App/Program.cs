@@ -49,6 +49,8 @@ builder.Services.AddOptions<AcmebotOptions>()
        .Bind(builder.Configuration.GetSection("Acmebot"))
        .ValidateDataAnnotations();
 
+builder.Services.AddWebhookOptions(builder.Configuration.GetSection("Acmebot:Webhook"));
+
 // Add Services
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<AppRoleService>();
@@ -139,26 +141,10 @@ builder.Services.AddSingleton<WebhookInvoker>();
 
 builder.Services.AddSingleton<IWebhookPayloadBuilder>(provider =>
 {
-    var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
+    var acmebotOptions = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
+    var webhookOptions = provider.GetRequiredService<IOptions<WebhookOptions>>().Value;
 
-    if (options.Webhook is null)
-    {
-        return new GenericPayloadBuilder(options);
-    }
-
-    var host = options.Webhook.Host;
-
-    if (host.EndsWith("hooks.slack.com", StringComparison.OrdinalIgnoreCase))
-    {
-        return new SlackPayloadBuilder();
-    }
-
-    if (host.EndsWith(".logic.azure.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".environment.api.powerplatform.com", StringComparison.OrdinalIgnoreCase))
-    {
-        return new TeamsPayloadBuilder();
-    }
-
-    return new GenericPayloadBuilder(options);
+    return WebhookPayloadBuilderFactory.Create(acmebotOptions, webhookOptions);
 });
 
 // Add DNS Providers
