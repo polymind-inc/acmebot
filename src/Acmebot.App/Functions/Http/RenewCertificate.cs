@@ -34,6 +34,11 @@ public partial class RenewCertificate(
         }
 
         var certificatePolicyItem = await certificateOperationService.GetCertificatePolicyAsync(certificateName, req.HttpContext.RequestAborted);
+
+        // Manual renewal must also work after the Acmebot account has changed. In that case, the
+        // current account cannot use the ARI certificate identifier issued to the previous account.
+        certificatePolicyItem.CertificateId = null;
+
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
 
         LogOrchestrationStarted(logger, certificateName, instanceId);
