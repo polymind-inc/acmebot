@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using Acmebot.App.Options;
 
@@ -10,6 +11,8 @@ namespace Acmebot.App.Notifications;
 
 public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder, IHttpClientFactory httpClientFactory, IOptions<WebhookOptions> options, ILogger<WebhookInvoker> logger)
 {
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new(JsonSerializerDefaults.Web);
+
     private readonly WebhookOptions _options = options.Value;
 
     public Task SendCompletedEventAsync(string certificateName, DateTimeOffset? expirationDate, IEnumerable<string> dnsNames, string acmeEndpoint)
@@ -43,8 +46,10 @@ public partial class WebhookInvoker(IWebhookPayloadBuilder webhookPayloadBuilder
         {
             var payload = payloadFactory();
             var httpClient = httpClientFactory.CreateClient();
+            using var content = JsonContent.Create(payload, options: s_jsonSerializerOptions);
+            await content.LoadIntoBufferAsync();
 
-            using var response = await httpClient.PostAsJsonAsync(_options.Endpoint, payload);
+            using var response = await httpClient.PostAsync(_options.Endpoint, content);
 
             if (!response.IsSuccessStatusCode)
             {

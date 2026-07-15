@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 
 using Acmebot.App.Notifications;
@@ -65,6 +66,7 @@ public sealed class WebhookInvokerTests
 
         Assert.Equal("application/json", handler.ContentType);
         Assert.NotNull(handler.Body);
+        Assert.Equal(Encoding.UTF8.GetByteCount(handler.Body), handler.ContentLength);
 
         using var body = JsonDocument.Parse(handler.Body);
         Assert.Equal("example-com", body.RootElement.GetProperty("certificateName").GetString());
@@ -138,8 +140,11 @@ public sealed class WebhookInvokerTests
 
         public string? ContentType { get; private set; }
 
+        public long? ContentLength { get; private set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            ContentLength = request.Content!.Headers.ContentLength;
             Body = await request.Content!.ReadAsStringAsync(cancellationToken);
             ContentType = request.Content.Headers.ContentType?.MediaType;
 
