@@ -13,7 +13,7 @@ namespace Acmebot.App.Providers;
 
 public class GoogleDnsProvider : IDnsProvider
 {
-    public GoogleDnsProvider(GoogleDnsOptions options, TokenCredential tokenCredential)
+    public GoogleDnsProvider(GoogleDnsOptions options, string audience, TokenCredential tokenCredential)
     {
         GoogleCredential? credential;
 
@@ -29,7 +29,7 @@ public class GoogleDnsProvider : IDnsProvider
             var initializer = new ProgrammaticExternalAccountCredential.Initializer("https://sts.googleapis.com/v1/token",
                                                                                     $"//iam.googleapis.com/{options.PoolProvider}",
                                                                                     "urn:ietf:params:oauth:token-type:jwt",
-                                                                                    new ManagedIdentitySubjectTokenProvider(tokenCredential))
+                                                                                    new ManagedIdentitySubjectTokenProvider(audience, tokenCredential))
             {
                 ServiceAccountImpersonationUrl = $"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{options.ServiceAccount}:generateAccessToken"
             };
@@ -120,13 +120,11 @@ public class GoogleDnsProvider : IDnsProvider
         await _dnsService.Changes.Create(change, _projectId, zone.Id).ExecuteAsync(cancellationToken);
     }
 
-    private sealed class ManagedIdentitySubjectTokenProvider(TokenCredential tokenCredential) : ProgrammaticExternalAccountCredential.ISubjectTokenProvider
+    private sealed class ManagedIdentitySubjectTokenProvider(string audience, TokenCredential tokenCredential) : ProgrammaticExternalAccountCredential.ISubjectTokenProvider
     {
-        private const string Audience = "https://management.azure.com/";
-
         public async Task<string> GetSubjectTokenAsync(ProgrammaticExternalAccountCredential caller, CancellationToken cancellationToken)
         {
-            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([Audience]), cancellationToken);
+            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([audience]), cancellationToken);
 
             return token.Token;
         }

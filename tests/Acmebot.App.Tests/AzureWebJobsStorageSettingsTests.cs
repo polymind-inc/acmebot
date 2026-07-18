@@ -34,16 +34,19 @@ public sealed class AzureWebJobsStorageSettingsTests
         var settings = AzureWebJobsStorageSettings.FromConfiguration(configuration);
 
         Assert.Equal("storageaccount", settings.AccountName);
-        Assert.Equal("https://custom.blob.core.windows.net", settings.GetBlobServiceUri());
+        Assert.Equal("https://custom.blob.core.windows.net", settings.GetBlobServiceUri("core.windows.net"));
         Assert.Equal("11111111-1111-1111-1111-111111111111", settings.ClientId);
     }
 
-    [Fact]
-    public void GetBlobServiceUri_WithAccountName_BuildsDefaultPublicAzureUri()
+    [Theory]
+    [InlineData("core.windows.net", "https://storageaccount.blob.core.windows.net")]
+    [InlineData("core.usgovcloudapi.net", "https://storageaccount.blob.core.usgovcloudapi.net")]
+    [InlineData("core.chinacloudapi.cn", "https://storageaccount.blob.core.chinacloudapi.cn")]
+    public void GetBlobServiceUri_WithAccountName_BuildsUriWithStorageEndpointSuffix(string storageEndpointSuffix, string expected)
     {
         var settings = new AzureWebJobsStorageSettings(null, null, "storageaccount", null);
 
-        Assert.Equal("https://storageaccount.blob.core.windows.net", settings.GetBlobServiceUri());
+        Assert.Equal(expected, settings.GetBlobServiceUri(storageEndpointSuffix));
     }
 
     [Fact]
@@ -51,7 +54,7 @@ public sealed class AzureWebJobsStorageSettingsTests
     {
         var settings = new AzureWebJobsStorageSettings(null, null, null, null);
 
-        var ex = Assert.Throws<InvalidOperationException>(settings.GetBlobServiceUri);
+        var ex = Assert.Throws<InvalidOperationException>(() => settings.GetBlobServiceUri("core.windows.net"));
 
         Assert.Equal("AzureWebJobsStorage, AzureWebJobsStorage__blobServiceUri, or AzureWebJobsStorage__accountName is required.", ex.Message);
     }

@@ -11,9 +11,9 @@ using Azure.Core;
 
 namespace Acmebot.App.Providers;
 
-public class Route53Provider(Route53Options options, TokenCredential tokenCredential) : IDnsProvider
+public class Route53Provider(Route53Options options, string audience, TokenCredential tokenCredential) : IDnsProvider
 {
-    private readonly AmazonRoute53Client _amazonRoute53Client = CreateClient(options, tokenCredential);
+    private readonly AmazonRoute53Client _amazonRoute53Client = CreateClient(options, audience, tokenCredential);
 
     public string Name => "Amazon Route 53";
 
@@ -91,23 +91,21 @@ public class Route53Provider(Route53Options options, TokenCredential tokenCreden
         await _amazonRoute53Client.ChangeResourceRecordSetsAsync(request, cancellationToken);
     }
 
-    private static AmazonRoute53Client CreateClient(Route53Options options, TokenCredential tokenCredential)
+    private static AmazonRoute53Client CreateClient(Route53Options options, string audience, TokenCredential tokenCredential)
     {
         if (!string.IsNullOrWhiteSpace(options.RoleArn))
         {
-            return new AmazonRoute53Client(new ManagedIdentityWebIdentityCredentials(options.RoleArn, tokenCredential), RegionEndpoint.USEast1);
+            return new AmazonRoute53Client(new ManagedIdentityWebIdentityCredentials(options.RoleArn, audience, tokenCredential), RegionEndpoint.USEast1);
         }
 
         return new AmazonRoute53Client(new BasicAWSCredentials(options.AccessKey, options.SecretKey), RegionEndpoint.USEast1);
     }
 
-    private sealed class ManagedIdentityWebIdentityCredentials(string roleArn, TokenCredential tokenCredential) : RefreshingAWSCredentials
+    private sealed class ManagedIdentityWebIdentityCredentials(string roleArn, string audience, TokenCredential tokenCredential) : RefreshingAWSCredentials
     {
-        private const string Audience = "https://management.azure.com/";
-
         protected override async Task<CredentialsRefreshState> GenerateNewCredentialsAsync()
         {
-            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([Audience]), CancellationToken.None);
+            var token = await tokenCredential.GetTokenAsync(new TokenRequestContext([audience]), CancellationToken.None);
 
             using var securityTokenServiceClient = new AmazonSecurityTokenServiceClient(new AnonymousAWSCredentials(), RegionEndpoint.USEast1);
 

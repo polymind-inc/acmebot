@@ -113,7 +113,7 @@ builder.Services.AddSingleton(provider =>
         return new BlobContainerClient(connectionString, acmeStateContainerName);
     }
 
-    var blobServiceUri = storageSettings.GetBlobServiceUri();
+    var blobServiceUri = storageSettings.GetBlobServiceUri(environment.StorageEndpointSuffix);
     var clientId = storageSettings.ClientId;
 
     var managedIdentityId = string.IsNullOrWhiteSpace(clientId) ? ManagedIdentityId.SystemAssigned : ManagedIdentityId.FromUserAssignedClientId(clientId);
@@ -159,23 +159,29 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
     dnsProviders.TryAdd(options.Akamai, o => new AkamaiEdgeDnsProvider(o));
     dnsProviders.TryAdd(options.AzureDns, o => new AzureDnsProvider(
         o,
-        environment,
+        environment.ResourceManager,
         ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.AzurePrivateDns, o => new AzurePrivateDnsProvider(
         o,
-        environment,
+        environment.ResourceManager,
         ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.Cloudflare, o => new CloudflareProvider(o));
     dnsProviders.TryAdd(options.CustomDns, o => new CustomDnsProvider(o));
     dnsProviders.TryAdd(options.DnsMadeEasy, o => new DnsMadeEasyProvider(o));
     dnsProviders.TryAdd(options.GandiLiveDns, o => new GandiLiveDnsProvider(o));
     dnsProviders.TryAdd(options.GoDaddy, o => new GoDaddyProvider(o));
-    dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(o, ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
+    dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(
+        o,
+        environment.ResourceManager.Audience,
+        ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.IonosDns, o => new IonosDnsProvider(o));
     dnsProviders.TryAdd(options.Ovh, o => new OvhProvider(o));
     dnsProviders.TryAdd(options.PowerDns, o => new PowerDnsProvider(o));
     dnsProviders.TryAdd(options.Regfish, o => new RegfishProvider(o));
-    dnsProviders.TryAdd(options.Route53, o => new Route53Provider(o, ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
+    dnsProviders.TryAdd(options.Route53, o => new Route53Provider(
+        o,
+        environment.ResourceManager.Audience,
+        ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
     dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, tokenCredential));
     dnsProviders.TryAdd(options.UnitedDomains, o => new UnitedDomainsProvider(o));
 

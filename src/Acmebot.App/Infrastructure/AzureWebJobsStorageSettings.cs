@@ -15,7 +15,7 @@ public sealed record AzureWebJobsStorageSettings(string? ConnectionString, strin
             GetConnectionProperty(configuration, "clientId"));
     }
 
-    public string GetBlobServiceUri()
+    public string GetBlobServiceUri(string storageEndpointSuffix)
     {
         if (!string.IsNullOrWhiteSpace(BlobServiceUri))
         {
@@ -24,7 +24,7 @@ public sealed record AzureWebJobsStorageSettings(string? ConnectionString, strin
 
         if (!string.IsNullOrWhiteSpace(AccountName))
         {
-            return $"https://{AccountName}.blob.core.windows.net";
+            return $"https://{AccountName}.blob.{storageEndpointSuffix}";
         }
 
         throw new InvalidOperationException("AzureWebJobsStorage, AzureWebJobsStorage__blobServiceUri, or AzureWebJobsStorage__accountName is required.");

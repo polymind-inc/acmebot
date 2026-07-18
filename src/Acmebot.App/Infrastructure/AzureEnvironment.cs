@@ -7,6 +7,7 @@ public class AzureEnvironment
 {
     public required Uri AuthorityHost { get; init; }
     public required ArmEnvironment ResourceManager { get; init; }
+    public required string StorageEndpointSuffix { get; init; }
 
     public static AzureEnvironment Get(string name) => s_environments[name];
 
@@ -17,7 +18,8 @@ public class AzureEnvironment
             new AzureEnvironment
             {
                 AuthorityHost = AzureAuthorityHosts.AzurePublicCloud,
-                ResourceManager = ArmEnvironment.AzurePublicCloud
+                ResourceManager = ArmEnvironment.AzurePublicCloud,
+                StorageEndpointSuffix = "core.windows.net"
             }
         },
         {
@@ -25,7 +27,8 @@ public class AzureEnvironment
             new AzureEnvironment
             {
                 AuthorityHost = AzureAuthorityHosts.AzureChina,
-                ResourceManager = ArmEnvironment.AzureChina
+                ResourceManager = ArmEnvironment.AzureChina,
+                StorageEndpointSuffix = "core.chinacloudapi.cn"
             }
         },
         {
@@ -33,7 +36,8 @@ public class AzureEnvironment
             new AzureEnvironment
             {
                 AuthorityHost = AzureAuthorityHosts.AzureGovernment,
-                ResourceManager = ArmEnvironment.AzureGovernment
+                ResourceManager = ArmEnvironment.AzureGovernment,
+                StorageEndpointSuffix = "core.usgovcloudapi.net"
             }
         }
     };

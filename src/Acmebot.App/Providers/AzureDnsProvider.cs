@@ -1,6 +1,5 @@
 ﻿using System.Net;
 
-using Acmebot.App.Infrastructure;
 using Acmebot.App.Options;
 
 using Azure;
@@ -11,9 +10,9 @@ using Azure.ResourceManager.Dns.Models;
 
 namespace Acmebot.App.Providers;
 
-public class AzureDnsProvider(AzureDnsOptions options, AzureEnvironment environment, TokenCredential credential) : IDnsProvider
+public class AzureDnsProvider(AzureDnsOptions options, ArmEnvironment environment, TokenCredential credential) : IDnsProvider
 {
-    private readonly ArmClient _armClient = new(credential, options.SubscriptionId, new ArmClientOptions { Environment = environment.ResourceManager });
+    private readonly ArmClient _armClient = new(credential, options.SubscriptionId, new ArmClientOptions { Environment = environment });
 
     public string Name => "Azure DNS";
 
