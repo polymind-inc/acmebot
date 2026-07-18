@@ -12,8 +12,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Akamai.EdgeGrid.Auth" Version="1.0.0-preview" />
-    <PackageReference Include="AWSSDK.Route53" Version="4.0.100.4" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.100.4" />
+    <PackageReference Include="AWSSDK.Route53" Version="4.0.100.5" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.100.5" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.8.2" />
     <PackageReference Include="Azure.ResourceManager.Dns" Version="1.1.1" />
@@ -32,8 +32,8 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
     <PackageReference Include="Microsoft.DurableTask.Generators" Version="2.1.0-preview.2" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
   </ItemGroup>
 
   <ItemGroup>
