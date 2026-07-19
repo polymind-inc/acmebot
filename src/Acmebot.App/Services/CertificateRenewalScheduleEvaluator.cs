@@ -45,6 +45,11 @@ internal static class CertificateRenewalScheduleEvaluator
 
     public static DateTimeOffset SelectRenewalTime(string certificateIdentifier, DateTimeOffset suggestedWindowStart, DateTimeOffset suggestedWindowEnd)
     {
+        if (suggestedWindowEnd <= suggestedWindowStart)
+        {
+            throw new ArgumentException("The suggested renewal window end must be after its start.", nameof(suggestedWindowEnd));
+        }
+
         // RFC 9773 Section 4.2 requires selecting a uniform random time within the suggested
         // window and renewing at exactly that moment. Deriving the offset from a hash of the
         // certificate identifier and the window keeps the selection stable across evaluations

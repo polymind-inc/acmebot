@@ -150,6 +150,15 @@ public sealed class CertificateRenewalScheduleEvaluatorTests
     }
 
     [Fact]
+    public void SelectRenewalTime_ThrowsForInvalidWindow()
+    {
+        var suggestedWindowStart = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        Assert.Throws<ArgumentException>(() => CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowStart));
+        Assert.Throws<ArgumentException>(() => CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowStart.AddHours(-1)));
+    }
+
+    [Fact]
     public void SelectNextCheck_WhenRenewalTimeIsBeforeRetryCheck_ReturnsRenewalTime()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
