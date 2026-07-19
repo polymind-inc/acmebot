@@ -69,6 +69,19 @@ public class CertificateActivities(
             };
         }
 
+        // RFC 9773 Section 4.3: renewal information must not be checked after the certificate
+        // has expired, so renew immediately without consulting the ARI endpoint.
+        if (properties.ExpiresOn is { } expiresOn && expiresOn <= now)
+        {
+            return new CertificateRenewalEvaluation
+            {
+                IsActive = true,
+                ShouldRenew = true,
+                NextCheck = now.Add(s_renewalInfoCheckInterval),
+                Reason = "Certificate has expired. Renewing immediately."
+            };
+        }
+
         if (properties.TryGetCertificateId(out var certificateId))
         {
             var acmeContext = await acmeClientFactory.CreateClientAsync();
@@ -79,12 +92,13 @@ public class CertificateActivities(
                 {
                     var renewalInfo = await acmeContext.Client.GetRenewalInfoAsync(certificateId);
                     var suggestedWindow = renewalInfo.Resource.SuggestedWindow;
+                    var renewalTime = CertificateRenewalScheduleEvaluator.SelectRenewalTime(certificateId, suggestedWindow.Start, suggestedWindow.End);
 
                     return new CertificateRenewalEvaluation
                     {
                         IsActive = true,
-                        ShouldRenew = suggestedWindow.Start <= now,
-                        NextCheck = SelectNextCheck(now, suggestedWindow.Start, suggestedWindow.End, renewalInfo.RetryAfter),
+                        ShouldRenew = renewalTime <= now,
+                        NextCheck = SelectNextCheck(now, renewalTime, renewalInfo.RetryAfter),
                         Reason = "Renewal is scheduled within the certificate authority's suggested renewal window."
                     };
                 }
@@ -126,8 +140,8 @@ public class CertificateActivities(
         }
     }
 
-    private static DateTimeOffset SelectNextCheck(DateTimeOffset now, DateTimeOffset suggestedWindowStart, DateTimeOffset suggestedWindowEnd, TimeSpan? retryAfter)
+    private static DateTimeOffset SelectNextCheck(DateTimeOffset now, DateTimeOffset renewalTime, TimeSpan? retryAfter)
     {
-        return CertificateRenewalScheduleEvaluator.SelectNextCheck(now, suggestedWindowStart, suggestedWindowEnd, retryAfter, s_renewalInfoCheckInterval);
+        return CertificateRenewalScheduleEvaluator.SelectNextCheck(now, renewalTime, retryAfter, s_renewalInfoCheckInterval);
     }
 }

@@ -115,37 +115,66 @@ public sealed class CertificateRenewalScheduleEvaluatorTests
     }
 
     [Fact]
-    public void SelectNextCheck_WhenRandomRenewalTimeIsBeforeRetryCheck_ReturnsRandomRenewalTime()
+    public void SelectRenewalTime_ReturnsTimeWithinSuggestedWindow()
     {
-        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var suggestedWindowStart = now.AddHours(1);
-        var suggestedWindowEnd = now.AddHours(3);
+        var suggestedWindowStart = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var suggestedWindowEnd = suggestedWindowStart.AddDays(2);
 
-        var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
-            now,
-            suggestedWindowStart,
-            suggestedWindowEnd,
-            retryAfter: TimeSpan.FromHours(4),
-            renewalInfoCheckInterval: TimeSpan.FromHours(6),
-            nextInt64: _ => TimeSpan.FromHours(1).Ticks);
+        var result = CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowEnd);
 
-        Assert.Equal(now.AddHours(2), result);
+        Assert.InRange(result, suggestedWindowStart, suggestedWindowEnd.AddTicks(-1));
     }
 
     [Fact]
-    public void SelectNextCheck_WhenRetryCheckIsBeforeRandomRenewalTime_ReturnsRetryCheck()
+    public void SelectRenewalTime_IsDeterministicForSameCertificateAndWindow()
+    {
+        var suggestedWindowStart = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var suggestedWindowEnd = suggestedWindowStart.AddDays(2);
+
+        var first = CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowEnd);
+        var second = CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowEnd);
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void SelectRenewalTime_VariesByCertificateIdentifier()
+    {
+        var suggestedWindowStart = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var suggestedWindowEnd = suggestedWindowStart.AddDays(2);
+
+        var first = CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE", suggestedWindowStart, suggestedWindowEnd);
+        var second = CertificateRenewalScheduleEvaluator.SelectRenewalTime("aYhba4dGQEHhs3uEe6CuLN4ByNQ.AQAB", suggestedWindowStart, suggestedWindowEnd);
+
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void SelectNextCheck_WhenRenewalTimeIsBeforeRetryCheck_ReturnsRenewalTime()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var suggestedWindowStart = now.AddHours(2);
-        var suggestedWindowEnd = now.AddHours(5);
+        var renewalTime = now.AddHours(2);
 
         var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
             now,
-            suggestedWindowStart,
-            suggestedWindowEnd,
+            renewalTime,
+            retryAfter: TimeSpan.FromHours(4),
+            renewalInfoCheckInterval: TimeSpan.FromHours(6));
+
+        Assert.Equal(renewalTime, result);
+    }
+
+    [Fact]
+    public void SelectNextCheck_WhenRetryCheckIsBeforeRenewalTime_ReturnsRetryCheck()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var renewalTime = now.AddHours(3);
+
+        var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
+            now,
+            renewalTime,
             retryAfter: TimeSpan.FromMinutes(30),
-            renewalInfoCheckInterval: TimeSpan.FromHours(6),
-            nextInt64: _ => TimeSpan.FromHours(1).Ticks);
+            renewalInfoCheckInterval: TimeSpan.FromHours(6));
 
         Assert.Equal(now.AddMinutes(30), result);
     }
@@ -154,17 +183,59 @@ public sealed class CertificateRenewalScheduleEvaluatorTests
     public void SelectNextCheck_WithoutRetryAfter_UsesDefaultRenewalInfoCheckInterval()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var suggestedWindowStart = now.AddHours(2);
-        var suggestedWindowEnd = now.AddHours(5);
+        var renewalTime = now.AddHours(3);
 
         var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
             now,
-            suggestedWindowStart,
-            suggestedWindowEnd,
+            renewalTime,
             retryAfter: null,
-            renewalInfoCheckInterval: TimeSpan.FromHours(1),
-            nextInt64: _ => TimeSpan.FromHours(1).Ticks);
+            renewalInfoCheckInterval: TimeSpan.FromHours(1));
 
         Assert.Equal(now.AddHours(1), result);
+    }
+
+    [Fact]
+    public void SelectNextCheck_WhenRenewalTimeIsInPast_ReturnsRetryCheck()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var renewalTime = now.AddHours(-1);
+
+        var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
+            now,
+            renewalTime,
+            retryAfter: null,
+            renewalInfoCheckInterval: TimeSpan.FromHours(6));
+
+        Assert.Equal(now.AddHours(6), result);
+    }
+
+    [Fact]
+    public void SelectNextCheck_ClampsRetryAfterBelowOneMinute()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var renewalTime = now.AddDays(3);
+
+        var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
+            now,
+            renewalTime,
+            retryAfter: TimeSpan.Zero,
+            renewalInfoCheckInterval: TimeSpan.FromHours(6));
+
+        Assert.Equal(now.AddMinutes(1), result);
+    }
+
+    [Fact]
+    public void SelectNextCheck_ClampsRetryAfterAboveOneDay()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var renewalTime = now.AddDays(30);
+
+        var result = CertificateRenewalScheduleEvaluator.SelectNextCheck(
+            now,
+            renewalTime,
+            retryAfter: TimeSpan.FromDays(14),
+            renewalInfoCheckInterval: TimeSpan.FromHours(6));
+
+        Assert.Equal(now.AddDays(1), result);
     }
 }
