@@ -13,14 +13,24 @@ body:
 
         Please fill out the details below so the issue can be reproduced and investigated efficiently.
 
+        Before submitting, review the [latest release](https://github.com/polymind-inc/acmebot/releases/latest), update Acmebot, and confirm that the issue still occurs. If you cannot update, explain why in **Additional context**.
+
   - type: input
     id: acmebot-version
     attributes:
       label: Acmebot version
-      description: The version of Acmebot you are using.
-      placeholder: e.g. v5.x.x
+      description: Enter the exact version matching an Acmebot release or tag. Values such as "v5" or "latest" are not accepted.
+      placeholder: e.g. v5.1.2
     validations:
       required: true
+
+  - type: checkboxes
+    id: latest-version-confirmation
+    attributes:
+      label: Latest version confirmation
+      options:
+        - label: I reviewed the latest release and updated to it, or explained in Additional context why I cannot update.
+          required: true
 
   - type: dropdown
     id: dns-provider
