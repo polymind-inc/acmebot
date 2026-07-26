@@ -24,7 +24,7 @@ public class UnitedDomainsProvider(UnitedDomainsOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         var records = values.Select(v => new RecordParam
         {
@@ -39,7 +39,7 @@ public class UnitedDomainsProvider(UnitedDomainsOptions options) : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         var zoneDetail = await _client.GetZoneAsync(zone.Id, recordName, "TXT", cancellationToken);
 

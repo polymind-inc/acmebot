@@ -31,7 +31,7 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         var recordSet = new RecordSet
         {
@@ -46,7 +46,7 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         try
         {

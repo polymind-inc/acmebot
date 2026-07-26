@@ -80,7 +80,7 @@ public class GoogleDnsProvider : IDnsProvider
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}.";
+        var recordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
 
         var change = new Change
         {
@@ -101,7 +101,7 @@ public class GoogleDnsProvider : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}.";
+        var recordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
 
         var request = _dnsService.ResourceRecordSets.List(_projectId, zone.Id);
 

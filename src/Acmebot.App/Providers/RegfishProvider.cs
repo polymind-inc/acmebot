@@ -31,7 +31,7 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = GetAbsoluteRecordName(zone.Name, relativeRecordName);
+        var recordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
 
         foreach (var value in values)
         {
@@ -49,7 +49,7 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var absoluteRecordName = GetAbsoluteRecordName(zone.Name, relativeRecordName);
+        var absoluteRecordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
         var records = await _regfishClient.ListRecordsAsync(zone.Name, cancellationToken);
 
         foreach (var record in records)
@@ -84,18 +84,6 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
 
     private static string NormalizeName(string value) => value.Trim().TrimEnd('.');
 
-    private static string GetAbsoluteRecordName(string zoneName, string relativeRecordName)
-    {
-        var normalizedZoneName = NormalizeName(zoneName);
-
-        if (string.IsNullOrWhiteSpace(relativeRecordName) || string.Equals(relativeRecordName.Trim(), "@", StringComparison.Ordinal))
-        {
-            return $"{normalizedZoneName}.";
-        }
-
-        var normalizedRelativeRecordName = NormalizeName(relativeRecordName);
-        return $"{normalizedRelativeRecordName}.{normalizedZoneName}.";
-    }
     private class RegfishClient
     {
         public RegfishClient(string apiKey)

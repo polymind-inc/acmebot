@@ -30,7 +30,7 @@ public class CustomDnsProvider(CustomDnsOptions options) : IDnsProvider
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         var record = new RecordParam
         {
@@ -44,7 +44,7 @@ public class CustomDnsProvider(CustomDnsOptions options) : IDnsProvider
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}";
+        var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
         try
         {

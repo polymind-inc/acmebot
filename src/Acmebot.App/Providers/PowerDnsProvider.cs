@@ -28,7 +28,7 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
     {
         var rrset = new RrSet
         {
-            Name = BuildRecordName(zone.Name, relativeRecordName),
+            Name = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName),
             Type = "TXT",
             Ttl = 60,
             ChangeType = "REPLACE",
@@ -42,7 +42,7 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
     {
         var rrset = new RrSet
         {
-            Name = BuildRecordName(zone.Name, relativeRecordName),
+            Name = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName),
             Type = "TXT",
             ChangeType = "DELETE"
         };
@@ -60,18 +60,6 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
     private static string StripTrailingDot(string value) => value.EndsWith('.') ? value[..^1] : value;
 
     private static string QuoteTxtValue(string value) => $"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"";
-
-    private static string BuildRecordName(string zoneName, string relativeRecordName)
-    {
-        var normalizedZone = StripTrailingDot(zoneName);
-
-        if (string.IsNullOrWhiteSpace(relativeRecordName) || relativeRecordName == "@")
-        {
-            return $"{normalizedZone}.";
-        }
-
-        return $"{StripTrailingDot(relativeRecordName)}.{normalizedZone}.";
-    }
 
     private class PowerDnsClient
     {

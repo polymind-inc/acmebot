@@ -40,7 +40,7 @@ public class Route53Provider(Route53Options options, string audience, TokenCrede
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}.";
+        var recordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
 
         var change = new Change
         {
@@ -61,7 +61,7 @@ public class Route53Provider(Route53Options options, string audience, TokenCrede
 
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        var recordName = $"{relativeRecordName}.{zone.Name}.";
+        var recordName = DnsRecordName.ToAbsoluteFqdn(zone.Name, relativeRecordName);
 
         var listRequest = new ListResourceRecordSetsRequest(zone.Id)
         {
