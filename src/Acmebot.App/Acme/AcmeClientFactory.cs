@@ -63,53 +63,70 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
         }
 
         var signer = accountKey.GenerateSigner();
-        var client = new AcmeClient(
-            _options.Endpoint,
-            new AcmeClientOptions
-            {
-                UserAgent = $"Acmebot/{Constants.ApplicationVersion}"
-            });
-        var directory = await client.GetDirectoryAsync();
-        AcmeAccountHandle accountHandle;
+        AcmeClient? client = null;
 
-        if (account is null)
+        // The client owns an HttpClient, and both it and the signer are only handed to the caller once
+        // the context has been fully built. Anything that fails in between (a directory fetch against an
+        // unreachable ACME endpoint, missing EAB credentials, a state store write) would otherwise leak
+        // them on every retry.
+        try
         {
-            var externalAccountBinding = CreateExternalAccountBinding();
-
-            if (externalAccountBinding is null && (directory.Metadata?.ExternalAccountRequired ?? false))
-            {
-                throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
-            }
-
-            accountHandle = await client.CreateAccountAsync(
-                signer,
-                new AcmeNewAccountRequest
+            client = new AcmeClient(
+                _options.Endpoint,
+                new AcmeClientOptions
                 {
-                    Contact = contacts,
-                    TermsOfServiceAgreed = true
-                },
-                externalAccountBinding);
-            account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
+                    UserAgent = $"Acmebot/{Constants.ApplicationVersion}"
+                });
 
-            if (isNewAccountKey)
+            var directory = await client.GetDirectoryAsync();
+            AcmeAccountHandle accountHandle;
+
+            if (account is null)
             {
-                await stateStore.SaveAsync(accountKey, "account_key.json");
+                var externalAccountBinding = CreateExternalAccountBinding();
+
+                if (externalAccountBinding is null && (directory.Metadata?.ExternalAccountRequired ?? false))
+                {
+                    throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
+                }
+
+                accountHandle = await client.CreateAccountAsync(
+                    signer,
+                    new AcmeNewAccountRequest
+                    {
+                        Contact = contacts,
+                        TermsOfServiceAgreed = true
+                    },
+                    externalAccountBinding);
+                account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
+
+                if (isNewAccountKey)
+                {
+                    await stateStore.SaveAsync(accountKey, "account_key.json");
+                }
+
+                await stateStore.SaveAsync(account, "account.json");
+            }
+            else
+            {
+                accountHandle = account.ToAccountHandle(signer);
             }
 
-            await stateStore.SaveAsync(account, "account.json");
+            return new AcmeClientContext
+            {
+                Client = client,
+                Directory = directory,
+                Signer = signer,
+                Account = accountHandle
+            };
         }
-        else
+        catch
         {
-            accountHandle = account.ToAccountHandle(signer);
-        }
+            client?.Dispose();
+            signer.Dispose();
 
-        return new AcmeClientContext
-        {
-            Client = client,
-            Directory = directory,
-            Signer = signer,
-            Account = accountHandle
-        };
+            throw;
+        }
     }
 
     private AcmeExternalAccountBindingOptions? CreateExternalAccountBinding()
