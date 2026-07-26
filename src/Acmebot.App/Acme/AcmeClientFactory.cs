@@ -122,8 +122,9 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
         }
         catch
         {
-            client?.Dispose();
+            // Same order as AcmeClientContext.Dispose(), which owns these once the context exists.
             signer.Dispose();
+            client?.Dispose();
 
             throw;
         }
