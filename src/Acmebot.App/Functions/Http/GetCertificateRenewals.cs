@@ -19,6 +19,8 @@ public partial class GetCertificateRenewals(
     CertificateQueryService certificateQueryService,
     ILogger<GetCertificateRenewals> logger) : HttpFunctionBase(httpContextAccessor)
 {
+    private const int MaxParallelism = 8;
+
     [Function($"{nameof(GetCertificateRenewals)}_{nameof(HttpStart)}")]
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/renewals")] HttpRequest req,
@@ -31,12 +33,20 @@ public partial class GetCertificateRenewals(
 
         var certificates = await certificateQueryService.GetRenewalTargetsAsync(req.HttpContext.RequestAborted);
 
-        var output = await Task.WhenAll(certificates.Select(async certificate =>
-        {
-            var schedule = await GetRenewalSchedule(starter, certificate.Name, req.HttpContext.RequestAborted);
+        // Each certificate needs its own scheduler instance lookup against the Durable task hub. Fetch
+        // them in parallel with a bounded degree so a large certificate fleet does not throttle storage.
+        var output = new CertificateRenewalItem[certificates.Count];
 
-            return CreateRenewalItem(certificate, schedule);
-        }));
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, certificates.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = MaxParallelism, CancellationToken = req.HttpContext.RequestAborted },
+            async (index, token) =>
+            {
+                var certificate = certificates[index];
+                var schedule = await GetRenewalSchedule(starter, certificate.Name, token);
+
+                output[index] = CreateRenewalItem(certificate, schedule);
+            });
 
         LogCertificateRenewalsRetrieved(logger, output.Length);
 
