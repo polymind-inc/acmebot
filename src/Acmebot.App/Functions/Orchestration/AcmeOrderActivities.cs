@@ -76,12 +76,16 @@ public partial class AcmeOrderActivities(
                 problems.Add(challenge.Error);
             }
 
-            if (problems.Count > 0 && problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
+            // The certificate authority does not always attach the failure to a challenge, so fall back
+            // to the order-level problem before giving up on reporting a cause.
+            if (problems.Count == 0 && orderDetails.Payload.Error is { } orderError)
             {
-                throw new RetriableOrchestratorException("ACME validation failed because of a DNS-related error. The operation will be retried automatically.");
+                LogAcmeDomainValidationError(logger, JsonSerializer.Serialize(orderError));
+
+                problems.Add(orderError);
             }
 
-            throw new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonSerializer.Serialize(problems.Last())}");
+            throw CreateOrderInvalidException(problems);
         }
 
         if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
@@ -183,6 +187,21 @@ public partial class AcmeOrderActivities(
 
     [LoggerMessage(LogLevel.Warning, "ACME order replacement was already consumed by another order. Retrying without ARI replaces hint. CertificateId: {CertificateId}")]
     private static partial void LogAlreadyReplacedRetry(ILogger logger, string certificateId);
+
+    internal static Exception CreateOrderInvalidException(IReadOnlyList<AcmeProblemDetails> problems)
+    {
+        if (problems.Count == 0)
+        {
+            return new InvalidOperationException("ACME validation failed and the order is now invalid, but the certificate authority did not report a problem for the order or any of its challenges. Review the order on the certificate authority and retry the operation.");
+        }
+
+        if (problems.All(x => x.Type is { } type && type == AcmeProblemTypes.Dns))
+        {
+            return new RetriableOrchestratorException("ACME validation failed because of a DNS-related error. The operation will be retried automatically.");
+        }
+
+        return new InvalidOperationException($"ACME validation failed and the order is now invalid. Review the reported problem and retry the operation.\nLast problem: {JsonSerializer.Serialize(problems[^1])}");
+    }
 
     internal static async Task<OrderDetails> CreateOrderAsync(AcmeClientContext acmeContext, IReadOnlyList<string> dnsNames, string? profile, string? replaces, ILogger logger)
     {

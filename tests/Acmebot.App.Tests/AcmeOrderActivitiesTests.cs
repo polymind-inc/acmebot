@@ -85,6 +85,40 @@ public sealed class AcmeOrderActivitiesTests
         Assert.Equal("tlsserver", secondPayload.RootElement.GetProperty("profile").GetString());
     }
 
+    [Fact]
+    public void CreateOrderInvalidException_WithoutProblems_ReportsMissingProblemInsteadOfThrowing()
+    {
+        var exception = AcmeOrderActivities.CreateOrderInvalidException([]);
+
+        var invalidOperationException = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Contains("did not report a problem", invalidOperationException.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CreateOrderInvalidException_WithOnlyDnsProblems_IsRetriable()
+    {
+        var exception = AcmeOrderActivities.CreateOrderInvalidException(
+        [
+            new AcmeProblemDetails { Type = AcmeProblemTypes.Dns },
+            new AcmeProblemDetails { Type = AcmeProblemTypes.Dns }
+        ]);
+
+        Assert.IsType<RetriableOrchestratorException>(exception);
+    }
+
+    [Fact]
+    public void CreateOrderInvalidException_WithNonDnsProblem_ReportsLastProblem()
+    {
+        var exception = AcmeOrderActivities.CreateOrderInvalidException(
+        [
+            new AcmeProblemDetails { Type = AcmeProblemTypes.Dns },
+            new AcmeProblemDetails { Type = AcmeProblemTypes.Caa, Detail = "caa forbids issuance" }
+        ]);
+
+        var invalidOperationException = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Contains("caa forbids issuance", invalidOperationException.Message, StringComparison.Ordinal);
+    }
+
     private static AcmeAccountHandle CreateAccountHandle(AcmeSigner signer)
     {
         return new AcmeAccountHandle
