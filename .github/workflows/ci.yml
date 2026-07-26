@@ -34,6 +34,9 @@ jobs:
           dotnet format --verify-no-changes --verbosity detailed --no-restore ./Acmebot.slnx
           dotnet build -c Release --no-restore ./Acmebot.slnx
 
+      - name: Test backend
+        run: dotnet test -c Release --no-build --no-restore ./Acmebot.slnx
+
   dashboard:
     name: Dashboard
     runs-on: ubuntu-latest
