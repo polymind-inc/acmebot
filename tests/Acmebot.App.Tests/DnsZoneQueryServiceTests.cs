@@ -1,6 +1,8 @@
 ﻿using Acmebot.App.Providers;
 using Acmebot.App.Services;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 
 namespace Acmebot.App.Tests;
@@ -16,7 +18,7 @@ public sealed class DnsZoneQueryServiceTests
                 CreateZone("b", "b.example.com"),
                 CreateZone("a", "a.example.com")
             ]);
-        var service = new DnsZoneQueryService([provider]);
+        var service = CreateService(provider);
 
         var groups = await service.GetAllDnsZonesAsync(TestContext.Current.CancellationToken);
 
@@ -30,7 +32,7 @@ public sealed class DnsZoneQueryServiceTests
     {
         var failingProvider = new TestDnsProvider("Broken DNS", exception: new InvalidOperationException("boom"));
         var workingProvider = new TestDnsProvider("Working DNS", [CreateZone("example", "example.com")]);
-        var service = new DnsZoneQueryService([failingProvider, workingProvider]);
+        var service = CreateService(failingProvider, workingProvider);
 
         var groups = await service.GetAllDnsZonesAsync(TestContext.Current.CancellationToken);
 
@@ -52,7 +54,7 @@ public sealed class DnsZoneQueryServiceTests
     public async Task GetAllDnsZonesAsync_WhenCancellationIsRequested_ThrowsOperationCanceledException()
     {
         var provider = new TestDnsProvider("Test DNS", [CreateZone("example", "example.com")]);
-        var service = new DnsZoneQueryService([provider]);
+        var service = CreateService(provider);
         using var cancellationTokenSource = new CancellationTokenSource();
 
         await cancellationTokenSource.CancelAsync();
@@ -61,21 +63,23 @@ public sealed class DnsZoneQueryServiceTests
     }
 
     [Fact]
-    public async Task ListZonesAsync_WithUnknownProvider_ReturnsEmpty()
+    public async Task ListZonesAsync_WithUnknownProvider_ThrowsPreconditionExceptionNamingConfiguredProviders()
     {
         var provider = new TestDnsProvider("Test DNS", [CreateZone("example", "example.com")]);
-        var service = new DnsZoneQueryService([provider]);
+        var service = CreateService(provider);
 
-        var zones = await service.ListZonesAsync("Other DNS", TestContext.Current.CancellationToken);
+        var exception = await Assert.ThrowsAsync<PreconditionException>(
+            () => service.ListZonesAsync("Other DNS", TestContext.Current.CancellationToken));
 
-        Assert.Empty(zones);
+        Assert.Contains("'Other DNS' is not configured", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Test DNS", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task ListZonesAsync_WithKnownProvider_ReturnsProviderZones()
     {
         var provider = new TestDnsProvider("Test DNS", [CreateZone("example", "example.com")]);
-        var service = new DnsZoneQueryService([provider]);
+        var service = CreateService(provider);
 
         var zones = await service.ListZonesAsync("Test DNS", TestContext.Current.CancellationToken);
 
@@ -83,6 +87,9 @@ public sealed class DnsZoneQueryServiceTests
         Assert.Equal("example.com", zone.Name);
         Assert.Same(provider, zone.DnsProvider);
     }
+
+    private static DnsZoneQueryService CreateService(params IDnsProvider[] dnsProviders)
+        => new(dnsProviders, NullLogger<DnsZoneQueryService>.Instance);
 
     private static DnsZone CreateZone(string id, string name)
     {
