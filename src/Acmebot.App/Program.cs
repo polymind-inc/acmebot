@@ -47,7 +47,8 @@ builder.Services.Configure<JsonSerializerOptions>(options =>
 // Add Options
 builder.Services.AddOptions<AcmebotOptions>()
        .Bind(builder.Configuration.GetSection("Acmebot"))
-       .ValidateDataAnnotations();
+       .ValidateDataAnnotations()
+       .ValidateOnStart();
 
 builder.Services.AddWebhookOptions(builder.Configuration.GetSection("Acmebot:Webhook"));
 
