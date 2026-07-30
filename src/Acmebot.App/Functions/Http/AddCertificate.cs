@@ -42,7 +42,7 @@ public partial class AddCertificate(IHttpContextAccessor httpContextAccessor, Ap
 
         LogOrchestrationStarted(logger, certificatePolicyItem.CertificateName, instanceId);
 
-        return AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }, null);
+        return Accepted(Url.RouteUrl($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }), null);
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]

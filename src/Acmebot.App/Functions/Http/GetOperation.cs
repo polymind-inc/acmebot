@@ -33,7 +33,7 @@ public partial class GetOperation(IHttpContextAccessor httpContextAccessor, ILog
         return metadata.RuntimeStatus switch
         {
             OrchestrationRuntimeStatus.Failed => Problem(metadata.FailureDetails?.ErrorMessage, type: metadata.FailureDetails?.ErrorType),
-            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(HttpStart)}", new { instanceId }, null),
+            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => Accepted(Url.RouteUrl($"{nameof(GetOperation)}_{nameof(HttpStart)}", new { instanceId }), null),
             _ => Ok()
         };
     }

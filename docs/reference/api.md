@@ -35,7 +35,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 
 ## Operation Lifecycle
 
-`POST /api/certificates` and `POST /api/certificates/{certificateName}/renew` return `202 Accepted` with a `Location` header. Poll that URL until it returns:
+`POST /api/certificates` and `POST /api/certificates/{certificateName}/renew` return `202 Accepted` with a `Location` header. The header holds a path relative to the request, so resolve it against the endpoint you called. Poll that URL until it returns:
 
 | Status | Meaning |
 | --- | --- |

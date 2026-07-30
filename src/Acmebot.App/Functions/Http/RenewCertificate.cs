@@ -43,7 +43,7 @@ public partial class RenewCertificate(
 
         LogOrchestrationStarted(logger, certificateName, instanceId);
 
-        return AcceptedAtFunction($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }, null);
+        return Accepted(Url.RouteUrl($"{nameof(GetOperation)}_{nameof(GetOperation.HttpStart)}", new { instanceId }), null);
     }
 
     [LoggerMessage(LogLevel.Information, "Certificate renewal orchestration started. CertificateName: {CertificateName}. InstanceId: {InstanceId}")]
