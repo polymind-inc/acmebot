@@ -58,7 +58,9 @@ Use the delegated DNS-01 issue mode when the DNS provider selected in Acmebot ma
 
 ### DNS Alias
 
-Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then writes TXT records at `_acme-challenge.<dnsAlias>` with the selected DNS provider. The alias value must not include the `_acme-challenge` prefix. In delegated DNS-01 mode, the dashboard generates a unique alias record in the selected alias zone and shows the CNAME records to create in the certificate domain's DNS provider.
+Set DNS Alias when the ACME challenge should be created under another domain. Acmebot then writes TXT records at `_acme-challenge.<dnsAlias>` with the selected DNS provider. The alias value must not include the `_acme-challenge` prefix. In delegated DNS-01 mode, the dashboard suggests a unique alias record in the selected alias zone and shows the CNAME records to create in the certificate domain's DNS provider.
+
+The **DNS alias record** field accepts a custom record name for that alias. The `_acme-challenge.` prefix and the alias zone suffix are fixed, so only the record name in between is editable. Leave the field empty to keep the generated record name, which changes whenever the certificate's DNS names change. Set an explicit record name when the CNAME records are created manually and must stay stable across renewals and DNS name changes.
 
 ### ACME Profile
 

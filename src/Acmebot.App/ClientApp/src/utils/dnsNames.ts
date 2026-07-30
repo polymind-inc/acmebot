@@ -117,18 +117,12 @@ function toAsciiOrNull(value: string): string | null {
   }
 }
 
-export function createDelegatedDnsAlias(dnsNames: string[], zone: SelectableDnsZone): string {
+export function createDelegatedAliasRecordName(dnsNames: string[]): string {
   if (dnsNames.length === 0) {
     return '';
   }
 
-  const zoneName = toAsciiDnsName(zone.name);
-
-  if (!zoneName) {
-    return '';
-  }
-
-  return `${createAliasRecordName(dnsNames)}.${zoneName}`;
+  return createAliasRecordName(dnsNames);
 }
 
 export function createDelegatedCnameInstructions(dnsNames: string[], dnsAlias: string): CnameInstruction[] {

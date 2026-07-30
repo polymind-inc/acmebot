@@ -4,7 +4,7 @@ import { CirclePlus, KeyRound, ShieldPlus, Tag, X } from 'lucide-vue-next';
 
 import type { CertificatePolicyItem, DnsZoneGroup, KeyCurveName, KeyType, SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
-import { createCertificateName, createDelegatedDnsAlias } from '@/utils/dnsNames';
+import { createCertificateName } from '@/utils/dnsNames';
 
 import AdvancedCertificateOptions from './AdvancedCertificateOptions.vue';
 import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
@@ -57,6 +57,7 @@ const issueModeOptions = {
 type IssueMode = keyof typeof issueModeOptions;
 
 const selectedZone = ref<SelectableDnsZone | null>(null);
+const delegatedAlias = reactive({ dnsAlias: '', message: '' });
 
 const validKeySizes = [2048, 3072, 4096];
 const validKeyCurves: KeyCurveName[] = ['P-256', 'P-384', 'P-521', 'P-256K'];
@@ -86,10 +87,13 @@ const tagValidation = computed(() => (form.useAdvancedOptions ? validateTags(for
 const tagError = computed(() => tagValidation.value.message);
 const zoneLabel = computed(() => activeIssueMode.value.zoneLabel);
 const zoneStepLabel = computed(() => activeIssueMode.value.zoneStepLabel);
-const delegatedDnsAlias = computed(() => (activeIssueMode.value.useGeneratedDnsAlias && selectedZone.value ? createDelegatedDnsAlias(form.dnsNames, selectedZone.value) : ''));
 const submitValidationMessage = computed(() => {
   if (form.dnsNames.length === 0) {
     return 'Add at least one DNS name.';
+  }
+
+  if (activeIssueMode.value.useGeneratedDnsAlias && !delegatedAlias.dnsAlias) {
+    return delegatedAlias.message || 'A DNS alias record is required.';
   }
 
   return certificateNameError.value || keyOptionError.value || tagError.value;
@@ -139,6 +143,7 @@ watch(
   () => {
     form.dnsNames = [];
     form.dnsProviderName = activeIssueMode.value.useSelectedZoneProvider && selectedZone.value ? selectedZone.value.dnsProviderName : '';
+    updateDelegatedAlias('', '');
   },
 );
 
@@ -168,8 +173,14 @@ watch(
   },
 );
 
+function updateDelegatedAlias(dnsAlias: string, message: string): void {
+  delegatedAlias.dnsAlias = dnsAlias;
+  delegatedAlias.message = message;
+}
+
 function resetForm(): void {
   selectedZone.value = null;
+  updateDelegatedAlias('', '');
   form.issueMode = 'managed';
   form.dnsNames = [];
   form.dnsProviderName = '';
@@ -268,7 +279,7 @@ function submit(): void {
     return;
   }
 
-  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedDnsAlias.value : '';
+  const dnsAlias = activeIssueMode.value.useGeneratedDnsAlias ? delegatedAlias.dnsAlias : '';
 
   const policy: CertificatePolicyItem = {
     dnsNames: form.dnsNames,
@@ -445,6 +456,7 @@ function submit(): void {
               :dns-provider-name="form.dnsProviderName"
               @add-dns-name="addDnsName"
               @remove-dns-name="removeDnsName"
+              @alias-change="updateDelegatedAlias"
             />
 
             <div class="form-section form-section--inline">

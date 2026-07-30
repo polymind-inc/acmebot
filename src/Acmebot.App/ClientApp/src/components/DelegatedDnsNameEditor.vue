@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-vue-next';
 
 import type { SelectableDnsZone } from '@/api/types';
 import { displayDnsName } from '@/utils/certificates';
-import { createDelegatedCnameInstructions, createDelegatedDnsAlias, readDnsNameInput } from '@/utils/dnsNames';
+import { createDelegatedAliasRecordName, createDelegatedCnameInstructions, createManagedDnsName, readDnsNameInput, validateOptionalDnsAlias } from '@/utils/dnsNames';
 
 const props = defineProps<{
   selectedZone: SelectableDnsZone | null;
@@ -15,20 +15,34 @@ const props = defineProps<{
 const emit = defineEmits<{
   'add-dns-name': [dnsName: string, dnsProviderName: string];
   'remove-dns-name': [dnsName: string];
+  'alias-change': [dnsAlias: string, message: string];
 }>();
 
 const recordName = ref('');
 const dnsNameError = ref('');
+const aliasRecordName = ref('');
 
 const requestedDnsName = computed(() => readDnsNameInput(recordName.value, 'DNS Name').value || null);
-const delegatedDnsAlias = computed(() => (props.selectedZone ? createDelegatedDnsAlias(props.dnsNames, props.selectedZone) : ''));
-const delegatedCnameInstructions = computed(() => createDelegatedCnameInstructions(props.dnsNames, delegatedDnsAlias.value));
+const generatedAliasRecordName = computed(() => createDelegatedAliasRecordName(props.dnsNames));
+const customAliasRecordName = computed(() => aliasRecordName.value.trim().replace(/^\.+|\.+$/g, ''));
+const effectiveAliasRecordName = computed(() => customAliasRecordName.value || generatedAliasRecordName.value);
+const delegatedDnsAlias = computed(() => (props.selectedZone && effectiveAliasRecordName.value ? createManagedDnsName(effectiveAliasRecordName.value, props.selectedZone) : ''));
+const aliasError = computed(() => validateOptionalDnsAlias(delegatedDnsAlias.value).message);
+const delegatedCnameInstructions = computed(() => createDelegatedCnameInstructions(props.dnsNames, aliasError.value ? '' : delegatedDnsAlias.value));
 
 watch(
   () => props.selectedZone,
   () => {
     dnsNameError.value = '';
   },
+);
+
+watch(
+  [delegatedDnsAlias, aliasError],
+  ([dnsAlias, message]) => {
+    emit('alias-change', message ? '' : dnsAlias, message);
+  },
+  { immediate: true },
 );
 
 function clearDnsNameError(): void {
@@ -123,10 +137,38 @@ function addDnsName(): void {
       </span>
     </div>
     <div
-      v-if="delegatedDnsAlias"
+      v-if="selectedZone"
       class="delegated-alias"
     >
-      <div class="form-result">
+      <div>
+        <label
+          class="form-label"
+          for="delegated-alias-record-name"
+        >DNS alias record</label>
+        <div class="compound-input compound-input--affixed">
+          <span class="compound-input__prefix">_acme-challenge.</span>
+          <input
+            id="delegated-alias-record-name"
+            v-model="aliasRecordName"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            :placeholder="generatedAliasRecordName || 'contoso-com'"
+            :aria-invalid="aliasError ? 'true' : 'false'"
+          >
+          <span class="compound-input__suffix">.{{ displayDnsName(selectedZone.name) }}</span>
+        </div>
+        <p
+          v-if="aliasError"
+          class="form-error"
+        >
+          {{ aliasError }}
+        </p>
+      </div>
+      <div
+        v-if="delegatedDnsAlias && !aliasError"
+        class="form-result"
+      >
         <span>DNS alias</span>
         <strong>{{ displayDnsName(delegatedDnsAlias) }}</strong>
       </div>

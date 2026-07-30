@@ -1213,6 +1213,30 @@ button:disabled {
   white-space: nowrap;
 }
 
+.compound-input__prefix {
+  min-height: 38px;
+  max-width: 260px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-right: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compound-input--affixed input {
+  border-radius: 0;
+}
+
+.compound-input--affixed .compound-input__suffix {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
 .compound-input .icon-button {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
@@ -1732,6 +1756,7 @@ button:disabled {
   }
 
   .compound-input input,
+  .compound-input__prefix,
   .compound-input__suffix,
   .compound-input .icon-button {
     width: 100%;
