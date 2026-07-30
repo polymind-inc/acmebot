@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
@@ -90,12 +89,8 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
 
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.regfish.com/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://api.regfish.com/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("x-api-key", apiKey);
         }
 

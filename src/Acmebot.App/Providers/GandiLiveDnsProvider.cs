@@ -56,12 +56,8 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
     {
         public GandiLiveDnsClient(string apiKey)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.gandi.net/v5/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://api.gandi.net/v5/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         }
 

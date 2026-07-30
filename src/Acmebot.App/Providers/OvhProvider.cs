@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -69,12 +68,7 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
         public OvhClient(string endpoint, string applicationKey, string applicationSecret, string consumerKey)
         {
             // DNS providers in this project own their API clients; this one is constructed once by the singleton provider.
-            _httpClient = new HttpClient(new ApiKeyHandler(applicationKey, applicationSecret, consumerKey))
-            {
-                BaseAddress = new Uri(NormalizeEndpoint(endpoint))
-            };
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient = DnsProviderHttpClient.Create(NormalizeEndpoint(endpoint), new ApiKeyHandler(applicationKey, applicationSecret, consumerKey));
         }
 
         private readonly HttpClient _httpClient;

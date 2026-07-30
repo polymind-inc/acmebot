@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -67,12 +66,7 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
     {
         public DnsMadeEasyClient(string apiKey, string secretKey)
         {
-            _httpClient = new HttpClient(new ApiKeyHandler(apiKey, secretKey))
-            {
-                BaseAddress = new Uri("https://api.dnsmadeeasy.com/V2.0/dns/")
-            };
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient = DnsProviderHttpClient.Create("https://api.dnsmadeeasy.com/V2.0/dns/", new ApiKeyHandler(apiKey, secretKey));
         }
 
         private readonly HttpClient _httpClient;

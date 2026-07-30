@@ -51,12 +51,8 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
     {
         public GoDaddyClient(string apiKey, string apiSecret)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.godaddy.com/v1/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://api.godaddy.com/v1/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("sso-key", $"{apiKey}:{apiSecret}");
         }
 

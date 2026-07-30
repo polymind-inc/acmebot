@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -69,12 +68,8 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
     {
         public IonosDnsClient(string apiKey)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.hosting.ionos.com/dns/v1/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://api.hosting.ionos.com/dns/v1/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-API-Key", apiKey);
         }
 

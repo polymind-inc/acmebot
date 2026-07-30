@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
@@ -70,12 +69,8 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
 
             var baseAddress = endpoint.AbsoluteUri.EndsWith('/') ? endpoint : new Uri(endpoint.AbsoluteUri + "/");
 
-            _httpClient = new HttpClient
-            {
-                BaseAddress = baseAddress
-            };
+            _httpClient = DnsProviderHttpClient.Create(baseAddress);
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-API-Key", apiKey);
 
             _serverId = Uri.EscapeDataString(serverId);

@@ -65,6 +65,8 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
             _httpClient = EdgeGridSigner.CreateHttpClient(new EdgeGridCredentials(host, clientToken, clientSecret, accessToken));
 
             _httpClient.BaseAddress = new Uri($"https://{host}/config-dns/v2/");
+
+            DnsProviderHttpClient.AddUserAgent(_httpClient);
         }
 
         private readonly HttpClient _httpClient;

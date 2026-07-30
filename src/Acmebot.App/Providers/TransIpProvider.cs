@@ -76,12 +76,7 @@ public class TransIpProvider : IDnsProvider
     {
         public TransIpClient(string customerName, CryptographyClient cryptoClient)
         {
-            _httpClient = new HttpClient(new TransIpSignHandler(customerName, cryptoClient))
-            {
-                BaseAddress = new Uri("https://api.transip.nl/v6/")
-            };
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/", new TransIpSignHandler(customerName, cryptoClient));
         }
 
         private readonly HttpClient _httpClient;
@@ -127,7 +122,7 @@ public class TransIpProvider : IDnsProvider
 
     private class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler(new HttpClientHandler())
     {
-        private readonly HttpClient _httpClient = new() { BaseAddress = new Uri("https://api.transip.nl/v6/") };
+        private readonly HttpClient _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/");
 
         private TransIpToken? _token;
 

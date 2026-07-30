@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
@@ -60,14 +59,9 @@ public class UnitedDomainsProvider(UnitedDomainsOptions options) : IDnsProvider
     {
         public UnitedDomainsClient(string apiKey)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://dnsapi.united-domains.de/dns/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://dnsapi.united-domains.de/dns/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("acmebot");
         }
 
         private readonly HttpClient _httpClient;

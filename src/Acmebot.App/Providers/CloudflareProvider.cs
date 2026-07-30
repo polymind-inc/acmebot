@@ -69,12 +69,8 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
     {
         public CloudflareClient(string apiToken)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.cloudflare.com/client/v4/")
-            };
+            _httpClient = DnsProviderHttpClient.Create("https://api.cloudflare.com/client/v4/");
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiToken);
         }
 

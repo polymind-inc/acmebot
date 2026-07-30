@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -60,12 +59,8 @@ public class CustomDnsProvider(CustomDnsOptions options) : IDnsProvider
     {
         public CustomDnsClient(string endpoint, string apiKey, string apiKeyHeaderName)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(endpoint)
-            };
+            _httpClient = DnsProviderHttpClient.Create(endpoint);
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(apiKeyHeaderName, apiKey);
         }
 
