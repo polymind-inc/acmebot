@@ -8,6 +8,14 @@ Acmebot v5 moves the application from the .NET in-process worker to the .NET iso
 
 Use the automatic migration unless your environment requires the same changes to be applied through an internal deployment pipeline.
 
+## Terraform Module Deployments
+
+The in-place migration described below does not apply to deployments managed by the former [`shibayan/keyvault-acmebot/azurerm`](https://registry.terraform.io/modules/shibayan/keyvault-acmebot/azurerm/latest) Terraform module.
+
+The v4 and v5 Terraform modules have substantially different resource structures, and the v5 module deploys Acmebot on Azure Functions Flex Consumption. There is no supported Terraform state, import, or in-place upgrade path between them. The recommended approach is to deploy a new v5 environment with the [`polymind-inc/acmebot/azurerm`](https://registry.terraform.io/modules/polymind-inc/acmebot/azurerm/latest) module, verify it, and then retire the v4 environment.
+
+The new deployment can continue to use an existing Key Vault by setting `acmebot.vault_uri`. Recreate and verify the managed identity permissions, DNS provider access, authentication, and application settings for the new Function App before removing the v4 deployment.
+
 ## What the Migration Changes
 
 The in-place migration updates only the existing Function App worker setting, .NET site runtime, Run From Package mode, and application package.
