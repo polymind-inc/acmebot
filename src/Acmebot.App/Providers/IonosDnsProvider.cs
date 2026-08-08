@@ -32,17 +32,17 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
     {
         var recordName = DnsRecordName.ToFqdn(zone.Name, relativeRecordName);
 
-        foreach (var value in values)
+        var records = values.Select(value => new RecordParam
         {
-            var record = new RecordParam
-            {
-                Name = recordName,
-                Type = "TXT",
-                Content = value,
-                Ttl = 60
-            };
+            Name = recordName,
+            Type = "TXT",
+            Content = value,
+            Ttl = 60
+        }).ToArray();
 
-            await _ionosDnsClient.CreateRecordAsync(zone.Id, record, cancellationToken);
+        if (records.Length != 0)
+        {
+            await _ionosDnsClient.CreateRecordsAsync(zone.Id, records, cancellationToken);
         }
     }
 
@@ -97,21 +97,28 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
 
         public async Task<IReadOnlyList<Record>> ListRecordsAsync(string zoneId, string recordName, CancellationToken cancellationToken = default)
         {
-            var result = await _httpClient.GetFromJsonAsync<Zone>($"zones/{zoneId}?recordName={recordName}&recordType=TXT", cancellationToken);
+            var result = await _httpClient.GetFromJsonAsync<Zone>(
+                $"zones/{zoneId}?recordName={recordName}&recordType=TXT",
+                cancellationToken);
 
             return result?.Records ?? [];
         }
 
-        public async Task CreateRecordAsync(string zoneId, RecordParam record, CancellationToken cancellationToken = default)
+        public async Task CreateRecordsAsync(string zoneId, RecordParam[] records, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsJsonAsync($"zones/{zoneId}/records", record, cancellationToken);
+            using var response = await _httpClient.PostAsJsonAsync(
+                $"zones/{zoneId}/records",
+                records,
+                cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
 
         public async Task DeleteRecordAsync(string zoneId, string recordId, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.DeleteAsync($"zones/{zoneId}/records/{recordId}", cancellationToken);
+            using var response = await _httpClient.DeleteAsync(
+                $"zones/{zoneId}/records/{recordId}",
+                cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }

@@ -138,7 +138,7 @@ Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private man
 
 | Setting | Description |
 | --- | --- |
-| `Acmebot__IonosDns__ApiKey` | IONOS DNS API key sent in the `X-API-Key` header. |
+| `Acmebot__IonosDns__ApiKey` | IONOS DNS API key in `<public-prefix>.<secret>` format, sent in the `X-API-Key` header. See the [IONOS API getting started guide](https://developer.hosting.ionos.com/docs/getstarted). |
 
 ### OVH
 

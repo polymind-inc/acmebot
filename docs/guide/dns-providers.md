@@ -268,14 +268,14 @@ https://www.googleapis.com/auth/ndev.clouddns.readwrite
 
 ## IONOS DNS
 
-Use an IONOS DNS API key that can list zones and manage DNS records.
+Create an API key as described in the [IONOS API getting started guide](https://developer.hosting.ionos.com/docs/getstarted). The value consists of the public prefix and secret joined by a period. Acmebot uses the [IONOS DNS API](https://developer.hosting.ionos.com/docs/dns) to list zones and manage DNS records.
 
 | Option | Description |
 | --- | --- |
-| `ApiKey` | IONOS DNS API key sent in the `X-API-Key` header. |
+| `ApiKey` | IONOS DNS API key in `<public-prefix>.<secret>` format, sent in the `X-API-Key` header. |
 
 ```text
-Acmebot__IonosDns__ApiKey=<api-key>
+Acmebot__IonosDns__ApiKey=<public-prefix>.<secret>
 ```
 
 ## OVH

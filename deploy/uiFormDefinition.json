@@ -989,7 +989,7 @@
                     "password": "API key",
                     "confirmPassword": "Confirm API key"
                   },
-                  "toolTip": "IONOS DNS API key.",
+                  "toolTip": "IONOS DNS API key in public-prefix.secret format.",
                   "constraints": {
                     "required": true
                   },
