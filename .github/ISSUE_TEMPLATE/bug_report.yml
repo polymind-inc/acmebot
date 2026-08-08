@@ -3,6 +3,7 @@ description: Create a report to help us improve
 title: "[Bug]: "
 labels:
   - bug
+type: Bug
 assignees:
   - shibayan
 body:

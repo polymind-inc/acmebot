@@ -3,6 +3,7 @@ description: Suggest an idea for this project
 title: "[Feature]: "
 labels:
   - enhancement
+type: Feature
 assignees:
   - shibayan
 body:
