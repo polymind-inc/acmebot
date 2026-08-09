@@ -45,6 +45,26 @@ These commands cover the contributor-facing validation checks.
 - Avoid unrelated refactoring in the same pull request.
 - Do not commit secrets, certificates, or populated `local.settings.json` values.
 
+## Issue and Pull Request Classification
+
+Issues use GitHub Issue Types as their primary classification:
+
+- `Bug` for unexpected behavior
+- `Feature` for requests, ideas, or new functionality
+- `Task` for a specific piece of implementation or documentation work
+
+Maintainers assign the organization-level `Priority` issue field during triage. An unset priority means the issue has not been prioritized yet. Labels beginning with `area:` identify affected components, and labels beginning with `status:` describe the current triage state.
+
+Pull requests use exactly one release category label:
+
+- `bug`
+- `enhancement`
+- `documentation`
+- `dependencies`
+- `maintenance`
+
+These release category labels are reserved for pull requests. The official GitHub pull request labeler adds `documentation` and `area:` labels from changed paths. It only adds labels and does not remove manually assigned labels. Maintainers assign `bug`, `enhancement`, `maintenance`, and `breaking-change` when applicable, while Dependabot applies dependency labels through its repository configuration. Pull request priority is inherited from its linked issue rather than represented by a label.
+
 ## Release Publishing
 
 The `Publish` workflow runs for version tags such as `v5.0.0`. Before pushing the tag, create a matching draft GitHub Release. The workflow uploads the Function App package, publishes the CLI package to NuGet, and then publishes the draft release.

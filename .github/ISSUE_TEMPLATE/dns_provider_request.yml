@@ -2,7 +2,8 @@ name: DNS Provider request
 description: Request support for a new DNS provider
 title: "[DNS Provider]: "
 labels:
-  - enhancement
+  - "area: dns-provider"
+  - "status: needs-triage"
 type: Feature
 assignees:
   - shibayan

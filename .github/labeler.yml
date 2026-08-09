@@ -1,0 +1,63 @@
+documentation:
+  - changed-files:
+      - any-glob-to-all-files:
+          - "{docs/**,README.md,**/README.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,SECURITY.md,SUPPORT.md}"
+
+"area: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - README.md
+          - "**/README.md"
+          - CONTRIBUTING.md
+          - CODE_OF_CONDUCT.md
+          - SECURITY.md
+          - SUPPORT.md
+
+"area: acme":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/Acmebot.Acme/**
+          - tests/Acmebot.Acme.Tests/**
+
+"area: backend":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/Acmebot.App/*
+          - src/Acmebot.App/Acme/**
+          - src/Acmebot.App/Extensions/**
+          - src/Acmebot.App/Functions/**
+          - src/Acmebot.App/Infrastructure/**
+          - src/Acmebot.App/Models/**
+          - src/Acmebot.App/Notifications/**
+          - src/Acmebot.App/Options/**
+          - src/Acmebot.App/Properties/**
+          - src/Acmebot.App/Providers/**
+          - src/Acmebot.App/Services/**
+          - src/Acmebot.App/wwwroot/**
+          - tests/Acmebot.App.Tests/**
+
+"area: dashboard":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/Acmebot.App/ClientApp/**
+
+"area: cli":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/Acmebot.Cli/**
+          - tests/Acmebot.Cli.Tests/**
+
+"area: deployment":
+  - changed-files:
+      - any-glob-to-any-file:
+          - deploy/**
+
+"area: dns-provider":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/Acmebot.App/Providers/**
+          - src/Acmebot.App/Options/*Dns*
+          - src/Acmebot.App/Extensions/Dns*
+          - src/Acmebot.App/Services/Dns*
+          - tests/Acmebot.App.Tests/*Dns*

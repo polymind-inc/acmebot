@@ -2,7 +2,7 @@ name: Feature request
 description: Suggest an idea for this project
 title: "[Feature]: "
 labels:
-  - enhancement
+  - "status: needs-triage"
 type: Feature
 assignees:
   - shibayan

@@ -9,6 +9,9 @@ changelog:
       - question
       - wontfix
   categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
     - title: New Features
       labels:
         - enhancement
@@ -21,6 +24,9 @@ changelog:
     - title: Dependency Updates
       labels:
         - dependencies
+    - title: Maintenance
+      labels:
+        - maintenance
     - title: Other Changes
       labels:
         - "*"
