@@ -63,7 +63,7 @@ Pull requests use exactly one release category label:
 - `dependencies`
 - `maintenance`
 
-These release category labels are reserved for pull requests. The official GitHub pull request labeler adds `documentation` and `area:` labels from changed paths. It only adds labels and does not remove manually assigned labels. Maintainers assign `bug`, `enhancement`, `maintenance`, and `breaking-change` when applicable, while Dependabot applies dependency labels through its repository configuration. Pull request priority is inherited from its linked issue rather than represented by a label.
+These release category labels are reserved for pull requests. For pull requests whose branch is in this repository, the official GitHub pull request labeler adds `documentation` and `area:` labels from changed paths. It only adds labels and does not remove manually assigned labels. Maintainers label pull requests from forks and assign `bug`, `enhancement`, `maintenance`, and `breaking-change` when applicable, while Dependabot applies dependency labels through its repository configuration. Pull request priority is inherited from its linked issue rather than represented by a label.
 
 ## Release Publishing
 

@@ -1,7 +1,7 @@
 name: Pull request labeler
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, reopened, synchronize, ready_for_review]
 
 permissions: {}
@@ -9,7 +9,7 @@ permissions: {}
 jobs:
   label:
     name: Add pull request labels
-    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
