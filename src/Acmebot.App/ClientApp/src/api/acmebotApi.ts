@@ -1,4 +1,4 @@
-import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ProblemDetails } from './types';
+import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ProblemDetails } from './types';
 
 const useMockApi = import.meta.env.DEV && import.meta.env.VITE_ACMEBOT_USE_MOCKS === 'true';
 
@@ -96,6 +96,15 @@ async function pollOperation(location: string): Promise<void> {
       throw new ApiError(getProblemMessage(response.status, body), response.status, body as ProblemDetails);
     }
   }
+}
+
+export async function getAccount(): Promise<AccountInfo> {
+  if (useMockApi) {
+    const { getMockAccount } = await import('./mockData');
+    return getMockAccount();
+  }
+
+  return requestJson<AccountInfo>('/api/account');
 }
 
 export async function getCertificates(): Promise<CertificateItem[]> {

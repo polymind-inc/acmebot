@@ -25,6 +25,7 @@
 }
 
 .brand-lockup,
+.header-actions,
 .header-status,
 .table-toolbar__actions,
 .table-controls,
@@ -90,6 +91,20 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   white-space: nowrap;
+}
+
+.header-actions {
+  gap: 8px;
+}
+
+.header-status--button {
+  cursor: pointer;
+}
+
+.header-status--button:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-subtle);
 }
 
 .app-main {
@@ -970,6 +985,7 @@ button:disabled {
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .metadata-value {
@@ -1022,6 +1038,86 @@ button:disabled {
   flex-wrap: wrap;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-subtle);
+}
+
+.drawer-state {
+  min-height: 240px;
+  padding: 40px 24px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.drawer-state > svg {
+  color: var(--color-accent);
+}
+
+.drawer-state strong,
+.drawer-empty strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+.drawer-state p,
+.drawer-empty p {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.drawer-state .secondary-button {
+  margin: 14px auto 0;
+}
+
+.drawer-state--error > svg {
+  color: var(--color-danger);
+}
+
+.drawer-empty {
+  margin-top: 10px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.account-identity-list {
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.account-identity-row {
+  min-width: 0;
+  padding: 9px 10px 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-identity-row:first-child {
+  border-top: 0;
+}
+
+.account-drawer__note {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .drawer__hint {
@@ -1688,6 +1784,10 @@ button:disabled {
     padding-bottom: 10px;
   }
 
+  .header-actions {
+    align-self: center;
+  }
+
   .table-toolbar,
   .app-footer__inner {
     align-items: stretch;
@@ -1888,6 +1988,16 @@ button:disabled {
 }
 
 @media (max-width: 520px) {
+  .app-header__inner {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .header-status {
     justify-content: center;
   }

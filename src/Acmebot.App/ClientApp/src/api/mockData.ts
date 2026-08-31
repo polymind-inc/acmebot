@@ -1,6 +1,12 @@
-import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
+import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
 
 const day = 86_400_000;
+
+const mockAccount: AccountInfo = {
+  accountUri: 'https://acme-v02.api.letsencrypt.org/acme/acct/1234567890',
+  directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
+  caaIdentities: ['letsencrypt.org'],
+};
 
 function dateFromNow(days: number): string {
   return new Date(Date.now() + days * day).toISOString();
@@ -196,6 +202,11 @@ const mockRenewalSchedules: Record<string, Partial<CertificateRenewalItem>> = {
     lastCheckedAt: dateBefore(0.1),
   },
 };
+
+export async function getMockAccount(): Promise<AccountInfo> {
+  await delay(250);
+  return structuredClone(mockAccount);
+}
 
 export async function getMockCertificates(): Promise<CertificateItem[]> {
   await delay(250);

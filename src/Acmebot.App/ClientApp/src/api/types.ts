@@ -3,6 +3,12 @@ export type KeyCurveName = 'P-256' | 'P-384' | 'P-521' | 'P-256K';
 export type CertificateCategory = 'managed' | 'other-ca' | 'unmanaged';
 export type CertificateStatusKind = 'valid' | 'warning' | 'expired' | 'disabled';
 
+export interface AccountInfo {
+  accountUri: string;
+  directoryUrl: string;
+  caaIdentities: string[];
+}
+
 export interface CertificateItem {
   id: string;
   name: string;

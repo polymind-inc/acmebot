@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Shield, ShieldAlert, ShieldCheck, X } from 'lucide-vue-next';
+import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Shield, ShieldAlert, ShieldCheck, UserRound, X } from 'lucide-vue-next';
 
-import { formatApiError, getCertificateRenewals, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
+import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
-import type { CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
+import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
+import AccountDrawer from '@/components/AccountDrawer.vue';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
 import ConfirmRevokeDialog from '@/components/ConfirmRevokeDialog.vue';
@@ -17,8 +18,10 @@ import { isNewerVersion, isVersionLike } from '@/utils/versions';
 const certificates = ref<CertificateItem[]>([]);
 const dnsZoneGroups = ref<DnsZoneGroup[]>([]);
 const renewals = ref<CertificateRenewalItem[]>([]);
+const accountInfo = ref<AccountInfo | null>(null);
 const selectedCertificate = ref<CertificateItem | null>(null);
 const pendingRevokeCertificate = ref<CertificateItem | null>(null);
+const accountDrawerOpen = ref(false);
 const addDialogOpen = ref(false);
 const detailsBusy = ref(false);
 const toasts = ref<ToastMessage[]>([]);
@@ -30,6 +33,11 @@ const acmebotRepositoryUrl = 'https://github.com/polymind-inc/acmebot';
 const dismissedUpgradeStorageKey = 'acmebot.dismissedUpgradeVersion';
 
 const certificateState = reactive({
+  loading: false,
+  error: '',
+});
+
+const accountState = reactive({
   loading: false,
   error: '',
 });
@@ -147,6 +155,32 @@ function pushToast(type: ToastMessage['type'], title: string, message: string): 
 
 function dismissToast(id: number): void {
   toasts.value = toasts.value.filter((message) => message.id !== id);
+}
+
+async function openAccountDrawer(): Promise<void> {
+  accountDrawerOpen.value = true;
+
+  if (!accountInfo.value) {
+    await loadAccount();
+  }
+}
+
+async function loadAccount(): Promise<void> {
+  if (accountState.loading) {
+    return;
+  }
+
+  accountState.loading = true;
+  accountState.error = '';
+
+  try {
+    accountInfo.value = await getAccount();
+  } catch (error) {
+    accountState.error = formatApiError(error);
+    pushToast('error', 'Failed to load account information', accountState.error);
+  } finally {
+    accountState.loading = false;
+  }
 }
 
 async function loadCertificates(): Promise<void> {
@@ -280,12 +314,26 @@ async function confirmRevokeCertificate(): Promise<void> {
             </div>
           </div>
         </div>
-        <div class="header-status">
-          <Activity
-            :size="16"
-            aria-hidden="true"
-          />
-          <span>{{ summary.total }} certificates</span>
+        <div class="header-actions">
+          <button
+            class="header-status header-status--button"
+            type="button"
+            aria-haspopup="dialog"
+            @click="openAccountDrawer"
+          >
+            <UserRound
+              :size="16"
+              aria-hidden="true"
+            />
+            <span>Account</span>
+          </button>
+          <div class="header-status">
+            <Activity
+              :size="16"
+              aria-hidden="true"
+            />
+            <span>{{ summary.total }} certificates</span>
+          </div>
         </div>
       </div>
     </header>
@@ -460,6 +508,16 @@ async function confirmRevokeCertificate(): Promise<void> {
       @close="addDialogOpen = false"
       @load-zones="loadDnsZones"
       @submit="handleIssueCertificate"
+    />
+
+    <AccountDrawer
+      :open="accountDrawerOpen"
+      :account="accountInfo"
+      :loading="accountState.loading"
+      :error="accountState.error"
+      @close="accountDrawerOpen = false"
+      @copy="handleCopy"
+      @retry="loadAccount"
     />
 
     <DetailsDrawer
