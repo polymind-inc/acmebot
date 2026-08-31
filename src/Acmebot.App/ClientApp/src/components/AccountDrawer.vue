@@ -30,6 +30,7 @@ const emit = defineEmits<{
         class="drawer-scrim"
         type="button"
         title="Close account information"
+        aria-label="Close account information"
         @click="emit('close')"
       />
       <aside class="drawer">
@@ -46,6 +47,7 @@ const emit = defineEmits<{
             class="icon-only-button"
             type="button"
             title="Close account information"
+            aria-label="Close account information"
             @click="emit('close')"
           >
             <X
@@ -117,6 +119,7 @@ const emit = defineEmits<{
                     class="copy-button"
                     type="button"
                     title="Copy account URI"
+                    aria-label="Copy account URI"
                     @click="emit('copy', 'Account URI', account.accountUri)"
                   >
                     <Copy
@@ -134,6 +137,7 @@ const emit = defineEmits<{
                     class="copy-button"
                     type="button"
                     title="Copy directory URL"
+                    aria-label="Copy directory URL"
                     @click="emit('copy', 'Directory URL', account.directoryUrl)"
                   >
                     <Copy
@@ -175,6 +179,7 @@ const emit = defineEmits<{
                   class="copy-button"
                   type="button"
                   :title="`Copy CAA identity ${identity}`"
+                  :aria-label="`Copy CAA identity ${identity}`"
                   @click="emit('copy', 'CAA identity', identity)"
                 >
                   <Copy

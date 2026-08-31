@@ -319,6 +319,7 @@ async function confirmRevokeCertificate(): Promise<void> {
             class="header-status header-status--button"
             type="button"
             aria-haspopup="dialog"
+            :aria-expanded="accountDrawerOpen"
             @click="openAccountDrawer"
           >
             <UserRound
