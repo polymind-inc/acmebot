@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "7475699352632478067"
+      "templateHash": "2054629406973803945"
     }
   },
   "definitions": {
@@ -368,6 +368,7 @@
         "siteConfig": {
           "appSettings": "[concat(createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference('appInsights').ConnectionString), createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'DEPLOYMENT_STORAGE_CONNECTION_STRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'Acmebot__Contacts', 'value', coalesce(tryGet(parameters('acme'), 'contacts'), '')), createObject('name', 'Acmebot__Endpoint', 'value', variables('acmeEndpoint')), createObject('name', 'Acmebot__VaultBaseUrl', 'value', variables('keyVaultBaseUrl')), createObject('name', 'Acmebot__Environment', 'value', environment().name)), variables('eabAppSettings'), variables('dnsProviderAppSettings'), if(variables('useUserAssignedIdentity'), createArray(createObject('name', 'Acmebot__ManagedIdentityClientId', 'value', coalesce(coalesce(tryGet(parameters('managedIdentity'), 'clientId'), tryGet(if(variables('useUserAssignedIdentity'), reference('userAssignedIdentity', '2023-01-31', 'full'), null()), 'properties', 'clientId')), ''))), createArray()), parameters('additionalAppSettings'))]",
           "minTlsVersion": "1.2",
+          "healthCheckPath": "/api/ping",
           "cors": {
             "allowedOrigins": [
               "https://portal.azure.com"
