@@ -85,6 +85,14 @@ The HTTP triggers use anonymous trigger authorization so App Service Authenticat
 
 If `az account get-access-token` fails before the HTTP request is sent, fix Microsoft Entra consent first. In the Acmebot application registration, go to **Expose an API** > **Authorized client applications**, add `04b07795-8ddb-461a-bbee-02f9e1bf7b46`, and select `user_impersonation`. If App Service Authentication is configured to allow only specific client applications, add the same client ID to that allow list as well.
 
+## Dashboard Returns 500 on the First Request After Idle
+
+Typical symptom: the very first `GET /` after a sign-in redirect fails with a Functions host timeout (a `System.TimeoutException` waiting for the worker to start the invocation), while later requests succeed immediately.
+
+App Service Authentication handles the unauthenticated redirect and the `/.auth/login/aad/callback` exchange entirely at the platform layer; neither request reaches the .NET isolated worker. As a result, an instance can be running and even configured for Always Ready without ever having dispatched a single invocation to the worker. The first real invocation, the authenticated `GET /` that renders the dashboard, is then the first time that instance's worker executes application code, and it can occasionally exceed the platform's fixed startup wait.
+
+`healthCheckPath` in `deploy/azuredeploy.bicep` points at `GET /api/ping`, an anonymous endpoint that returns `200` without checking authentication. Azure's health check probe bypasses App Service Authentication and invokes it directly, which keeps the worker's request pipeline warm on every instance, including ones provisioned through Always Ready, without depending on a real user request. Do not repoint `healthCheckPath` at an authenticated route: unauthenticated probes would receive `401`, which the platform treats as unhealthy and can cause repeated instance recycling instead of preventing it.
+
 ## Renewal Does Not Run
 
 Typical causes:

@@ -467,6 +467,7 @@ resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
     siteConfig: {
       appSettings: acmebotAppSettings
       minTlsVersion: '1.2'
+      healthCheckPath: '/api/ping'
       cors: {
         allowedOrigins: ['https://portal.azure.com']
         supportCredentials: false
