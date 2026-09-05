@@ -1,4 +1,4 @@
-import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
+import type { AccountInfo, CertificateIssuanceStatus, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
 
 const day = 86_400_000;
 
@@ -223,8 +223,11 @@ export async function getMockCertificateRenewals(): Promise<CertificateRenewalIt
   return structuredClone(mockCertificates.map(createMockCertificateRenewal)).toSorted(compareCertificateRenewals);
 }
 
-export async function mockIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
-  await delay(700);
+export async function mockIssueCertificate(
+  policy: CertificatePolicyItem,
+  onProgress?: (status: CertificateIssuanceStatus) => void,
+): Promise<void> {
+  await emitMockProgress(policy.certificateName, onProgress);
 
   mockCertificates = [
     ...mockCertificates,
@@ -250,8 +253,11 @@ export async function mockIssueCertificate(policy: CertificatePolicyItem): Promi
   ];
 }
 
-export async function mockRenewCertificate(certificateName: string): Promise<void> {
-  await delay(650);
+export async function mockRenewCertificate(
+  certificateName: string,
+  onProgress?: (status: CertificateIssuanceStatus) => void,
+): Promise<void> {
+  await emitMockProgress(certificateName, onProgress);
   mockCertificates = mockCertificates.map((certificate) =>
     certificate.name === certificateName
       ? {
@@ -271,6 +277,19 @@ export async function mockRevokeCertificate(certificateName: string): Promise<vo
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+const mockIssuanceSteps: Pick<CertificateIssuanceStatus, 'step' | 'message'>[] = [
+  { step: 'CreatingOrder', message: 'Creating ACME order...' },
+  { step: 'WaitingForDnsPropagation', message: 'Waiting for DNS propagation...' },
+  { step: 'MergingCertificate', message: 'Saving certificate to Key Vault...' },
+];
+
+async function emitMockProgress(certificateName: string, onProgress?: (status: CertificateIssuanceStatus) => void): Promise<void> {
+  for (const { step, message } of mockIssuanceSteps) {
+    await delay(250);
+    onProgress?.({ certificateName, step, message, updatedAt: new Date().toISOString() });
+  }
 }
 
 function createMockCertificateRenewal(certificate: CertificateItem): CertificateRenewalItem {
