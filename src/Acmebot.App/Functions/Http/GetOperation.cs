@@ -1,4 +1,8 @@
-﻿using Azure.Functions.Worker.Extensions.HttpApi;
+﻿using System.Text.Json;
+
+using Acmebot.App.Models;
+
+using Azure.Functions.Worker.Extensions.HttpApi;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,12 +34,36 @@ public partial class GetOperation(IHttpContextAccessor httpContextAccessor, ILog
             return BadRequest();
         }
 
+        var status = ReadIssuanceStatus(metadata);
+
         return metadata.RuntimeStatus switch
         {
-            OrchestrationRuntimeStatus.Failed => Problem(metadata.FailureDetails?.ErrorMessage, type: metadata.FailureDetails?.ErrorType),
-            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => Accepted(Url.RouteUrl($"{nameof(GetOperation)}_{nameof(HttpStart)}", new { instanceId }), null),
+            OrchestrationRuntimeStatus.Failed => Problem(detail: BuildFailureDetail(metadata.FailureDetails?.ErrorMessage, status), type: metadata.FailureDetails?.ErrorType),
+            OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending => Accepted(Url.RouteUrl($"{nameof(GetOperation)}_{nameof(HttpStart)}", new { instanceId }), status),
             _ => Ok()
         };
+    }
+
+    internal static string? BuildFailureDetail(string? errorMessage, CertificateIssuanceStatus? status)
+    {
+        return status is not null ? $"{errorMessage} (failed during: {status.Message})" : errorMessage;
+    }
+
+    internal static CertificateIssuanceStatus? ReadIssuanceStatus(OrchestrationMetadata metadata)
+    {
+        if (metadata.SerializedCustomStatus is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return metadata.ReadCustomStatusAs<CertificateIssuanceStatus>();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     [LoggerMessage(LogLevel.Information, "Instance state lookup returned no result. InstanceId: {InstanceId}")]
