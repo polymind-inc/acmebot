@@ -117,7 +117,9 @@ function updateReuseKey(event: Event): void {
         @change="updateKeyType"
       >
         <option value="RSA">RSA</option>
+        <option value="RSA-HSM">RSA-HSM</option>
         <option value="EC">EC</option>
+        <option value="EC-HSM">EC-HSM</option>
       </select>
       <span
         v-if="keyOptionError"
@@ -126,7 +128,7 @@ function updateReuseKey(event: Event): void {
     </label>
 
     <label
-      v-if="keyType === 'RSA'"
+      v-if="keyType === 'RSA' || keyType === 'RSA-HSM'"
       class="form-field"
     >
       <span class="form-label">Key Size</span>

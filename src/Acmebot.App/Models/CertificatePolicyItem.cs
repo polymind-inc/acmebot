@@ -16,7 +16,7 @@ public partial class CertificatePolicyItem : IValidatableObject
     public required string DnsProviderName { get; set; }
 
     [JsonPropertyName("keyType")]
-    [RegularExpression("^(RSA|EC)$")]
+    [RegularExpression("^(RSA|RSA-HSM|EC|EC-HSM)$")]
     public required string KeyType { get; set; }
 
     [JsonPropertyName("keySize")]
@@ -196,18 +196,18 @@ public partial class CertificatePolicyItem : IValidatableObject
 
     private IEnumerable<ValidationResult> ValidateKeyOptions()
     {
-        if (KeyType == "RSA")
+        if (KeyType is "RSA" or "RSA-HSM")
         {
             if (KeySize is not (2048 or 3072 or 4096))
             {
-                yield return new ValidationResult($"The {nameof(KeySize)} must be 2048, 3072, or 4096 when {nameof(KeyType)} is RSA.", [nameof(KeySize)]);
+                yield return new ValidationResult($"The {nameof(KeySize)} must be 2048, 3072, or 4096 when {nameof(KeyType)} is {KeyType}.", [nameof(KeySize)]);
             }
         }
-        else if (KeyType == "EC")
+        else if (KeyType is "EC" or "EC-HSM")
         {
             if (KeyCurveName is not ("P-256" or "P-384" or "P-521" or "P-256K"))
             {
-                yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is EC.", [nameof(KeyCurveName)]);
+                yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is {KeyType}.", [nameof(KeyCurveName)]);
             }
         }
     }

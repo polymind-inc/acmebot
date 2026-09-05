@@ -36,9 +36,9 @@ internal static class HelpText
         await writer.WriteLineAsync("  --name <value>                         Key Vault certificate name. Defaults to the first DNS name.");
         await writer.WriteLineAsync("  --dns-name <value>                     DNS name. Repeatable.");
         await writer.WriteLineAsync("  --dns-provider <value>                 DNS provider display name. Required.");
-        await writer.WriteLineAsync("  --key-type <RSA|EC>                    Key type. Default: RSA.");
-        await writer.WriteLineAsync("  --key-size <2048|3072|4096>            RSA key size. Default: 2048.");
-        await writer.WriteLineAsync("  --key-curve <P-256|P-384|P-521|P-256K> EC key curve. Default: P-256.");
+        await writer.WriteLineAsync("  --key-type <RSA|RSA-HSM|EC|EC-HSM>     Key type. HSM variants require a Premium Key Vault. Default: RSA.");
+        await writer.WriteLineAsync("  --key-size <2048|3072|4096>            RSA/RSA-HSM key size. Default: 2048.");
+        await writer.WriteLineAsync("  --key-curve <P-256|P-384|P-521|P-256K> EC/EC-HSM key curve. Default: P-256.");
         await writer.WriteLineAsync("  --reuse-key                            Reuse the Key Vault certificate key.");
         await writer.WriteLineAsync("  --dns-alias <value>                    DNS-01 validation alias.");
         await writer.WriteLineAsync("  --profile <value>                      ACME certificate profile.");

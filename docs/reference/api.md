@@ -74,9 +74,9 @@ Accept: application/json
 | `certificateName` | Yes | Key Vault certificate name. API clients must provide this value. It must be 1 to 127 characters and contain only letters, numbers, and hyphens. |
 | `dnsNames` | Yes | ASCII/punycode DNS names to include in the certificate. Omit trailing dots. Wildcards are allowed only as the leftmost label. |
 | `dnsProviderName` | Yes | Provider display name, such as `Azure DNS` or `Cloudflare`. When `dnsAlias` is set, this provider must manage the DNS alias zone. |
-| `keyType` | Yes | `RSA` or `EC`. |
-| `keySize` | For RSA | `2048`, `3072`, or `4096`. |
-| `keyCurveName` | For EC | `P-256`, `P-384`, `P-521`, or `P-256K`. |
+| `keyType` | Yes | `RSA`, `RSA-HSM`, `EC`, or `EC-HSM`. The `-HSM` variants require a Premium-tier Key Vault. |
+| `keySize` | For RSA/RSA-HSM | `2048`, `3072`, or `4096`. |
+| `keyCurveName` | For EC/EC-HSM | `P-256`, `P-384`, `P-521`, or `P-256K`. |
 | `reuseKey` | No | Whether Key Vault should reuse the certificate key. |
 | `dnsAlias` | No | Alternate ASCII/punycode domain used for DNS-01 validation. Acmebot writes TXT records at `_acme-challenge.<dnsAlias>`, so omit the `_acme-challenge` prefix and trailing dot from this value. |
 | `profile` | No | ACME profile to request for this certificate. When omitted, Acmebot uses `Acmebot__PreferredProfile` if configured. |

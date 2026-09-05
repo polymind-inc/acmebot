@@ -95,7 +95,7 @@ const submitValidationMessage = computed(() => {
   return certificateNameError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
-const keySummary = computed(() => (form.keyType === 'RSA' ? `${form.keySize} bit RSA` : `${form.keyCurveName} EC`));
+const keySummary = computed(() => (form.keyType.startsWith('RSA') ? `${form.keySize} bit ${form.keyType}` : `${form.keyCurveName} ${form.keyType}`));
 const issueStatusLabel = computed(() => {
   if (form.dnsNames.length > 0) {
     return 'Ready';
@@ -202,12 +202,12 @@ function validateCertificateName(certificateName: string): string {
 }
 
 function validateKeyOptions(): string {
-  if (form.keyType === 'RSA' && !validKeySizes.includes(form.keySize)) {
-    return 'Key Size must be 2048, 3072, or 4096 when Key Type is RSA.';
+  if (form.keyType.startsWith('RSA') && !validKeySizes.includes(form.keySize)) {
+    return `Key Size must be 2048, 3072, or 4096 when Key Type is ${form.keyType}.`;
   }
 
-  if (form.keyType === 'EC' && !validKeyCurves.includes(form.keyCurveName)) {
-    return 'Curve must be P-256, P-384, P-521, or P-256K when Key Type is EC.';
+  if (form.keyType.startsWith('EC') && !validKeyCurves.includes(form.keyCurveName)) {
+    return `Curve must be P-256, P-384, P-521, or P-256K when Key Type is ${form.keyType}.`;
   }
 
   return '';
@@ -279,7 +279,7 @@ function submit(): void {
     dnsAlias: dnsAlias || undefined,
   };
 
-  if (form.keyType === 'RSA') {
+  if (form.keyType.startsWith('RSA')) {
     policy.keySize = form.keySize;
   } else {
     policy.keyCurveName = form.keyCurveName;

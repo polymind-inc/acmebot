@@ -147,6 +147,27 @@ public sealed class CertificatePolicyItemTests
     }
 
     [Theory]
+    [InlineData(2048)]
+    [InlineData(3072)]
+    [InlineData(4096)]
+    public void Validate_WithValidRsaHsmKeySize_ReturnsNoError(int keySize)
+    {
+        var policy = CreatePolicy(keyType: "RSA-HSM", keySize: keySize);
+
+        Assert.Empty(Validate(policy));
+    }
+
+    [Fact]
+    public void Validate_WithInvalidRsaHsmKeySize_ReturnsError()
+    {
+        var policy = CreatePolicy(keyType: "RSA-HSM", keySize: 1024);
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The KeySize must be 2048, 3072, or 4096 when KeyType is RSA-HSM.", result.ErrorMessage);
+    }
+
+    [Theory]
     [InlineData("P-256")]
     [InlineData("P-384")]
     [InlineData("P-521")]
@@ -166,6 +187,39 @@ public sealed class CertificatePolicyItemTests
         var result = Assert.Single(Validate(policy));
 
         Assert.Equal("The KeyCurveName must be P-256, P-384, P-521, or P-256K when KeyType is EC.", result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("P-256")]
+    [InlineData("P-384")]
+    [InlineData("P-521")]
+    [InlineData("P-256K")]
+    public void Validate_WithValidEcHsmCurve_ReturnsNoError(string keyCurveName)
+    {
+        var policy = CreatePolicy(keyType: "EC-HSM", keySize: null, keyCurveName: keyCurveName);
+
+        Assert.Empty(Validate(policy));
+    }
+
+    [Fact]
+    public void Validate_WithEcHsmKeyMissingCurve_ReturnsError()
+    {
+        var policy = CreatePolicy(keyType: "EC-HSM", keySize: null, keyCurveName: null);
+
+        var result = Assert.Single(Validate(policy));
+
+        Assert.Equal("The KeyCurveName must be P-256, P-384, P-521, or P-256K when KeyType is EC-HSM.", result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("rsa")]
+    [InlineData("RSA2")]
+    [InlineData("HSM")]
+    public void Validate_WithInvalidKeyType_ReturnsError(string keyType)
+    {
+        var policy = CreatePolicy(keyType: keyType);
+
+        Assert.Contains(Validate(policy), r => r.MemberNames.Contains(nameof(CertificatePolicyItem.KeyType)));
     }
 
     [Fact]

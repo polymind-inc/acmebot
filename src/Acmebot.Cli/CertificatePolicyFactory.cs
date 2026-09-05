@@ -50,11 +50,11 @@ internal static partial class CertificatePolicyFactory
         var keyCurveName = NormalizeOptionalValue(commandLine.GetOption("key-curve"));
         int? keySize = null;
 
-        if (string.Equals(keyType, "RSA", StringComparison.Ordinal))
+        if (keyType is "RSA" or "RSA-HSM")
         {
             if (!string.IsNullOrWhiteSpace(keyCurveName))
             {
-                throw new CliException("Option '--key-curve' can only be used when '--key-type EC' is specified.");
+                throw new CliException("Option '--key-curve' can only be used when '--key-type EC' or 'EC-HSM' is specified.");
             }
 
             keySize = ParseOptionalInt(commandLine.GetOption("key-size")) ?? 2048;
@@ -64,11 +64,11 @@ internal static partial class CertificatePolicyFactory
                 throw new CliException("Option '--key-size' must be 2048, 3072, or 4096.");
             }
         }
-        else if (string.Equals(keyType, "EC", StringComparison.Ordinal))
+        else if (keyType is "EC" or "EC-HSM")
         {
             if (commandLine.HasOption("key-size"))
             {
-                throw new CliException("Option '--key-size' can only be used when '--key-type RSA' is specified.");
+                throw new CliException("Option '--key-size' can only be used when '--key-type RSA' or 'RSA-HSM' is specified.");
             }
 
             keyCurveName = NormalizeEcKeyCurve(keyCurveName) ?? "P-256";
@@ -80,7 +80,7 @@ internal static partial class CertificatePolicyFactory
         }
         else
         {
-            throw new CliException("Option '--key-type' must be 'RSA' or 'EC'.");
+            throw new CliException("Option '--key-type' must be 'RSA', 'RSA-HSM', 'EC', or 'EC-HSM'.");
         }
 
         return new CertificatePolicyItem

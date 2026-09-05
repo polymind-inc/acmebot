@@ -1,4 +1,4 @@
-export type KeyType = 'RSA' | 'EC';
+export type KeyType = 'RSA' | 'RSA-HSM' | 'EC' | 'EC-HSM';
 export type KeyCurveName = 'P-256' | 'P-384' | 'P-521' | 'P-256K';
 export type CertificateCategory = 'managed' | 'other-ca' | 'unmanaged';
 export type CertificateStatusKind = 'valid' | 'warning' | 'expired' | 'disabled';

@@ -145,9 +145,9 @@ acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
 | `--dns-name <value>` | DNS name to include in the certificate. Required and repeatable. Duplicate names are removed case-insensitively. |
 | `--name <value>` | Key Vault certificate name. If omitted, the CLI derives the name from the first DNS name before calling the API. Only letters, numbers, and hyphens are allowed. |
 | `--dns-provider <value>` | DNS provider display name, such as `Azure DNS` or `Cloudflare`. Required. When `--dns-alias` is set, this provider must manage the DNS alias zone. |
-| `--key-type <type>` | Certificate key type. Valid values are `RSA` and `EC`. Defaults to `RSA`. |
-| `--key-size <size>` | RSA key size. Valid values are `2048`, `3072`, and `4096`. Defaults to `2048`. Valid only with `--key-type RSA`. |
-| `--key-curve <curve>` | EC key curve. Valid values are `P-256`, `P-384`, `P-521`, and `P-256K`. Defaults to `P-256`. Valid only with `--key-type EC`. |
+| `--key-type <type>` | Certificate key type. Valid values are `RSA`, `RSA-HSM`, `EC`, and `EC-HSM`. The `-HSM` variants require a Premium-tier Key Vault. Defaults to `RSA`. |
+| `--key-size <size>` | RSA/RSA-HSM key size. Valid values are `2048`, `3072`, and `4096`. Defaults to `2048`. Valid only with `--key-type RSA` or `--key-type RSA-HSM`. |
+| `--key-curve <curve>` | EC/EC-HSM key curve. Valid values are `P-256`, `P-384`, `P-521`, and `P-256K`. Defaults to `P-256`. Valid only with `--key-type EC` or `--key-type EC-HSM`. |
 | `--reuse-key` | Reuse the existing Key Vault certificate key. |
 | `--dns-alias <value>` | DNS-01 validation alias. Omit the `_acme-challenge` prefix. |
 | `--profile <value>` | ACME profile to request for this certificate. If omitted, Acmebot uses the deployment-level preferred profile when configured. |

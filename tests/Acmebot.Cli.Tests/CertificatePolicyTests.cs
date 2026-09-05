@@ -179,6 +179,64 @@ public sealed class CertificatePolicyTests
     }
 
     [Fact]
+    public void Create_WithRsaHsmKeyType_SetsKeySize()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--key-type",
+            "RSA-HSM"
+        ]));
+
+        Assert.Equal("RSA-HSM", policy.KeyType);
+        Assert.Equal(2048, policy.KeySize);
+        Assert.Null(policy.KeyCurveName);
+    }
+
+    [Fact]
+    public void Create_WithEcHsmKeyType_DefaultsToP256()
+    {
+        var policy = CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--key-type",
+            "EC-HSM"
+        ]));
+
+        Assert.Equal("EC-HSM", policy.KeyType);
+        Assert.Null(policy.KeySize);
+        Assert.Equal("P-256", policy.KeyCurveName);
+    }
+
+    [Fact]
+    public void Create_WithInvalidKeyType_Throws()
+    {
+        var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
+        [
+            "certificate",
+            "issue",
+            "--dns-name",
+            "example.com",
+            "--dns-provider",
+            "Azure DNS",
+            "--key-type",
+            "DSA"
+        ])));
+
+        Assert.Equal("Option '--key-type' must be 'RSA', 'RSA-HSM', 'EC', or 'EC-HSM'.", ex.Message);
+    }
+
+    [Fact]
     public void Create_WithInvalidCertificateName_Throws()
     {
         var ex = Assert.Throws<CliException>(() => CertificatePolicyFactory.Create(CommandLine.Parse(
