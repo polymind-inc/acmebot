@@ -84,7 +84,7 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
                     break;
                 }
 
-                foreach (var zone in result.Zones.Where(x => x.ActivationState == "ACTIVE"))
+                foreach (var zone in result.Zones.Where(x => x.ActivationState is "ACTIVE" or "PENDING"))
                 {
                     yield return zone;
                 }
