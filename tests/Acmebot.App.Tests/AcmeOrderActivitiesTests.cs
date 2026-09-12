@@ -8,6 +8,7 @@ using Acmebot.Acme;
 using Acmebot.Acme.Models;
 using Acmebot.App.Acme;
 using Acmebot.App.Functions.Orchestration;
+using Acmebot.App.Options;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -17,6 +18,32 @@ namespace Acmebot.App.Tests;
 
 public sealed class AcmeOrderActivitiesTests
 {
+    [Fact]
+    public async Task GetCertificateIssuanceRetrySettings_ReturnsConfiguredValues()
+    {
+        var activities = new AcmeOrderActivities(
+            acmeClientFactory: null!,
+            certificateClient: null!,
+            Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
+            {
+                Contacts = "admin@example.com",
+                Endpoint = new Uri("https://acme.example/directory"),
+                VaultBaseUrl = "https://vault.example/",
+                DnsChallengeCheckMaxAttempts = 20,
+                DnsChallengeCheckIntervalSeconds = 15,
+                OrderPollingMaxAttempts = 40,
+                OrderPollingIntervalSeconds = 10
+            }),
+            NullLogger<AcmeOrderActivities>.Instance);
+
+        var result = await activities.GetCertificateIssuanceRetrySettings(null);
+
+        Assert.Equal(20, result.DnsChallengeCheckMaxAttempts);
+        Assert.Equal(15, result.DnsChallengeCheckIntervalSeconds);
+        Assert.Equal(40, result.OrderPollingMaxAttempts);
+        Assert.Equal(10, result.OrderPollingIntervalSeconds);
+    }
+
     [Fact]
     public async Task CreateOrderAsync_WithAlreadyReplacedProblem_RetriesWithoutReplaces()
     {
