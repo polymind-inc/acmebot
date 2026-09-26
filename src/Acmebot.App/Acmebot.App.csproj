@@ -24,15 +24,15 @@
     <PackageReference Include="DnsClient" Version="1.8.0" />
     <PackageReference Include="Functions.Worker.Extensions.HttpApi" Version="3.0.5" />
     <PackageReference Include="Google.Apis.Auth" Version="1.76.0" />
-    <PackageReference Include="Google.Apis.Dns.v1" Version="1.75.0.4212" />
+    <PackageReference Include="Google.Apis.Dns.v1" Version="1.76.0.4275" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.19.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.19.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.1.0" />
     <PackageReference Include="Microsoft.DurableTask.Generators" Version="2.1.0-preview.2" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
   </ItemGroup>
 
