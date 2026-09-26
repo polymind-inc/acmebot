@@ -15,19 +15,19 @@
     "@tanstack/vue-table": "8.21.3",
     "lucide-vue-next": "1.0.0",
     "punycode": "2.3.1",
-    "reka-ui": "2.10.4",
-    "vue": "3.5.42"
+    "reka-ui": "2.10.5",
+    "vue": "3.5.43"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
-    "@types/node": "26.6.1",
+    "@types/node": "26.6.2",
     "@vitejs/plugin-vue": "6.0.9",
-    "eslint": "10.10.0",
+    "eslint": "10.11.0",
     "eslint-plugin-vue": "10.11.0",
     "globals": "17.12.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.70.0",
+    "typescript-eslint": "8.70.1",
     "vite": "8.3.0",
     "vue-eslint-parser": "10.4.1",
     "vue-tsc": "3.3.11"
