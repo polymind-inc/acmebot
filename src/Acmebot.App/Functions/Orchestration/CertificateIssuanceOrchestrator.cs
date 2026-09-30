@@ -18,6 +18,20 @@ public partial class CertificateIssuanceOrchestrator
 
         try
         {
+            // Fetch retry settings through an activity so the values are recorded in orchestration history
+            // and stay stable across replays even if configuration changes while this instance is running.
+            var retrySettings = await context.CallGetCertificateIssuanceRetrySettingsAsync(null);
+
+            var dnsChallengeCheckRetryPolicy = new RetryPolicy(retrySettings.DnsChallengeCheckMaxAttempts, TimeSpan.FromSeconds(retrySettings.DnsChallengeCheckIntervalSeconds))
+            {
+                HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
+            };
+
+            var orderPollingRetryPolicy = new RetryPolicy(retrySettings.OrderPollingMaxAttempts, TimeSpan.FromSeconds(retrySettings.OrderPollingIntervalSeconds))
+            {
+                HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
+            };
+
             // 前提条件をチェック
             certificatePolicyItem.DnsProviderName = await context.CallDns01PreconditionAsync(certificatePolicyItem);
 
@@ -38,13 +52,13 @@ public partial class CertificateIssuanceOrchestrator
                     await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
 
                     // 正しく追加した DNS TXT レコードが引けるか確認
-                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(_retryPolicy));
+                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(dnsChallengeCheckRetryPolicy));
 
                     // ACME Answer Challenge を実行
                     await context.CallAnswerChallengesAsync(challengeResults);
 
-                    // ACME Order のステータスが ready になるまで 60 秒待機
-                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(_retryPolicy));
+                    // Wait for the ACME order to become ready (retry behavior configurable via OrderPollingMaxAttempts / OrderPollingIntervalSeconds)
+                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(orderPollingRetryPolicy));
                 }
                 finally
                 {
@@ -59,8 +73,8 @@ public partial class CertificateIssuanceOrchestrator
             // Finalize の時点でステータスが valid の時点はスキップ
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
             {
-                // Finalize 後のステータスが valid になるまで 60 秒待機
-                orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(_retryPolicy));
+                // Wait for the order to become valid after finalization (retry behavior configurable via OrderPollingMaxAttempts / OrderPollingIntervalSeconds)
+                orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(orderPollingRetryPolicy));
             }
 
             // 証明書をダウンロードし Key Vault に保存された秘密鍵とマージ
@@ -80,11 +94,6 @@ public partial class CertificateIssuanceOrchestrator
             throw;
         }
     }
-
-    private readonly RetryPolicy _retryPolicy = new(12, TimeSpan.FromSeconds(5))
-    {
-        HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
-    };
 
     [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
     private static partial void LogCertificateIssuanceStarted(ILogger logger, string certificateName, string dnsNames);

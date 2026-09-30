@@ -114,6 +114,8 @@ If it remains pending longer than expected:
 - Confirm the Function App has not restarted repeatedly.
 - Check whether the selected provider has a long propagation delay.
 - Poll the operation URL again before starting another operation for the same certificate.
+- If the orchestration fails after exhausting retries while waiting for the DNS TXT record to propagate, increase `Acmebot__DnsChallengeCheckMaxAttempts` and/or `Acmebot__DnsChallengeCheckIntervalSeconds` (see [Configuration](../reference/configuration.md#general-settings)) and restart the Function App.
+- If it instead fails while waiting for the ACME CA to mark the order `ready` or `valid`, the CA may be slower to process orders than the default polling window allows. Increase `Acmebot__OrderPollingMaxAttempts` and/or `Acmebot__OrderPollingIntervalSeconds` and restart the Function App.
 
 ## Certificate Issued But Endpoint Still Uses the Old Certificate
 
