@@ -10,6 +10,14 @@ The dashboard is the primary interface for Acmebot. The Function App serves the 
 
 The dashboard requires authenticated requests, so configure App Service Authentication on the Function App before using it. Once authentication is enabled, open the Function App URL in a browser. If the dashboard returns `401 Unauthorized`, check the authentication configuration first.
 
+## ACME Account Information
+
+Select **Account** in the header to view the ACME account URI, directory URL, and CAA identities. Each value has a copy button. When the CA advertises no identities, the panel indicates that none are available.
+
+The first successful load registers an ACME account if one does not exist yet. Configure the contact email and any required external account binding credentials before opening the panel. It does not create a certificate order or modify DNS records.
+
+These values identify the account and CA. Acmebot does not generate `_validation-persist` TXT values or support issuance through DNS-PERSIST-01 yet. See the [DNS-PERSIST-01 operating model](/guide/dns-persist-01).
+
 ## Certificate List
 
 The dashboard lists certificates from the configured Key Vault and marks each one by category:

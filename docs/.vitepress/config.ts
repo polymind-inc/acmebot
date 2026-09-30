@@ -20,6 +20,7 @@ const guideSidebar = [
     items: [
       { text: "DNS Providers", link: "/guide/dns-providers" },
       { text: "Certificate Authorities", link: "/guide/certificate-authorities" },
+      { text: "DNS-PERSIST-01", link: "/guide/dns-persist-01" },
       { text: "Azure Service Integration", link: "/guide/service-integration" }
     ]
   },

@@ -25,6 +25,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/account` | Show the ACME account URI, directory URL, and CAA identities. |
 | `GET` | `/api/certificates` | List certificates from Key Vault. |
 | `POST` | `/api/certificates` | Start certificate issuance. |
 | `POST` | `/api/certificates/{certificateName}/renew` | Start manual renewal. |
@@ -32,6 +33,29 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 | `GET` | `/api/dns-zones` | List DNS zones from configured providers. |
 | `GET` | `/api/renewals` | List automatic renewal status for certificates. |
 | `GET` | `/api/operations/{instanceId}` | Poll an issuance or renewal operation. |
+
+## Show ACME Account
+
+```http
+GET /api/account
+Accept: application/json
+```
+
+```json
+{
+  "accountUri": "https://acme-v02.api.letsencrypt.org/acme/acct/123456",
+  "directoryUrl": "https://acme-v02.api.letsencrypt.org/directory",
+  "caaIdentities": ["letsencrypt.org"]
+}
+```
+
+This endpoint requires authentication and no app role, including when `Acmebot__RequireAppRoles=true`. Unauthenticated requests return `401 Unauthorized`. The account URI is an identifier, not a private key; the response contains no private key material.
+
+`directoryUrl` is the configured `Acmebot__Endpoint`. `caaIdentities` comes from the ACME directory metadata and is an empty array when the CA does not advertise it. These identities do not establish DNS-PERSIST-01 support.
+
+The first successful call registers an ACME account and saves its key and account state when no account exists yet, even if this deployment has never issued a certificate. Configure the contact email and any required external account binding credentials before calling it. No DNS records are changed and no certificate order is created.
+
+The dashboard's **Account** panel uses this endpoint. See the [DNS-PERSIST-01 operating model](/guide/dns-persist-01) for current limitations.
 
 ## Operation Lifecycle
 
