@@ -1,4 +1,12 @@
-import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ProblemDetails } from './types';
+import type {
+  AccountInfo,
+  CertificateIssuanceStatus,
+  CertificateItem,
+  CertificatePolicyItem,
+  CertificateRenewalItem,
+  DnsZoneGroup,
+  ProblemDetails,
+} from './types';
 
 const useMockApi = import.meta.env.DEV && import.meta.env.VITE_ACMEBOT_USE_MOCKS === 'true';
 
@@ -81,7 +89,7 @@ async function startOperation(input: RequestInfo | URL, init?: RequestInit): Pro
   return location;
 }
 
-async function pollOperation(location: string): Promise<void> {
+async function pollOperation(location: string, onProgress?: (status: CertificateIssuanceStatus) => void): Promise<void> {
   while (true) {
     await new Promise((resolve) => window.setTimeout(resolve, 3000));
 
@@ -94,6 +102,10 @@ async function pollOperation(location: string): Promise<void> {
 
     if (response.status !== 202) {
       throw new ApiError(getProblemMessage(response.status, body), response.status, body as ProblemDetails);
+    }
+
+    if (onProgress && body && typeof body === 'object') {
+      onProgress(body as CertificateIssuanceStatus);
     }
   }
 }
@@ -136,10 +148,13 @@ export async function getCertificateRenewals(): Promise<CertificateRenewalItem[]
   return requestJson<CertificateRenewalItem[]>('/api/renewals');
 }
 
-export async function issueCertificate(policy: CertificatePolicyItem): Promise<void> {
+export async function issueCertificate(
+  policy: CertificatePolicyItem,
+  onProgress?: (status: CertificateIssuanceStatus) => void,
+): Promise<void> {
   if (useMockApi) {
     const { mockIssueCertificate } = await import('./mockData');
-    await mockIssueCertificate(policy);
+    await mockIssueCertificate(policy, onProgress);
     return;
   }
 
@@ -149,13 +164,16 @@ export async function issueCertificate(policy: CertificatePolicyItem): Promise<v
     body: JSON.stringify(policy),
   });
 
-  await pollOperation(location);
+  await pollOperation(location, onProgress);
 }
 
-export async function renewCertificate(certificateName: string): Promise<void> {
+export async function renewCertificate(
+  certificateName: string,
+  onProgress?: (status: CertificateIssuanceStatus) => void,
+): Promise<void> {
   if (useMockApi) {
     const { mockRenewCertificate } = await import('./mockData');
-    await mockRenewCertificate(certificateName);
+    await mockRenewCertificate(certificateName, onProgress);
     return;
   }
 
@@ -163,7 +181,7 @@ export async function renewCertificate(certificateName: string): Promise<void> {
     method: 'POST',
   });
 
-  await pollOperation(location);
+  await pollOperation(location, onProgress);
 }
 
 export async function revokeCertificate(certificateName: string): Promise<void> {

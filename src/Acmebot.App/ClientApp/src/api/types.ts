@@ -67,6 +67,13 @@ export interface CertificateRenewalItem {
   lastCheckedAt?: string | null;
 }
 
+export interface CertificateIssuanceStatus {
+  certificateName: string;
+  step: string;
+  message: string;
+  updatedAt: string;
+}
+
 export interface ProblemDetails {
   title?: string;
   detail?: string;
