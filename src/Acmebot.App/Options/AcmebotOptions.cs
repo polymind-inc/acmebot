@@ -32,6 +32,8 @@ public class AcmebotOptions
     public string? PreferredProfile { get; set; }
 
     // Properties should be in alphabetical order
+    public AcmeDnsOptions? AcmeDns { get; set; }
+
     public AkamaiEdgeDnsOptions? Akamai { get; set; }
 
     public AzureDnsOptions? AzureDns { get; set; }
