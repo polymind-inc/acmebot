@@ -10,6 +10,7 @@ internal static class HelpText
         await writer.WriteLineAsync("  acmebot config set --endpoint <url> [--audience <audience>]");
         await writer.WriteLineAsync("  acmebot config show");
         await writer.WriteLineAsync("  acmebot config clear");
+        await writer.WriteLineAsync("  acmebot account show [options]");
         await writer.WriteLineAsync("  acmebot certificate list [options]");
         await writer.WriteLineAsync("  acmebot certificate issue --dns-name <name> [options]");
         await writer.WriteLineAsync("  acmebot certificate renew <certificate-name> [options]");

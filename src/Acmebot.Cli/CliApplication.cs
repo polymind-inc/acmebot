@@ -71,7 +71,7 @@ internal static class CliApplication
         }
     }
 
-    private static async Task<int> RunCommandAsync(
+    internal static async Task<int> RunCommandAsync(
         CommandLine commandLine,
         CliOptions options,
         AcmebotApiClient client,
@@ -83,11 +83,38 @@ internal static class CliApplication
 
         return command switch
         {
+            "account" => await RunAccountCommandAsync(commandLine, options, client, output, cancellationToken),
             "certificate" => await RunCertificateCommandAsync(commandLine, options, client, output, error, cancellationToken),
             "dns-zone" => await RunDnsZoneCommandAsync(commandLine, options, client, output, cancellationToken),
             "operation" => await RunOperationCommandAsync(commandLine, options, client, output, error, cancellationToken),
             _ => throw new CliException($"Unknown command '{commandLine.Arguments[0]}'.")
         };
+    }
+
+    private static async Task<int> RunAccountCommandAsync(
+        CommandLine commandLine,
+        CliOptions options,
+        AcmebotApiClient client,
+        TextWriter output,
+        CancellationToken cancellationToken)
+    {
+        if (commandLine.Arguments.Count < 2)
+        {
+            throw new CliException("Missing account subcommand.");
+        }
+
+        if (!string.Equals(commandLine.Arguments[1], "show", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new CliException($"Unknown account subcommand '{commandLine.Arguments[1]}'.");
+        }
+
+        EnsureNoExtraArguments(commandLine, 2);
+
+        var account = await client.GetAccountAsync(cancellationToken);
+
+        await OutputFormatter.WriteAccountAsync(output, account, options.OutputFormat, cancellationToken);
+
+        return ExitCodes.Success;
     }
 
     private static async Task<int> RunConfigCommandAsync(CommandLine commandLine, TextWriter output)

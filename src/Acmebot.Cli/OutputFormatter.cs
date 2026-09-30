@@ -16,6 +16,19 @@ internal static class OutputFormatter
         await writer.WriteLineAsync(json.AsMemory(), cancellationToken);
     }
 
+    public static async Task WriteAccountAsync(TextWriter writer, AccountItem account, OutputFormat format, CancellationToken cancellationToken)
+    {
+        if (format == OutputFormat.Json)
+        {
+            await WriteJsonAsync(writer, account, cancellationToken);
+            return;
+        }
+
+        await writer.WriteLineAsync($"Account URI: {account.AccountUri.OriginalString}");
+        await writer.WriteLineAsync($"Directory URL: {account.DirectoryUrl.OriginalString}");
+        await writer.WriteLineAsync($"CAA Identities: {(account.CaaIdentities.Count == 0 ? "<none>" : string.Join(", ", account.CaaIdentities))}");
+    }
+
     public static async Task WriteCertificatesAsync(TextWriter writer, IReadOnlyList<CertificateItem> certificates, OutputFormat format, CancellationToken cancellationToken)
     {
         if (format == OutputFormat.Json)

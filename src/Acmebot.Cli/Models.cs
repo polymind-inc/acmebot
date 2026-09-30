@@ -2,6 +2,18 @@
 
 namespace Acmebot.Cli;
 
+internal sealed class AccountItem
+{
+    [JsonPropertyName("accountUri")]
+    public required Uri AccountUri { get; set; }
+
+    [JsonPropertyName("directoryUrl")]
+    public required Uri DirectoryUrl { get; set; }
+
+    [JsonPropertyName("caaIdentities")]
+    public required IReadOnlyList<string> CaaIdentities { get; set; }
+}
+
 internal sealed class CertificatePolicyItem
 {
     [JsonPropertyName("certificateName")]

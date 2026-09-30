@@ -8,6 +8,7 @@ Full command syntax and authentication details are available in the [CLI Referen
 
 ```powershell
 acmebot config set --endpoint https://<function-app>.azurewebsites.net
+acmebot account show --json
 acmebot certificate list --json
 acmebot dns-zone list
 acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"

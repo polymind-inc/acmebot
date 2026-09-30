@@ -122,6 +122,20 @@ Configuration precedence is:
 
 ## Commands
 
+### `account show`
+
+Shows the ACME account URI, configured directory URL, and CAA identities from `GET /api/account`. It accepts the global options and requires authentication, with no app role.
+
+```bash
+acmebot account show
+acmebot account show --format json
+acmebot account show --json | jq -r '.accountUri'
+```
+
+The default table format prints each field on its own line and joins CAA identities with commas. If the CA advertises none, it shows `<none>`. JSON output preserves the API response fields and values, including an empty `caaIdentities` array.
+
+On a deployment with no ACME account, the first successful call registers one and saves its state. Configure contact and required external account binding settings first. The command does not generate or publish DNS records, and issuance through DNS-PERSIST-01 is not supported yet.
+
 ### `certificate list`
 
 Lists Key Vault certificates visible to Acmebot.

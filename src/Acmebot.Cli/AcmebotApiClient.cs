@@ -20,6 +20,8 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
     private readonly string[] _scopes = scopes;
     private AccessToken? _accessToken;
 
+    public async Task<AccountItem> GetAccountAsync(CancellationToken cancellationToken) => await GetJsonAsync<AccountItem>("api/account", cancellationToken);
+
     public async Task<IReadOnlyList<CertificateItem>> GetCertificatesAsync(CancellationToken cancellationToken) => await GetJsonAsync<IReadOnlyList<CertificateItem>>("api/certificates", cancellationToken);
 
     public async Task<IReadOnlyList<DnsZoneGroup>> GetDnsZonesAsync(CancellationToken cancellationToken) => await GetJsonAsync<IReadOnlyList<DnsZoneGroup>>("api/dns-zones", cancellationToken);
