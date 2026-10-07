@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Acmebot.Acme.Internal;
+
 namespace Acmebot.Acme.Models;
 
 public sealed record AcmeAuthorizationResource
@@ -43,6 +45,10 @@ public sealed record AcmeChallengeResource
 
     [JsonPropertyName("token")]
     public string? Token { get; init; }
+
+    [JsonPropertyName("issuerDomainNames")]
+    [JsonConverter(typeof(AcmeOptionalStringArrayJsonConverter))]
+    public IReadOnlyList<string> IssuerDomainNames { get; init; } = [];
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalData { get; set; }
