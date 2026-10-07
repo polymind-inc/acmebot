@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Acmebot.Acme.Internal;
+
 namespace Acmebot.Acme.Models;
 
 public sealed record AcmeDirectoryResource
@@ -42,7 +44,16 @@ public sealed record AcmeDirectoryMetadata
     public Uri? Website { get; init; }
 
     [JsonPropertyName("caaIdentities")]
+    [JsonConverter(typeof(AcmeOptionalStringArrayJsonConverter))]
     public IReadOnlyList<string> CaaIdentities { get; init; } = [];
+
+    [JsonPropertyName("issuerDomainNames")]
+    [JsonConverter(typeof(AcmeOptionalStringArrayJsonConverter))]
+    public IReadOnlyList<string> IssuerDomainNames { get; init; } = [];
+
+    [JsonPropertyName("accountHashPrefix")]
+    [JsonConverter(typeof(AcmeOptionalStringJsonConverter))]
+    public string? AccountHashPrefix { get; init; }
 
     [JsonPropertyName("externalAccountRequired")]
     public bool? ExternalAccountRequired { get; init; }

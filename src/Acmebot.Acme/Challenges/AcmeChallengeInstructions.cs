@@ -89,4 +89,5 @@ public static class AcmeChallengeTypes
 {
     public static AcmeChallengeType Http01 { get; } = new("http-01");
     public static AcmeChallengeType Dns01 { get; } = new("dns-01");
+    public static AcmeChallengeType DnsPersist01 { get; } = new("dns-persist-01");
 }
