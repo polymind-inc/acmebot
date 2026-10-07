@@ -1,9 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Azure.Functions.Sdk/1.0.1">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
-    <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
@@ -20,7 +18,7 @@
     <PackageReference Include="Azure.ResourceManager.PrivateDns" Version="1.2.3" />
     <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.9.2" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.10.2" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.30.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.30.1" />
     <PackageReference Include="DnsClient" Version="1.8.0" />
     <PackageReference Include="Functions.Worker.Extensions.HttpApi" Version="3.0.5" />
     <PackageReference Include="Google.Apis.Auth" Version="1.77.0" />
@@ -30,7 +28,6 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.1.0" />
     <PackageReference Include="Microsoft.DurableTask.Generators" Version="2.1.0-preview.2" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
