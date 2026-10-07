@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { createColumnHelper, FlexRender, getCoreRowModel, getSortedRowModel, useVueTable, type Row, type SortingState } from '@tanstack/vue-table';
+import { createColumnHelper, createSortedRowModel, FlexRender, rowSortingFeature, sortFn_alphanumeric, sortFn_text, tableFeatures, useTable, type Row, type SortingState } from '@tanstack/vue-table';
 import {
   ArrowDown,
   ArrowUp,
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 
 type CategoryFilter = 'all' | CertificateCategory;
 type StatusFilter = 'all' | CertificateStatusKind;
-type CertificateRow = Row<CertificateItem>;
+type CertificateRow = Row<typeof features, CertificateItem>;
 interface ZoneGroup {
   zoneName: string;
   rows: CertificateRow[];
@@ -69,8 +69,16 @@ const filters = reactive({
 const sorting = ref<SortingState>([{ id: 'expiresOn', desc: false }]);
 const collapsedZones = ref<Set<string>>(new Set());
 
-const columnHelper = createColumnHelper<CertificateItem>();
-const columns = [
+const features = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: {
+    alphanumeric: sortFn_alphanumeric,
+    text: sortFn_text,
+  },
+});
+const columnHelper = createColumnHelper<typeof features, CertificateItem>();
+const columns = columnHelper.columns([
   columnHelper.accessor('name', { header: 'Name' }),
   columnHelper.display({ id: 'dnsNames', header: 'DNS Names', enableSorting: false }),
   columnHelper.accessor((certificate) => getCategoryLabel(getCertificateCategory(certificate)), { id: 'category', header: 'Category' }),
@@ -78,7 +86,7 @@ const columns = [
   columnHelper.display({ id: 'autoRenewal', header: 'Auto Renewal', enableSorting: false }),
   columnHelper.accessor((certificate) => `${certificate.keyType ?? ''} ${certificate.keySize ?? certificate.keyCurveName ?? ''}`, { id: 'key', header: 'Key' }),
   columnHelper.display({ id: 'actions', header: '', enableSorting: false }),
-];
+]);
 
 const categoryOptions: { label: string; value: CategoryFilter }[] = [
   { label: 'All', value: 'all' },
@@ -141,10 +149,9 @@ const tableTitle = computed(() => {
   return `${getCategoryLabel(filters.category)} Certificates`;
 });
 
-const table = useVueTable({
-  get data() {
-    return filteredCertificates.value;
-  },
+const table = useTable({
+  features,
+  data: filteredCertificates,
   columns,
   state: {
     get sorting() {
@@ -154,8 +161,6 @@ const table = useVueTable({
   onSortingChange: (updaterOrValue) => {
     sorting.value = typeof updaterOrValue === 'function' ? updaterOrValue(sorting.value) : updaterOrValue;
   },
-  getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel(),
 });
 
 const zoneGroups = computed<ZoneGroup[]>(() => {
@@ -403,8 +408,7 @@ function getRenewalIcon(renewal: CertificateRenewalItem | null) {
                 @click="header.column.getToggleSortingHandler()?.($event)"
               >
                 <FlexRender
-                  :render="header.column.columnDef.header"
-                  :props="header.getContext()"
+                  :header="header"
                 />
                 <component
                   :is="getSortIcon(header.column.getIsSorted())"
@@ -414,8 +418,7 @@ function getRenewalIcon(renewal: CertificateRenewalItem | null) {
               </button>
               <FlexRender
                 v-else-if="!header.isPlaceholder"
-                :render="header.column.columnDef.header"
-                :props="header.getContext()"
+                :header="header"
               />
             </th>
           </tr>
