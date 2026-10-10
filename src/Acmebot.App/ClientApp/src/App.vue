@@ -4,7 +4,7 @@ import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, P
 
 import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
-import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
+import type { AccountInfo, CertificateIssuanceStatus, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
 import AccountDrawer from '@/components/AccountDrawer.vue';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
@@ -231,13 +231,19 @@ async function refreshCertificates(): Promise<void> {
   await Promise.all([loadCertificates(), loadRenewals()]);
 }
 
-async function runCertificateOperation(title: string, message: string, action: () => Promise<void>): Promise<void> {
+async function runCertificateOperation(
+  title: string,
+  message: string,
+  action: (onProgress: (status: CertificateIssuanceStatus) => void) => Promise<void>,
+): Promise<void> {
   operation.active = true;
   operation.title = title;
   operation.message = message;
 
   try {
-    await action();
+    await action((status) => {
+      operation.message = status.message;
+    });
     pushToast('success', 'Operation completed', message.replace('...', ' completed.'));
     addDialogOpen.value = false;
     selectedCertificate.value = null;
@@ -250,14 +256,16 @@ async function runCertificateOperation(title: string, message: string, action: (
 }
 
 async function handleIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
-  await runCertificateOperation('Issuing certificate', 'Issuing certificate...', () => issueCertificate(policy));
+  await runCertificateOperation('Issuing certificate', 'Issuing certificate...', (onProgress) => issueCertificate(policy, onProgress));
 }
 
 async function handleRenewCertificate(certificate: CertificateItem): Promise<void> {
   detailsBusy.value = true;
 
   try {
-    await runCertificateOperation('Renewing certificate', `Renewing ${certificate.name}...`, () => renewCertificate(certificate.name));
+    await runCertificateOperation('Renewing certificate', `Renewing ${certificate.name}...`, (onProgress) =>
+      renewCertificate(certificate.name, onProgress),
+    );
   } finally {
     detailsBusy.value = false;
   }

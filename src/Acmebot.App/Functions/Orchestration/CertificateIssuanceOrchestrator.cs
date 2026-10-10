@@ -19,54 +19,85 @@ public partial class CertificateIssuanceOrchestrator
         try
         {
             // 前提条件をチェック
+            SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "Precondition", "Checking prerequisites...");
             certificatePolicyItem.DnsProviderName = await context.CallDns01PreconditionAsync(certificatePolicyItem);
 
             // 新しく ACME Order を作成する (ARI で更新扱いにする場合は既存証明書の Certificate ID を replaces に指定)
+            SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "CreatingOrder", "Creating ACME order...");
             var orderDetails = await context.CallOrderAsync((certificatePolicyItem.DnsNames, certificatePolicyItem.CertificateId, certificatePolicyItem.Profile));
 
             // 既に確認済みの場合は Challenge をスキップする
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
             {
                 // ACME DNS-01 Challenge を実行
+                SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "CreatingDnsRecords", "Creating DNS challenge records...");
                 var (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations));
+
+                var dnsChallengeStep = "CreatingDnsRecords";
+                var dnsChallengeMessage = "Creating DNS challenge records...";
+                var dnsChallengeSucceeded = false;
 
                 try
                 {
                     // DNS Provider が指定した分だけ後続の処理を遅延させる
                     LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
 
+                    dnsChallengeStep = "WaitingForDnsPropagation";
+                    dnsChallengeMessage = "Waiting for DNS propagation...";
+                    SetIssuanceStatus(context, certificatePolicyItem.CertificateName, dnsChallengeStep, dnsChallengeMessage);
                     await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
 
                     // 正しく追加した DNS TXT レコードが引けるか確認
+                    dnsChallengeStep = "VerifyingDnsChallenge";
+                    dnsChallengeMessage = "Verifying DNS challenge record...";
+                    SetIssuanceStatus(context, certificatePolicyItem.CertificateName, dnsChallengeStep, dnsChallengeMessage);
                     await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(_retryPolicy));
 
                     // ACME Answer Challenge を実行
+                    dnsChallengeStep = "AnsweringChallenges";
+                    dnsChallengeMessage = "Notifying ACME server...";
+                    SetIssuanceStatus(context, certificatePolicyItem.CertificateName, dnsChallengeStep, dnsChallengeMessage);
                     await context.CallAnswerChallengesAsync(challengeResults);
 
                     // ACME Order のステータスが ready になるまで 60 秒待機
+                    dnsChallengeStep = "WaitingForOrderReady";
+                    dnsChallengeMessage = "Waiting for order to become ready...";
+                    SetIssuanceStatus(context, certificatePolicyItem.CertificateName, dnsChallengeStep, dnsChallengeMessage);
                     await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(_retryPolicy));
+
+                    dnsChallengeSucceeded = true;
                 }
                 finally
                 {
                     // 作成した DNS レコードを削除
+                    SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "CleaningUpDnsRecords", "Cleaning up DNS challenge records...");
                     await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName, challengeResults));
+
+                    if (!dnsChallengeSucceeded)
+                    {
+                        SetIssuanceStatus(context, certificatePolicyItem.CertificateName, dnsChallengeStep, dnsChallengeMessage);
+                    }
                 }
             }
 
             // Key Vault で CSR を作成し Finalize を実行
+            SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "FinalizingOrder", "Finalizing order...");
             orderDetails = await context.CallFinalizeOrderAsync((certificatePolicyItem, orderDetails));
 
             // Finalize の時点でステータスが valid の時点はスキップ
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
             {
                 // Finalize 後のステータスが valid になるまで 60 秒待機
+                SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "WaitingForOrderValid", "Waiting for certificate to be issued...");
                 orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(_retryPolicy));
             }
 
             // 証明書をダウンロードし Key Vault に保存された秘密鍵とマージ
+            SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "MergingCertificate", "Saving certificate to Key Vault...");
             var certificate = await context.CallMergeCertificateAsync((certificatePolicyItem.CertificateName, orderDetails));
 
             // 証明書の更新が完了後に Webhook を送信する
+            SetIssuanceStatus(context, certificatePolicyItem.CertificateName, "SendingCompletedEvent", "Sending completion notification...");
             await context.CallSendCompletedEventAsync((certificate.Name, certificate.ExpiresOn, certificatePolicyItem.DnsNames));
 
             LogCertificateIssuanceCompleted(logger, certificate.Name, certificate.ExpiresOn);
@@ -85,6 +116,17 @@ public partial class CertificateIssuanceOrchestrator
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
     };
+
+    private static void SetIssuanceStatus(TaskOrchestrationContext context, string certificateName, string step, string message)
+    {
+        context.SetCustomStatus(new CertificateIssuanceStatus
+        {
+            CertificateName = certificateName,
+            Step = step,
+            Message = message,
+            UpdatedAt = context.CurrentUtcDateTime
+        });
+    }
 
     [LoggerMessage(LogLevel.Information, "Certificate issuance orchestration started. CertificateName: {CertificateName}. DnsNames: {DnsNames}")]
     private static partial void LogCertificateIssuanceStarted(ILogger logger, string certificateName, string dnsNames);
