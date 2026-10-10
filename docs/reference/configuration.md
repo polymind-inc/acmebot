@@ -32,6 +32,10 @@ Acmebot__Endpoint=https://acme-v02.api.letsencrypt.org/directory
 | `Acmebot__PreferredProfile` | Empty | Preferred ACME profile when the CA advertises profiles. |
 | `Acmebot__RenewBeforeExpiry` | `30` | Percentage of certificate lifetime remaining at which scheduled renewal runs, used when ACME renewal information is unavailable for the certificate. Valid range is 0 to 100. |
 | `Acmebot__UseSystemNameServer` | `false` | Use the system DNS resolver instead of Google Public DNS for challenge verification. Enable it when the validation zone is private or outbound DNS policy requires internal resolvers. |
+| `Acmebot__DnsChallengeCheckMaxAttempts` | `12` | Maximum number of attempts (including the first) when verifying that the DNS TXT challenge record has propagated (queried against the resolver `UseSystemNameServer` selects). Valid range is 1 to 60. |
+| `Acmebot__DnsChallengeCheckIntervalSeconds` | `5` | Seconds to wait between DNS propagation check attempts. Increase this if DNS propagation is slow. Valid range is 1 to 300. |
+| `Acmebot__OrderPollingMaxAttempts` | `12` | Maximum number of attempts (including the first) when waiting for the ACME order to become `ready` after answering the challenge, and when waiting for it to become `valid` after finalization. Valid range is 1 to 60. |
+| `Acmebot__OrderPollingIntervalSeconds` | `5` | Seconds to wait between order status check attempts. Increase this if your CA is slow to process orders. Valid range is 1 to 300. |
 | `Acmebot__ManagedIdentityClientId` | Empty | Client ID for the app-wide user-assigned managed identity used for Key Vault certificate operations, Key Vault keys, Azure DNS providers that do not override it, Route 53 web identity federation when `RoleArn` is set, and Google Cloud DNS workload identity federation when `KeyFile64` is empty. When empty, Acmebot uses the system-assigned managed identity. The user-assigned identity must be assigned to the Function App. |
 
 ## Azure Environments

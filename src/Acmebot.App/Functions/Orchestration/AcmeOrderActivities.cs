@@ -25,6 +25,19 @@ public partial class AcmeOrderActivities(
 {
     private readonly AcmebotOptions _options = options.Value;
 
+    // Orchestrators must not read configuration directly, since a settings change mid-run could make a
+    // replay compute different retry policies than the ones already recorded in orchestration history.
+    // This activity's result is persisted in history instead, so it stays stable across replays.
+    [Function(nameof(GetCertificateIssuanceRetrySettings))]
+    public Task<CertificateIssuanceRetrySettings> GetCertificateIssuanceRetrySettings([ActivityTrigger] object? input = null) =>
+        Task.FromResult(new CertificateIssuanceRetrySettings
+        {
+            DnsChallengeCheckMaxAttempts = _options.DnsChallengeCheckMaxAttempts,
+            DnsChallengeCheckIntervalSeconds = _options.DnsChallengeCheckIntervalSeconds,
+            OrderPollingMaxAttempts = _options.OrderPollingMaxAttempts,
+            OrderPollingIntervalSeconds = _options.OrderPollingIntervalSeconds
+        });
+
     [Function(nameof(Order))]
     public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?, string?) input)
     {

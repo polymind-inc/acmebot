@@ -22,10 +22,22 @@ public class AcmebotOptions
     [Required]
     public required string Contacts { get; set; }
 
+    [Range(1, 60)]
+    public int DnsChallengeCheckMaxAttempts { get; set; } = 12;
+
+    [Range(1, 300)]
+    public int DnsChallengeCheckIntervalSeconds { get; set; } = 5;
+
     [Required]
     public required Uri Endpoint { get; set; }
 
     public ExternalAccountBindingOptions? ExternalAccountBinding { get; set; }
+
+    [Range(1, 60)]
+    public int OrderPollingMaxAttempts { get; set; } = 12;
+
+    [Range(1, 300)]
+    public int OrderPollingIntervalSeconds { get; set; } = 5;
 
     public string? PreferredChain { get; set; }
 
