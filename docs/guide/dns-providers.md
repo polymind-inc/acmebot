@@ -32,6 +32,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 
 | Provider | App setting section | Required settings | Propagation delay |
 | --- | --- | --- | --- |
+| acme-dns | `Acmebot__AcmeDns` | `Endpoint`, `Zones` (domain mappings and registration credentials) | 30 seconds (configurable via `PropagationSeconds`) |
 | Akamai Edge DNS | `Acmebot__Akamai` | `Host`, `ClientToken`, `ClientSecret`, `AccessToken` | 120 seconds |
 | Azure DNS | `Acmebot__AzureDns` | `SubscriptionId` | 10 seconds |
 | Azure Private DNS | `Acmebot__AzurePrivateDns` | `SubscriptionId` | 10 seconds |
@@ -50,6 +51,29 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | UnitedDomains | `Acmebot__UnitedDomains` | `ApiKey` | 60 seconds |
 
 Propagation delay is the initial wait before Acmebot begins querying DNS for the expected TXT record. After that wait, Acmebot retries DNS checks until the record becomes visible.
+
+## acme-dns
+
+Use [acme-dns](https://github.com/acme-dns/acme-dns) for CNAME-based DNS-01 delegation. Register with your acme-dns server first, then create a CNAME from `_acme-challenge.example.com` to the registration response's `fulldomain`. Acmebot does not register accounts or create these CNAME records.
+
+Configure each delegated domain as a zone using its registration credentials:
+
+```text
+Acmebot__AcmeDns__Endpoint=https://auth.example.net/
+Acmebot__AcmeDns__PropagationSeconds=30
+Acmebot__AcmeDns__Zones__0__Name=example.com
+Acmebot__AcmeDns__Zones__0__Subdomain=<registration-subdomain>
+Acmebot__AcmeDns__Zones__0__Username=<registration-username>
+Acmebot__AcmeDns__Zones__0__Password=<registration-password>
+```
+
+Select `acme-dns` as the DNS provider. `Name` is the domain being validated, without `_acme-challenge` or a wildcard prefix. Unicode and punycode names are accepted; names must be unique regardless of case or representation. `Subdomain` is the registration's identifier, not its full DNS name.
+
+Add further mappings at `Zones__1`, `Zones__2`, and so on. For a child domain such as `www.example.com`, configure its own mapping and `_acme-challenge.www.example.com` CNAME. Each mapping sends updates to its configured acme-dns registration.
+
+acme-dns retains two rotating TXT values, so a domain and its wildcard can be validated together. Acmebot rejects more than two distinct TXT values in one update operation before writing any values. Avoid concurrent certificate operations sharing a registration, because later updates can replace values still needed by another operation.
+
+Cleanup is a no-op because the acme-dns API has no record deletion operation. Subsequent updates replace old challenge values.
 
 ## Akamai Edge DNS
 
