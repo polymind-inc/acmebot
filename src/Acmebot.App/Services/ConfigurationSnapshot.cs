@@ -67,7 +67,7 @@ internal static class ConfigurationSnapshot
 
         if (options.PowerDns is { } power)
         {
-            Add("PowerDNS", Text("Endpoint", DisplayUrl(power.Endpoint.ToString())), Secret("API key", power.ApiKey), Text("Server ID", power.ServerId));
+            Add("PowerDNS", Text("Endpoint", DisplayUrl(power.Endpoint?.ToString())), Secret("API key", power.ApiKey), Text("Server ID", power.ServerId));
         }
 
         if (options.Regfish is { } regfish)
@@ -117,7 +117,7 @@ internal static class ConfigurationSnapshot
 
     private static ConfigurationSetting Secret(string name, string? value) => new(name, null, !string.IsNullOrWhiteSpace(value));
 
-    private static string? DisplayUrl(string value)
+    private static string? DisplayUrl(string? value)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
         {

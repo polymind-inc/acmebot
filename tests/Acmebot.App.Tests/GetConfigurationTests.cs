@@ -8,6 +8,7 @@ using Acmebot.App.Services;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 using Xunit;
 
@@ -41,6 +42,36 @@ public sealed class GetConfigurationTests
         Assert.Equal("no-store", context.Response.Headers.CacheControl.ToString());
         Assert.Empty(snapshot.DnsProviders);
         Assert.Contains(snapshot.Acme.Settings, x => x.Name == "Contact email" && x.Value == options.Contacts);
+    }
+
+    [Fact]
+    public void HttpStart_MissingPowerDnsEndpoint_ReturnsRemainingConfiguration()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Acmebot:Contacts"] = "admin@example.com",
+            ["Acmebot:Endpoint"] = "https://ca.example/directory",
+            ["Acmebot:VaultBaseUrl"] = "https://vault.example/",
+            ["Acmebot:PowerDns:ApiKey"] = "powerdns-credential-marker",
+            ["Acmebot:Cloudflare:ApiToken"] = "cloudflare-credential-marker"
+        }).Build();
+        var options = configuration.GetSection("Acmebot").Get<AcmebotOptions>()!;
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "reader")], "test"))
+        };
+        var function = new GetConfiguration(new HttpContextAccessor { HttpContext = context }, Microsoft.Extensions.Options.Options.Create(options));
+
+        var result = Assert.IsType<OkObjectResult>(function.HttpStart(context.Request));
+        var snapshot = Assert.IsType<ConfigurationItem>(result.Value);
+        var powerDns = Assert.Single(snapshot.DnsProviders, x => x.Name == "PowerDNS");
+
+        Assert.Null(Assert.Single(powerDns.Settings, x => x.Name == "Endpoint").Value);
+        Assert.True(Assert.Single(powerDns.Settings, x => x.Name == "API key").IsConfigured);
+        Assert.Contains(snapshot.DnsProviders, x => x.Name == "Cloudflare");
+        Assert.Contains(snapshot.Acme.Settings, x => x.Value == "https://ca.example/directory");
+        Assert.Contains(snapshot.General.Settings, x => x.Value == "https://vault.example/");
+        Assert.DoesNotContain("credential-marker", JsonSerializer.Serialize(snapshot));
     }
 
     [Fact]
