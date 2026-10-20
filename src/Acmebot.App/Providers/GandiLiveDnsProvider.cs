@@ -65,28 +65,28 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
         public async IAsyncEnumerable<Domain> ListDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var found = false;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            // GET livedns/domains only returns the zones attached to the token's own organization.
+            // With a reseller token, zones owned by customer (resellee) organizations are missing from
+            // this list, although they remain readable and writable through livedns/domains/{fqdn}.
+            // Some organization-scoped tokens even get an empty list.
             await foreach (var domain in ListLiveDnsDomainsAsync(cancellationToken))
             {
-                found = true;
-
-                yield return domain;
+                if (seen.Add(domain.Fqdn))
+                {
+                    yield return domain;
+                }
             }
 
-            if (found)
-            {
-                yield break;
-            }
-
-            // Some Gandi accounts (most often organization-scoped Personal Access Tokens) return an
-            // empty list from GET livedns/domains even when they manage LiveDNS zones. In that case fall
-            // back to the registrar domain listing and keep the domains whose live nameservers are set to
-            // LiveDNS. This re-enables the registrar-based zone listing that was the original behavior
-            // before the DNS providers were rewritten for v5.
+            // Always merge with the registrar listing (which aggregates resellee organizations) and keep
+            // the domains whose live nameservers are set to LiveDNS.
             await foreach (var domain in ListRegistrarLiveDnsDomainsAsync(cancellationToken))
             {
-                yield return domain;
+                if (seen.Add(domain.Fqdn))
+                {
+                    yield return domain;
+                }
             }
         }
 
