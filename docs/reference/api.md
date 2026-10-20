@@ -26,6 +26,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/account` | Show the ACME account URI, directory URL, and CAA identities. |
+| `GET` | `/api/configuration` | Show current ACME, general, and DNS provider settings without credential values. |
 | `GET` | `/api/certificates` | List certificates from Key Vault. |
 | `POST` | `/api/certificates` | Start certificate issuance. |
 | `POST` | `/api/certificates/{certificateName}/renew` | Start manual renewal. |
@@ -33,6 +34,16 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 | `GET` | `/api/dns-zones` | List DNS zones from configured providers. |
 | `GET` | `/api/renewals` | List automatic renewal status for certificates. |
 | `GET` | `/api/operations/{instanceId}` | Poll an issuance or renewal operation. |
+
+## Show Current Configuration
+
+`GET /api/configuration` requires an authenticated user and no app role, including when `Acmebot__RequireAppRoles=true`. Unauthenticated requests return `401 Unauthorized`. Responses use `Cache-Control: no-store`.
+
+The response contains `acme` and `general` sections and a `dnsProviders` array. Each section has a `name` and `settings` array. Each setting has `name`, `value`, and `isConfigured`: ordinary settings expose their value (or `null` when unset) with `isConfigured: null`; credentials expose `value: null` and only a boolean `isConfigured`. A configured credential means a nonblank value was loaded, not that the credential is valid or connectivity has been checked.
+
+Only explicitly selected fields are returned. Credential values, including API keys, tokens, EAB identifiers and HMAC keys, service account keys, and private key references, are omitted. URL user information, query strings, and fragments are removed. Webhook URLs and arbitrary environment variables are not included.
+
+This endpoint reports options loaded by the application; it does not contact providers, register an ACME account, or change settings. It does not validate whether the current settings can issue certificates.
 
 ## Show ACME Account
 

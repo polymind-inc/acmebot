@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Activity, AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Shield, ShieldAlert, ShieldCheck, UserRound, X } from 'lucide-vue-next';
+import { AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Settings, Shield, ShieldAlert, ShieldCheck, UserRound, X } from 'lucide-vue-next';
 
-import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
+import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getConfiguration, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
-import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup, ReleaseInfo } from '@/api/types';
+import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, ConfigurationInfo, DnsZoneGroup, ReleaseInfo } from '@/api/types';
 import AccountDrawer from '@/components/AccountDrawer.vue';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
 import ConfirmRevokeDialog from '@/components/ConfirmRevokeDialog.vue';
+import ConfigurationDrawer from '@/components/ConfigurationDrawer.vue';
 import DetailsDrawer from '@/components/DetailsDrawer.vue';
 import OperationOverlay from '@/components/OperationOverlay.vue';
 import ToastStack, { type ToastMessage } from '@/components/ToastStack.vue';
@@ -22,6 +23,9 @@ const accountInfo = ref<AccountInfo | null>(null);
 const selectedCertificate = ref<CertificateItem | null>(null);
 const pendingRevokeCertificate = ref<CertificateItem | null>(null);
 const accountDrawerOpen = ref(false);
+const configurationDrawerOpen = ref(false);
+const configuration = ref<ConfigurationInfo | null>(null);
+const configurationState = reactive({ loading: false, error: '' });
 const addDialogOpen = ref(false);
 const detailsBusy = ref(false);
 const toasts = ref<ToastMessage[]>([]);
@@ -68,7 +72,6 @@ const summary = computed(() => {
   );
 
   return {
-    total: certificates.value.length,
     managed: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'managed').length,
     otherCa: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'other-ca').length,
     unmanaged: certificates.value.filter((certificate) => getCertificateCategory(certificate) === 'unmanaged').length,
@@ -162,6 +165,29 @@ async function openAccountDrawer(): Promise<void> {
 
   if (!accountInfo.value) {
     await loadAccount();
+  }
+}
+
+async function openConfigurationDrawer(): Promise<void> {
+  configurationDrawerOpen.value = true;
+  await loadConfiguration();
+}
+
+async function loadConfiguration(): Promise<void> {
+  if (configurationState.loading) {
+    return;
+  }
+
+  configurationState.loading = true;
+  configurationState.error = '';
+  configuration.value = null;
+
+  try {
+    configuration.value = await getConfiguration();
+  } catch (error) {
+    configurationState.error = formatApiError(error);
+  } finally {
+    configurationState.loading = false;
   }
 }
 
@@ -319,6 +345,19 @@ async function confirmRevokeCertificate(): Promise<void> {
             class="header-status header-status--button"
             type="button"
             aria-haspopup="dialog"
+            :aria-expanded="configurationDrawerOpen"
+            @click="openConfigurationDrawer"
+          >
+            <Settings
+              :size="16"
+              aria-hidden="true"
+            />
+            <span>Configuration</span>
+          </button>
+          <button
+            class="header-status header-status--button"
+            type="button"
+            aria-haspopup="dialog"
             :aria-expanded="accountDrawerOpen"
             @click="openAccountDrawer"
           >
@@ -328,13 +367,6 @@ async function confirmRevokeCertificate(): Promise<void> {
             />
             <span>Account</span>
           </button>
-          <div class="header-status">
-            <Activity
-              :size="16"
-              aria-hidden="true"
-            />
-            <span>{{ summary.total }} certificates</span>
-          </div>
         </div>
       </div>
     </header>
@@ -519,6 +551,15 @@ async function confirmRevokeCertificate(): Promise<void> {
       @close="accountDrawerOpen = false"
       @copy="handleCopy"
       @retry="loadAccount"
+    />
+
+    <ConfigurationDrawer
+      :open="configurationDrawerOpen"
+      :configuration="configuration"
+      :loading="configurationState.loading"
+      :error="configurationState.error"
+      @close="configurationDrawerOpen = false"
+      @refresh="loadConfiguration"
     />
 
     <DetailsDrawer

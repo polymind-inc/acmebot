@@ -10,6 +10,14 @@ The dashboard is the primary interface for Acmebot. The Function App serves the 
 
 The dashboard requires authenticated requests, so configure App Service Authentication on the Function App before using it. Once authentication is enabled, open the Function App URL in a browser. If the dashboard returns `401 Unauthorized`, check the authentication configuration first.
 
+## Current Configuration
+
+Select **Configuration** in the header to view the ACME directory, contact email, preferred chain and profile, general settings, and settings for each configured DNS provider. Credentials appear only as **Configured** or **Not configured**; their values are never returned to the browser. URL user information, query strings, and fragments are omitted.
+
+The panel is read-only and available to authenticated users. Opening or refreshing it does not register an ACME account, contact DNS providers, or change settings. **Configured** indicates a nonblank credential value, not successful authentication. Unset managed identity client IDs use the default identity: providers inherit the app-wide identity, which uses the system-assigned identity when its client ID is also unset.
+
+Change settings through the Function App configuration. The panel shows the settings currently loaded by Acmebot; **Refresh** reloads this view and does not apply pending Azure configuration changes.
+
 ## ACME Account Information
 
 Select **Account** in the header to view the ACME account URI, directory URL, and CAA identities. Each value has a copy button. When the CA advertises no identities, the panel indicates that none are available.

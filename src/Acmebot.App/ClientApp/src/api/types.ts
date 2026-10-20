@@ -3,6 +3,23 @@ export type KeyCurveName = 'P-256' | 'P-384' | 'P-521' | 'P-256K';
 export type CertificateCategory = 'managed' | 'other-ca' | 'unmanaged';
 export type CertificateStatusKind = 'valid' | 'warning' | 'expired' | 'disabled';
 
+export interface ConfigurationSetting {
+  name: string;
+  value: string | null;
+  isConfigured: boolean | null;
+}
+
+export interface ConfigurationSection {
+  name: string;
+  settings: ConfigurationSetting[];
+}
+
+export interface ConfigurationInfo {
+  acme: ConfigurationSection;
+  general: ConfigurationSection;
+  dnsProviders: ConfigurationSection[];
+}
+
 export interface AccountInfo {
   accountUri: string;
   directoryUrl: string;

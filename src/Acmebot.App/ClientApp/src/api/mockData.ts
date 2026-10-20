@@ -1,4 +1,39 @@
-import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, DnsZoneGroup } from './types';
+import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, ConfigurationInfo, DnsZoneGroup } from './types';
+
+export function getMockConfiguration(): ConfigurationInfo {
+  return {
+    acme: {
+      name: 'ACME CA',
+      settings: [
+        { name: 'Directory URL', value: 'https://acme-v02.api.letsencrypt.org/directory', isConfigured: null },
+        { name: 'Contact email', value: 'admin@example.com', isConfigured: null },
+        { name: 'Preferred chain', value: null, isConfigured: null },
+        { name: 'Preferred profile', value: 'tlsserver', isConfigured: null },
+        { name: 'EAB key ID', value: null, isConfigured: false },
+        { name: 'EAB HMAC key', value: null, isConfigured: false },
+        { name: 'EAB algorithm', value: null, isConfigured: null },
+      ],
+    },
+    general: {
+      name: 'General',
+      settings: [
+        { name: 'Azure environment', value: 'AzureCloud', isConfigured: null },
+        { name: 'Key Vault URL', value: 'https://acmebot.vault.azure.net/', isConfigured: null },
+        { name: 'Managed identity client ID', value: null, isConfigured: null },
+        { name: 'Renewal threshold (% of lifetime remaining)', value: '30', isConfigured: null },
+        { name: 'Require app roles', value: 'Yes', isConfigured: null },
+        { name: 'Use system name server', value: 'No', isConfigured: null },
+      ],
+    },
+    dnsProviders: [
+      { name: 'Azure DNS', settings: [
+        { name: 'Subscription ID', value: '00000000-0000-0000-0000-000000000000', isConfigured: null },
+        { name: 'Managed identity client ID', value: null, isConfigured: null },
+      ] },
+      { name: 'Cloudflare', settings: [{ name: 'API token', value: null, isConfigured: true }] },
+    ],
+  };
+}
 
 const day = 86_400_000;
 
