@@ -45,6 +45,43 @@ These commands cover the contributor-facing validation checks.
 - Avoid unrelated refactoring in the same pull request.
 - Do not commit secrets, certificates, or populated `local.settings.json` values.
 
+## Commit and Pull Request Writing Style
+
+Use this style for contributor-written and agent-generated commit messages, pull request titles, and pull request descriptions in this repository. Automated dependency update messages may retain the bot's own format.
+
+### Commit subjects and pull request titles
+
+- Write a short English imperative sentence starting with a capitalized verb, such as `Add`, `Fix`, `Update`, `Remove`, or `Document`.
+- Describe the specific change or resulting behavior. Avoid vague subjects such as `Fix issues` or `Update files`.
+- Aim for 72 characters or fewer, with no trailing period.
+- Do not add Conventional Commits prefixes such as `feat:` or `docs:`, emoji, or manually appended pull request numbers.
+- Describe the individual change in a commit subject and the overall delivered change in a pull request title. They may be identical for a single-change pull request.
+
+Examples:
+
+```text
+Fix certificate renewal error handling
+Add DNS-PERSIST-01 capability validation
+Document Key Vault CSR compatibility limitations
+Update Azure Functions SDK and xUnit packages
+```
+
+### Commit bodies
+
+Omit the body when the subject is sufficient. Otherwise, separate it from the subject with a blank line and explain why the change is needed, along with any material behavior changes or limitations. Use English prose or concise bullets. Include issue references in the body when relevant.
+
+### Pull request descriptions
+
+Use [.github/pull_request_template.md](.github/pull_request_template.md), retain its headings, and write the content in English:
+
+- **Summary:** Explain the concrete problem and resulting behavior in one or two sentences.
+- **Related Issue:** Use `Closes #123` only when the pull request resolves that issue, or `Related to #123` for context. Write `None` when there is no linked issue.
+- **What Changed:** List the meaningful changes that help a reviewer understand the implementation. Describe the final scope and relevant design choices rather than the sequence of work.
+- **Validation:** Record the checks actually performed and their results. Mark a checkbox only when the check passed. State why a check failed, was not run, or is not applicable, and add relevant checks beyond the template when needed.
+- **Notes:** Describe material limitations, compatibility considerations, breaking changes, or deployment steps. Write `None` when there are none.
+
+Keep descriptions proportional to the change. Remove placeholder text and template comments when filling in the description, and avoid repeating the same explanation across sections.
+
 ## Issue and Pull Request Classification
 
 Issues use GitHub Issue Types as their primary classification:
