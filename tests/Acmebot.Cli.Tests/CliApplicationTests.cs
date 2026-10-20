@@ -4,6 +4,55 @@ namespace Acmebot.Cli.Tests;
 
 public sealed class CliApplicationTests
 {
+    [Theory]
+    [InlineData("http://acmebot.example")]
+    [InlineData("ftp://acmebot.example")]
+    [InlineData("/relative")]
+    [InlineData("https://user:password@acmebot.example")]
+    public async Task RunAsync_WithConfigSetUnsafeEndpoint_DoesNotWriteConfiguration(string endpoint)
+    {
+        var configPath = Path.Combine(Path.GetTempPath(), $"acmebot-{Guid.NewGuid():N}.json");
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await CliApplication.RunAsync(
+            ["--config", configPath, "config", "set", "--endpoint", endpoint],
+            output,
+            error,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(ExitCodes.Usage, exitCode);
+        Assert.Contains("must be an absolute HTTPS URL", error.ToString());
+        Assert.False(File.Exists(configPath));
+    }
+
+    [Fact]
+    public async Task RunAsync_WithConfigSetAudienceAndExistingHttpEndpoint_DoesNotOverwriteConfiguration()
+    {
+        var configPath = Path.Combine(Path.GetTempPath(), $"acmebot-{Guid.NewGuid():N}.json");
+        const string configuration = """{"endpoint":"http://acmebot.example","audience":"api://original"}""";
+        await File.WriteAllTextAsync(configPath, configuration, TestContext.Current.CancellationToken);
+
+        try
+        {
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+
+            var exitCode = await CliApplication.RunAsync(
+                ["--config", configPath, "config", "set", "--audience", "api://changed"],
+                output,
+                error,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(ExitCodes.Usage, exitCode);
+            Assert.Equal(configuration, await File.ReadAllTextAsync(configPath, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(configPath);
+        }
+    }
+
     [Fact]
     public async Task RunAsync_WithRemovedScopeOption_ReturnsUsage()
     {

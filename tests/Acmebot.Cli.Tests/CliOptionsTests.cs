@@ -4,6 +4,23 @@ namespace Acmebot.Cli.Tests;
 
 public sealed class CliOptionsTests
 {
+    [Theory]
+    [InlineData("http://acmebot.example")]
+    [InlineData("ftp://acmebot.example")]
+    [InlineData("/relative")]
+    [InlineData("https://user:password@acmebot.example")]
+    public void Create_WithUnsafeEndpointFromAnySource_Throws(string endpoint)
+    {
+        using var environment = EnvironmentVariableScope.Set([("ACMEBOT_ENDPOINT", null)]);
+
+        Assert.Throws<CliException>(() => CliOptions.Create(CommandLine.Parse(["--endpoint", endpoint, "certificate", "list"])));
+        Assert.Throws<CliException>(() => CliOptions.Create(CommandLine.Parse(["certificate", "list"]), new CliConfig(endpoint, null)));
+
+        using var endpointEnvironment = EnvironmentVariableScope.Set([("ACMEBOT_ENDPOINT", endpoint)]);
+
+        Assert.Throws<CliException>(() => CliOptions.Create(CommandLine.Parse(["certificate", "list"])));
+    }
+
     [Fact]
     public void Create_WithEndpoint_UsesEndpointOriginAsDefaultAudience()
     {

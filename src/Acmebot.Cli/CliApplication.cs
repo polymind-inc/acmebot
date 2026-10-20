@@ -428,10 +428,7 @@ internal static class CliApplication
             throw new CliException("Option '--endpoint' requires a value.");
         }
 
-        if (!Uri.TryCreate(value, UriKind.Absolute, out _))
-        {
-            throw new CliException("Option '--endpoint' must be an absolute URL.");
-        }
+        CliOptions.ValidateEndpoint(value);
 
         return value.Trim();
     }

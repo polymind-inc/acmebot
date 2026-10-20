@@ -12,6 +12,8 @@ The Function App serves the dashboard and API endpoints with anonymous trigger a
 
 Configure App Service Authentication and require sign-in before requests reach the app. Microsoft Entra ID is the typical provider for Azure-hosted deployments.
 
+The dashboard and every API endpoint return `401` unless App Service Authentication is enabled (`WEBSITE_AUTH_ENABLED=true`) and the caller is authenticated. Supplying identity headers alone does not satisfy this requirement when authentication is disabled.
+
 The HTTP triggers are configured with anonymous trigger authorization so App Service Authentication can provide the authenticated user principal to the application. Do not rely on a Functions host key as the only protection for the dashboard or API in v5 deployments.
 
 ## App Roles
@@ -58,6 +60,8 @@ Prefer assigning roles at the individual zone or vault scope rather than subscri
 ## DNS Provider Credentials
 
 External DNS provider credentials are stored as Function App app settings. Treat them as operational secrets.
+
+The shared REST client does not follow HTTP redirects, including when a provider uses a custom signing handler. Configure the final API endpoint for providers with a configurable URL; a redirect response is treated as a failed provider request.
 
 Recommendations:
 

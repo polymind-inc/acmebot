@@ -15,7 +15,7 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
     };
 
     private readonly HttpClient _httpClient = httpClient;
-    private readonly Uri _endpoint = endpoint;
+    private readonly Uri _endpoint = CliOptions.ValidateEndpoint(endpoint.OriginalString);
     private readonly TokenCredential _credential = credential;
     private readonly string[] _scopes = scopes;
     private AccessToken? _accessToken;
@@ -114,6 +114,8 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        ValidateRequestUri(request.RequestUri);
+
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessTokenAsync(cancellationToken));
 
@@ -178,16 +180,20 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
 
     private Uri BuildLocationUri(Uri location)
     {
-        if (location.IsAbsoluteUri)
-        {
-            return location;
-        }
+        var resolvedLocation = new Uri(_endpoint, location);
 
-        if (location.OriginalString.StartsWith("/", StringComparison.Ordinal))
-        {
-            return new Uri(new Uri(_endpoint.GetLeftPart(UriPartial.Authority)), location.OriginalString.TrimStart('/'));
-        }
+        ValidateRequestUri(resolvedLocation);
 
-        return new Uri(_endpoint, location);
+        return resolvedLocation;
+    }
+
+    private void ValidateRequestUri(Uri? uri)
+    {
+        if (uri is null || !uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(uri.IdnHost, _endpoint.IdnHost, StringComparison.OrdinalIgnoreCase) ||
+            uri.Port != _endpoint.Port || !string.IsNullOrEmpty(uri.UserInfo))
+        {
+            throw new AcmebotApiException(HttpStatusCode.BadGateway, "The API request URL must use HTTPS and match the configured endpoint origin without user information.");
+        }
     }
 }

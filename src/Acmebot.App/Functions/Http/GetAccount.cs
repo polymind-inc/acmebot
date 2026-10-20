@@ -22,7 +22,7 @@ public class GetAccount(
     public async Task<IActionResult> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/account")] HttpRequest req)
     {
-        if (User.Identity?.IsAuthenticated != true)
+        if (!IsAuthenticationEnabled || User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

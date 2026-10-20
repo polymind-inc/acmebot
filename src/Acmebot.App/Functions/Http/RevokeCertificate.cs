@@ -20,7 +20,7 @@ public partial class RevokeCertificate(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/certificates/{certificateName}/revoke")] HttpRequest req,
         string certificateName)
     {
-        if (User.Identity?.IsAuthenticated != true)
+        if (!IsAuthenticationEnabled || User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

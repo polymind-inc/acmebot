@@ -67,6 +67,8 @@ acmebot config set --audience api://<application-client-id>
 
 The audience value must be an application ID URI or endpoint origin. Do not pass a token scope such as `user_impersonation` or `.default`; the CLI appends `/.default` internally.
 
+The endpoint must be an absolute HTTPS URL without embedded user credentials. This applies to command-line options, environment variables, and saved configuration. Operation status URLs must also use HTTPS and match the endpoint's host and port. The CLI rejects other destinations before attaching an access token.
+
 When using `az login` or Azure CLI-backed credentials against an application ID URI such as `api://<application-client-id>`, the application registration used by App Service Authentication must allow the Microsoft Azure CLI public client. In the application registration, open **Expose an API**, add an authorized client application with client ID `04b07795-8ddb-461a-bbee-02f9e1bf7b46`, and select the `user_impersonation` scope.
 
 ## Global Options

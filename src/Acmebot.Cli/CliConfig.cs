@@ -44,6 +44,11 @@ internal sealed record CliConfig(string? Endpoint, string? Audience)
 
     public void Save(CommandLine commandLine)
     {
+        if (Endpoint is not null)
+        {
+            CliOptions.ValidateEndpoint(Endpoint);
+        }
+
         var path = GetPath(commandLine);
         var directory = Path.GetDirectoryName(path);
 

@@ -14,8 +14,13 @@ using Xunit;
 
 namespace Acmebot.App.Tests;
 
-public sealed class GetConfigurationTests
+[Collection(AppServiceAuthenticationCollection.Name)]
+public sealed class GetConfigurationTests : IDisposable
 {
+    private readonly AppServiceAuthenticationScope _authentication = new("true");
+
+    public void Dispose() => _authentication.Dispose();
+
     [Fact]
     public void HttpStart_WhenUnauthenticated_DoesNotReadConfiguration()
     {

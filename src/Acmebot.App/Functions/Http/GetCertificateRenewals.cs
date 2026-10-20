@@ -26,7 +26,7 @@ public partial class GetCertificateRenewals(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/renewals")] HttpRequest req,
         [DurableClient] DurableTaskClient starter)
     {
-        if (User.Identity?.IsAuthenticated != true)
+        if (!IsAuthenticationEnabled || User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

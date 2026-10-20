@@ -21,10 +21,7 @@ internal sealed record CliOptions(
             throw new CliException("Missing required option '--endpoint'. Run 'acmebot config set --endpoint <url>', set ACMEBOT_ENDPOINT, or pass --endpoint.");
         }
 
-        if (!Uri.TryCreate(endpointValue, UriKind.Absolute, out var endpoint))
-        {
-            throw new CliException("Option '--endpoint' must be an absolute URL.");
-        }
+        var endpoint = ValidateEndpoint(endpointValue);
 
         var credentialOptions = CredentialOptions.Create(commandLine);
         var tokenScopes = GetTokenScopes(commandLine, endpoint, config);
@@ -40,6 +37,16 @@ internal sealed record CliOptions(
     }
 
     private static Uri NormalizeEndpoint(Uri endpoint) => new(endpoint.AbsoluteUri.TrimEnd('/') + "/");
+
+    public static Uri ValidateEndpoint(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(endpoint.UserInfo))
+        {
+            throw new CliException("Option '--endpoint' must be an absolute HTTPS URL without user information.");
+        }
+
+        return endpoint;
+    }
 
     private static string[] GetTokenScopes(CommandLine commandLine, Uri endpoint, CliConfig config)
     {

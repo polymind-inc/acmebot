@@ -18,7 +18,7 @@ public class GetConfiguration(
     public IActionResult HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/configuration")] HttpRequest req)
     {
-        if (User.Identity?.IsAuthenticated != true)
+        if (!IsAuthenticationEnabled || User.Identity?.IsAuthenticated != true)
         {
             return Unauthorized();
         }

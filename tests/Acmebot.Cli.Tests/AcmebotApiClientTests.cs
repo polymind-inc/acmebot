@@ -10,6 +10,93 @@ namespace Acmebot.Cli.Tests;
 
 public sealed class AcmebotApiClientTests
 {
+    [Theory]
+    [InlineData("http://acmebot.example/")]
+    [InlineData("https://user:password@acmebot.example/")]
+    public void Constructor_WithUnsafeEndpoint_RejectsBeforeAcquiringToken(string endpoint)
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        var credential = new TestCredential("token");
+
+        Assert.Throws<CliException>(() => new AcmebotApiClient(httpClient, new Uri(endpoint), credential, ["api://acmebot/.default"]));
+        Assert.Empty(handler.Requests);
+        Assert.Equal(0, credential.RequestCount);
+    }
+
+    [Theory]
+    [InlineData("https://other.example/api/operations/abc")]
+    [InlineData("http://acmebot.example/api/operations/abc")]
+    [InlineData("https://acmebot.example:444/api/operations/abc")]
+    [InlineData("//other.example/api/operations/abc")]
+    [InlineData("https://acmebot.example@other.example/api/operations/abc")]
+    [InlineData("https://user:password@acmebot.example/api/operations/abc")]
+    public async Task RenewCertificateAsync_WithUnsafeLocation_DoesNotSendTokenToLocation(string location)
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        var credential = new TestCredential("token");
+        using var client = new AcmebotApiClient(httpClient, new Uri("https://acmebot.example/"), credential, ["api://acmebot/.default"]);
+        handler.Enqueue(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Accepted);
+            response.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
+            return response;
+        });
+
+        var exception = await Assert.ThrowsAsync<AcmebotApiException>(() => client.RenewCertificateAsync("example", TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.BadGateway, exception.StatusCode);
+        Assert.Equal(new Uri("https://acmebot.example/api/certificates/example/renew"), Assert.Single(handler.Requests).RequestUri);
+        Assert.Equal(1, credential.RequestCount);
+    }
+
+    [Theory]
+    [InlineData("/api/operations/abc", "https://acmebot.example/api/operations/abc")]
+    [InlineData("api/operations/abc", "https://acmebot.example/base/api/operations/abc")]
+    [InlineData("https://ACMEBOT.example:443/api/operations/abc", "https://acmebot.example/api/operations/abc")]
+    public async Task RenewCertificateAsync_WithSameOriginLocation_ResolvesAndPolls(string location, string expected)
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmebotApiClient(httpClient, new Uri("https://acmebot.example/base/"), new TestCredential("token"), ["api://acmebot/.default"]);
+        handler.Enqueue(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Accepted);
+            response.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
+            return response;
+        });
+        handler.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.OK));
+
+        var operationLocation = await client.RenewCertificateAsync("example", TestContext.Current.CancellationToken);
+        await client.WaitForOperationAsync(operationLocation, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TextWriter.Null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(new Uri(expected), operationLocation);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(new Uri(expected), handler.Requests[1].RequestUri);
+        Assert.Equal("token", handler.Requests[1].AuthorizationParameter);
+    }
+
+    [Theory]
+    [InlineData("https://other.example/api/operations/abc")]
+    [InlineData("http://acmebot.example/api/operations/abc")]
+    [InlineData("https://acmebot.example:444/api/operations/abc")]
+    [InlineData("api/operations/abc")]
+    [InlineData("https://user:password@acmebot.example/api/operations/abc")]
+    public async Task WaitForOperationAsync_WithUnsafeLocation_RejectsBeforeAcquiringToken(string location)
+    {
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        var credential = new TestCredential("token");
+        using var client = new AcmebotApiClient(httpClient, new Uri("https://acmebot.example/"), credential, ["api://acmebot/.default"]);
+
+        await Assert.ThrowsAsync<AcmebotApiException>(() => client.WaitForOperationAsync(
+            new Uri(location, UriKind.RelativeOrAbsolute), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TextWriter.Null, TestContext.Current.CancellationToken));
+
+        Assert.Empty(handler.Requests);
+        Assert.Equal(0, credential.RequestCount);
+    }
+
     [Fact]
     public async Task GetCertificatesAsync_SendsBearerTokenAndDeserializesResponse()
     {
@@ -198,7 +285,13 @@ public sealed class AcmebotApiClientTests
 
     private sealed class TestCredential(string token) : TokenCredential
     {
-        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken) => new(token, DateTimeOffset.UtcNow.AddHours(1));
+        public int RequestCount { get; private set; }
+
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return new AccessToken(token, DateTimeOffset.UtcNow.AddHours(1));
+        }
 
         public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken) => new(GetToken(requestContext, cancellationToken));
     }

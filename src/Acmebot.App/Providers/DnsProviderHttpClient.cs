@@ -18,7 +18,13 @@ internal static class DnsProviderHttpClient
 
     public static HttpClient Create(Uri baseAddress, HttpMessageHandler? handler = null)
     {
-        var httpClient = handler is null ? new HttpClient() : new HttpClient(handler);
+        handler ??= new HttpClientHandler();
+
+        // Custom authentication headers survive redirects, including redirects to another origin.
+        // Apply this to the transport beneath provider signing handlers as well.
+        DisableAutoRedirect(handler);
+
+        var httpClient = new HttpClient(handler);
 
         httpClient.BaseAddress = baseAddress;
 
@@ -27,6 +33,23 @@ internal static class DnsProviderHttpClient
         AddUserAgent(httpClient);
 
         return httpClient;
+    }
+
+    private static void DisableAutoRedirect(HttpMessageHandler handler)
+    {
+        while (handler is DelegatingHandler { InnerHandler: { } innerHandler })
+        {
+            handler = innerHandler;
+        }
+
+        if (handler is HttpClientHandler httpClientHandler)
+        {
+            httpClientHandler.AllowAutoRedirect = false;
+        }
+        else if (handler is SocketsHttpHandler socketsHttpHandler)
+        {
+            socketsHttpHandler.AllowAutoRedirect = false;
+        }
     }
 
     /// <summary>
