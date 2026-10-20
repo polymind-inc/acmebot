@@ -193,7 +193,7 @@ Use a Gandi LiveDNS API key with access to the domains Acmebot should manage.
 Acmebot__GandiLiveDns__ApiKey=<api-key>
 ```
 
-Acmebot lists zones from `GET /v5/livedns/domains`. Some accounts, most often organization-scoped Personal Access Tokens, receive an empty list from that endpoint even when they manage LiveDNS zones. In that case Acmebot falls back to the registrar listing (`GET /v5/domain/domains`) and keeps the domains whose live nameservers are set to LiveDNS, so the token also needs Domain API access.
+Acmebot lists zones from `GET /v5/livedns/domains` and merges them with the registrar listing (`GET /v5/domain/domains`), keeping the registrar domains whose live nameservers are set to LiveDNS. The LiveDNS listing only returns zones attached to the token's own organization: with a reseller token, zones owned by customer (resellee) organizations are missing from it, and some organization-scoped Personal Access Tokens receive an empty list. The registrar listing covers those zones, so the token should also have Domain API access.
 
 ## GoDaddy
 
