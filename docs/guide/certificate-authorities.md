@@ -19,6 +19,14 @@ Acmebot works with ACME v2 certificate authorities (CAs). Configure the ACME dir
 
 You can also enter a custom ACME directory endpoint in the deployment form.
 
+## CSR Compatibility Limitations
+
+Acmebot uses Azure Key Vault to generate private keys and certificate signing requests (CSRs). Key Vault-generated CSRs include the X.509 Basic Constraints extension (`2.5.29.19`), and Key Vault does not currently expose a setting to omit it.
+
+ACME endpoints that reject this extension are not supported. This includes AWS ACME endpoints that reject Key Vault-generated CSRs with `Disallowed extension: 2.5.29.19`, as reported in [issue #1292](https://github.com/polymind-inc/acmebot/issues/1292). Issuance fails during order finalization, even if DNS validation succeeds. Changing the certificate key type does not remove this extension.
+
+Acmebot has no configuration workaround for this limitation. Use a compatible CA, such as one of the verified endpoints above. Supporting endpoints that reject Basic Constraints requires a change to Key Vault CSR generation or to the CA's CSR acceptance policy.
+
 ## Contact Email
 
 Set the account contact email address:
