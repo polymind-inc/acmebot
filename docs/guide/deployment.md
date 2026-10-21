@@ -79,6 +79,29 @@ Acmebot__Environment=AzureCloud
 
 It also writes the selected DNS provider and managed identity settings. For the complete list, see [Configuration](../reference/configuration).
 
+### Additional App Settings
+
+When deploying the template directly, pass optional Function App settings through `additionalAppSettings`. This parameter is a secure object containing a `settings` array of string `name` and `value` pairs. It defaults to `{ "settings": [] }` when omitted.
+
+For example, include this entry in the `parameters` object of an ARM parameters file:
+
+```json
+"additionalAppSettings": {
+  "value": {
+    "settings": [
+      {
+        "name": "Acmebot__RenewBeforeExpiry",
+        "value": "25"
+      }
+    ]
+  }
+}
+```
+
+Existing template callers that pass an array directly must wrap that array in `{ "settings": [...] }`. In an ARM parameters file, the `value` changes from `[...]` to `{ "settings": [...] }`. Callers that omit the parameter do not need to change. The portal deployment form does not supply this parameter and continues to use the empty default.
+
+Azure Resource Manager treats the entire object as sensitive and does not retain its values in deployment parameter history. If a parent template forwards secret values, its input parameters must also be secure. Keep secrets out of committed parameter files and command-line arguments, and prefer App Service Key Vault references for secret app settings. See [Deployment Parameters](../reference/security#deployment-parameters) for security boundaries and handling values passed through earlier template versions.
+
 ## Post-Deployment Steps
 
 1. Assign DNS zone permissions to the Function App identity.

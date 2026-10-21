@@ -5,11 +5,22 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.44.1.10279",
-      "templateHash": "7475699352632478067"
+      "version": "0.48.1.52935",
+      "templateHash": "17394842526826689544"
     }
   },
   "definitions": {
+    "additionalAppSettingsType": {
+      "type": "secureObject",
+      "properties": {
+        "settings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/appSettingType"
+          }
+        }
+      }
+    },
     "appSettingType": {
       "type": "object",
       "properties": {
@@ -168,13 +179,12 @@
       }
     },
     "additionalAppSettings": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/appSettingType"
+      "$ref": "#/definitions/additionalAppSettingsType",
+      "defaultValue": {
+        "settings": []
       },
-      "defaultValue": [],
       "metadata": {
-        "description": "Additional name/value pairs appended to the Function App app settings."
+        "description": "Secure object containing additional name/value pairs in its settings array, appended to the Function App app settings."
       }
     }
   },
@@ -366,7 +376,7 @@
           }
         },
         "siteConfig": {
-          "appSettings": "[concat(createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference('appInsights').ConnectionString), createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'DEPLOYMENT_STORAGE_CONNECTION_STRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'Acmebot__Contacts', 'value', coalesce(tryGet(parameters('acme'), 'contacts'), '')), createObject('name', 'Acmebot__Endpoint', 'value', variables('acmeEndpoint')), createObject('name', 'Acmebot__VaultBaseUrl', 'value', variables('keyVaultBaseUrl')), createObject('name', 'Acmebot__Environment', 'value', environment().name)), variables('eabAppSettings'), variables('dnsProviderAppSettings'), if(variables('useUserAssignedIdentity'), createArray(createObject('name', 'Acmebot__ManagedIdentityClientId', 'value', coalesce(coalesce(tryGet(parameters('managedIdentity'), 'clientId'), tryGet(if(variables('useUserAssignedIdentity'), reference('userAssignedIdentity', '2023-01-31', 'full'), null()), 'properties', 'clientId')), ''))), createArray()), parameters('additionalAppSettings'))]",
+          "appSettings": "[concat(createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference('appInsights').ConnectionString), createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'DEPLOYMENT_STORAGE_CONNECTION_STRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys('storageAccount', '2025-06-01').keys[0].value, environment().suffixes.storage)), createObject('name', 'Acmebot__Contacts', 'value', coalesce(tryGet(parameters('acme'), 'contacts'), '')), createObject('name', 'Acmebot__Endpoint', 'value', variables('acmeEndpoint')), createObject('name', 'Acmebot__VaultBaseUrl', 'value', variables('keyVaultBaseUrl')), createObject('name', 'Acmebot__Environment', 'value', environment().name)), variables('eabAppSettings'), variables('dnsProviderAppSettings'), if(variables('useUserAssignedIdentity'), createArray(createObject('name', 'Acmebot__ManagedIdentityClientId', 'value', coalesce(coalesce(tryGet(parameters('managedIdentity'), 'clientId'), tryGet(if(variables('useUserAssignedIdentity'), reference('userAssignedIdentity', '2023-01-31', 'full'), null()), 'properties', 'clientId')), ''))), createArray()), parameters('additionalAppSettings').settings)]",
           "minTlsVersion": "1.2",
           "cors": {
             "allowedOrigins": [
@@ -433,8 +443,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "17722264565150714319"
+              "version": "0.48.1.52935",
+              "templateHash": "14898925353537805008"
             }
           },
           "parameters": {
@@ -499,8 +509,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "17722264565150714319"
+              "version": "0.48.1.52935",
+              "templateHash": "14898925353537805008"
             }
           },
           "parameters": {

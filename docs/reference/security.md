@@ -72,6 +72,14 @@ Recommendations:
 - Rotate credentials regularly.
 - Restart the Function App after updating credentials.
 
+## Deployment Parameters
+
+The deployment template accepts ACME credentials, DNS provider credentials, and additional app settings through secure object parameters. For `additionalAppSettings`, place the name/value pairs inside its `settings` array; see [Additional App Settings](../guide/deployment#additional-app-settings) for the format and migration from the previous array parameter.
+
+Secure parameters prevent Azure Resource Manager from retaining those parameter values in deployment history. They do not encrypt local parameter files, remove values from shell history or external logs, or change who can read Function App app settings. Parent templates must also mark forwarded secret input parameters as secure. Prefer App Service Key Vault references when passing secret app settings.
+
+Earlier template versions accepted `additionalAppSettings` as a non-secure array. If you passed credentials or signed webhook URLs directly through that parameter, treat the corresponding deployment history as containing secrets. Rotate those credentials or webhook URLs and remove the affected deployment history according to your retention policy. Updating the template does not remove values from earlier deployments or copies of their logs.
+
 ## Key Vault
 
 Acmebot stores private keys in Key Vault. It creates certificate operations and merges the issued public certificate chain into the pending operation.

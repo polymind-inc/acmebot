@@ -43,8 +43,15 @@ param keyVaultSkuName string = 'standard'
 #disable-next-line no-hardcoded-env-urls
 param appPackageUri string = 'https://github.com/polymind-inc/acmebot/releases/latest/download/acmebot.zip'
 
-@description('Additional name/value pairs appended to the Function App app settings.')
-param additionalAppSettings appSettingType[] = []
+@description('Secure object containing additional name/value pairs in its settings array, appended to the Function App app settings.')
+param additionalAppSettings additionalAppSettingsType = {
+  settings: []
+}
+
+@secure()
+type additionalAppSettingsType = {
+  settings: appSettingType[]
+}
 
 type appSettingType = {
   name: string
@@ -346,7 +353,7 @@ var acmebotAppSettings = concat([
     name: 'Acmebot__Environment'
     value: environment().name
   }
-], eabAppSettings, dnsProviderAppSettings, identityAppSettings, additionalAppSettings)
+], eabAppSettings, dnsProviderAppSettings, identityAppSettings, additionalAppSettings.settings)
 
 var functionPrincipalId = useUserAssignedIdentity ? userAssignedIdentity.?properties.principalId ?? '' : functionApp.identity.principalId
 
