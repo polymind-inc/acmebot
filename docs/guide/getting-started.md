@@ -73,20 +73,28 @@ In the dashboard:
 
 Acmebot creates the `_acme-challenge` TXT record, waits for propagation, finalizes the ACME order, and stores the certificate in Key Vault.
 
-## 6. Verify the Result
+## 6. Verify the Key Vault Certificate
 
 After the operation completes:
 
 - Confirm the certificate appears in the dashboard.
 - Open the Key Vault and confirm the certificate has a current version.
-- Check Application Insights if the operation failed or stayed pending.
-- Confirm that downstream Azure services can read the certificate from Key Vault or import the PFX.
+- Check your deployment's Application Insights if the operation failed or stayed pending.
+- Check the certificate's SANs, expiry, key type, and exportability against the consuming service's requirements.
 
-## 7. Let Renewals Run
+## 7. Bind and Verify Your HTTPS Endpoint
+
+Issuance does not configure a service's TLS binding. Follow the [Application Gateway](./integrations/application-gateway) or [Front Door](./integrations/front-door) walkthrough, or choose another service in [Azure Service Integration](./service-integration).
+
+Configure the consuming service's Key Vault access, bind the certificate to the custom domain, and point the domain's DNS records to that service. Then open the public HTTPS URL and verify the certificate actually served: the hostname must match, the chain must be trusted, and its serial number or thumbprint must match the intended Key Vault version. The integration guides include OpenSSL checks.
+
+A staging CA certificate is useful for testing issuance but is not publicly trusted; issue a production certificate before using it on a public endpoint. Front Door requires a supported publicly trusted chain.
+
+## 8. Let Renewals Run
 
 The `RenewCertificates` timer runs daily and maintains renewal state per managed certificate. When ACME Renewal Information (ARI) is available for a certificate, Acmebot evaluates the certificate authority's suggested renewal window and `Retry-After` timing before renewing. Otherwise, only that certificate falls back to the configured lifetime threshold, `Acmebot__RenewBeforeExpiry` percent (default 30).
 
-See [Operations](./operations) for monitoring and troubleshooting guidance.
+Repeat the public endpoint check after renewal, allowing for the consuming service's synchronization delay. See [Operations](./operations) for monitoring and troubleshooting guidance.
 
 ## Next Steps
 

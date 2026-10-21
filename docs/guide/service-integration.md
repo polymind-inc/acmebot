@@ -57,6 +57,8 @@ Reference: [Import certificates from Azure Key Vault to Azure Container Apps](ht
 
 ## Application Gateway v2
 
+Follow the [Application Gateway integration guide](./integrations/application-gateway) for identity setup, listener binding, rotation timing, and public endpoint verification.
+
 Application Gateway v2 supports TLS termination with Key Vault certificates. For automatic rotation, configure the listener with a Key Vault secret identifier that omits the version.
 
 Recommended checks:
@@ -69,6 +71,8 @@ Recommended checks:
 Reference: [TLS termination with Key Vault certificates](https://learn.microsoft.com/azure/application-gateway/key-vault-certs)
 
 ## Azure Front Door Standard/Premium
+
+Follow the [Front Door integration guide](./integrations/front-door) for certificate requirements, managed identity setup, domain binding, rotation timing, and public endpoint verification.
 
 For customer-managed certificates, create a Front Door secret from the Key Vault certificate and select `Latest`. This avoids reconfiguring Front Door on every renewal.
 

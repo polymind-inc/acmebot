@@ -20,8 +20,15 @@ const guideSidebar = [
     items: [
       { text: "DNS Providers", link: "/guide/dns-providers" },
       { text: "Certificate Authorities", link: "/guide/certificate-authorities" },
-      { text: "DNS-PERSIST-01", link: "/guide/dns-persist-01" },
-      { text: "Azure Service Integration", link: "/guide/service-integration" }
+      { text: "DNS-PERSIST-01", link: "/guide/dns-persist-01" }
+    ]
+  },
+  {
+    text: "Integrations",
+    items: [
+      { text: "Azure Service Overview", link: "/guide/service-integration" },
+      { text: "Application Gateway", link: "/guide/integrations/application-gateway" },
+      { text: "Front Door", link: "/guide/integrations/front-door" }
     ]
   },
   {
@@ -51,7 +58,7 @@ const hostname = "https://acmebot.dev";
 export default defineConfig({
   lang: "en-US",
   title: "Acmebot",
-  description: "Automate free SSL/TLS certificates on Microsoft Azure with Let's Encrypt and other ACME CAs. DNS-01 validation, wildcard certificates, ARI-aware renewal, and Azure Key Vault storage.",
+  description: "Self-host open-source ACME certificate issuance and renewal in your Azure environment, store certificates in Key Vault, and connect them to Azure services.",
   lastUpdated: true,
   srcExclude: ["README.md"],
   cleanUrls: true,
@@ -63,8 +70,8 @@ export default defineConfig({
     ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
     ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
     ["link", { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" }],
-    ["meta", { property: "og:title", content: "Acmebot — Automated TLS certificates for Microsoft Azure" }],
-    ["meta", { property: "og:description", content: "Automate free SSL/TLS certificates on Microsoft Azure with Let's Encrypt and other ACME CAs. DNS-01 validation, wildcard certificates, ARI-aware renewal, and Azure Key Vault storage." }],
+    ["meta", { property: "og:title", content: "Acmebot — Automated TLS Certificate Management for Microsoft Azure" }],
+    ["meta", { property: "og:description", content: "Self-host open-source ACME certificate issuance and renewal in your Azure environment, store certificates in Key Vault, and connect them to Azure services." }],
     ["meta", { property: "og:image", content: "https://acmebot.dev/images/ogp.png" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }]

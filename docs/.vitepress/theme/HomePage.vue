@@ -3,7 +3,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   event.preventDefault();
 
   document.querySelector(selector)?.scrollIntoView({
-    behavior: "smooth",
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     block: "start"
   });
 }
@@ -13,12 +13,12 @@ function scrollToSection(event: MouseEvent, selector: string) {
   <div class="landing-page">
     <section class="hero">
       <div class="container">
-        <div class="hero-badge">Acmebot v5 &mdash; Production Ready</div>
-        <h1 class="hero-title">Automated TLS certificates<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
-        <p class="hero-description">Acmebot issues and renews free certificates from Let's Encrypt and other ACME CAs — DNS-01 validation, wildcard support, ARI-aware renewal scheduling, and Azure Key Vault private key storage.</p>
+        <div class="hero-badge">Open source &middot; Self-hosted in your Azure environment</div>
+        <h1 class="hero-title">Automated TLS Certificate Management<br>for <span class="hero-highlight">Microsoft Azure</span></h1>
+        <p class="hero-description">Acmebot issues and renews ACME certificates, stores them in Azure Key Vault, and lets your Azure services consume them. Self-hosted in your Azure environment and open source under Apache-2.0.</p>
         <div class="hero-actions">
-          <a href="#deploy" class="btn btn-primary" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
-          <a href="/guide/getting-started" class="btn btn-outline">Get Started</a>
+          <a href="/guide/getting-started" class="btn btn-primary">Get Started</a>
+          <a href="#deploy" class="btn btn-outline" @click="scrollToSection($event, '#deploy')">Deploy to Azure</a>
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
@@ -39,7 +39,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section id="features" class="section">
       <div class="container">
-        <h2 class="section-title">Why teams choose Acmebot</h2>
+        <h2 class="section-title">Certificate automation in your Azure environment</h2>
         <p class="section-subtitle">Reduce expiry risk, retire one-off renewal scripts, and keep certificate work inside Azure-native security and monitoring.</p>
         <div class="features-grid">
           <div class="feature-card">
@@ -91,28 +91,28 @@ function scrollToSection(event: MouseEvent, selector: string) {
     <section class="section section-alt">
       <div class="container">
         <h2 class="section-title">Designed for production rollout</h2>
-        <p class="section-subtitle">v5 focuses on making adoption safer for existing deployments and easier to operate after the first certificate is issued.</p>
-        <div class="v5-grid">
-          <div class="v5-card">
-            <div class="v5-icon">
+        <p class="section-subtitle">Manage issuance and renewal in your subscription, with access controls and visibility into your own deployment.</p>
+        <div class="operations-grid">
+          <div class="operations-card">
+            <div class="operations-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>
             </div>
-            <h3>Preserve what already works</h3>
-            <p>Migrate from v4 while keeping existing Key Vault certificates, DNS provider settings, managed identity, and monitoring resources.</p>
+            <h3>Connect to your environment</h3>
+            <p>Use your Key Vault, DNS provider, managed identity, and monitoring resources. Review deployment prerequisites before issuing a certificate.</p>
           </div>
-          <div class="v5-card">
-            <div class="v5-icon">
+          <div class="operations-card">
+            <div class="operations-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
             </div>
             <h3>Use one operation model</h3>
             <p>Issue, renew, revoke, and track operations through the same model whether you use the dashboard, HTTP API, CLI, or scheduled renewal.</p>
           </div>
-          <div class="v5-card">
-            <div class="v5-icon">
+          <div class="operations-card">
+            <div class="operations-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             </div>
             <h3>Keep access and visibility clear</h3>
-            <p>Protect the dashboard with authentication and app roles, scope Azure access with managed identity, and monitor with telemetry and webhooks.</p>
+            <p>Protect the dashboard with authentication and app roles, scope Azure access with managed identity, and monitor your own deployment with Azure Application Insights.</p>
           </div>
         </div>
       </div>
@@ -121,71 +121,71 @@ function scrollToSection(event: MouseEvent, selector: string) {
     <section id="services" class="section">
       <div class="container">
         <h2 class="section-title">Bring renewed certificates to Azure services</h2>
-        <p class="section-subtitle">Acmebot owns issuance and renewal; each Azure service consumes the current Key Vault certificate through its supported pattern.</p>
+        <p class="section-subtitle">Choose a service for integration guidance. Each service controls certificate pickup and rotation. If its native managed certificate meets your needs, that may be simpler.</p>
         <div class="services-grid">
-          <div class="service-card">
+          <a class="service-card" href="/guide/service-integration#app-service">
             <div class="service-icon">
-              <img src="/images/azure-app-service.svg" alt="App Service" width="36" height="36">
+              <img src="/images/azure-app-service.svg" alt="" width="36" height="36">
             </div>
             <span>App Service</span>
             <small>Web Apps / Functions / Containers</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#azure-container-apps">
             <div class="service-icon">
-              <img src="/images/azure-container-apps.svg" alt="Container Apps" width="36" height="36">
+              <img src="/images/azure-container-apps.svg" alt="" width="36" height="36">
             </div>
             <span>Container Apps</span>
             <small>Including custom DNS suffix</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/integrations/front-door">
             <div class="service-icon">
-              <img src="/images/azure-front-door.svg" alt="Front Door" width="36" height="36">
+              <img src="/images/azure-front-door.svg" alt="" width="36" height="36">
             </div>
             <span>Front Door</span>
             <small>Standard / Premium</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/integrations/application-gateway">
             <div class="service-icon">
-              <img src="/images/azure-application-gateway.svg" alt="Application Gateway" width="36" height="36">
+              <img src="/images/azure-application-gateway.svg" alt="" width="36" height="36">
             </div>
             <span>Application Gateway</span>
             <small>v2</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#api-management">
             <div class="service-icon">
-              <img src="/images/azure-api-management.svg" alt="API Management" width="36" height="36">
+              <img src="/images/azure-api-management.svg" alt="" width="36" height="36">
             </div>
             <span>API Management</span>
             <small>Custom domains</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#azure-web-pubsub">
             <div class="service-icon">
-              <img src="/images/azure-web-pubsub.svg" alt="Azure Web PubSub" width="36" height="36">
+              <img src="/images/azure-web-pubsub.svg" alt="" width="36" height="36">
             </div>
             <span>Web PubSub</span>
             <small>Premium tier</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#azure-event-grid-namespaces">
             <div class="service-icon">
-              <img src="/images/azure-event-grid.svg" alt="Azure Event Grid Namespaces" width="36" height="36">
+              <img src="/images/azure-event-grid.svg" alt="" width="36" height="36">
             </div>
             <span>Event Grid Namespaces</span>
             <small>HTTP / MQTT custom domains</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#signalr-service">
             <div class="service-icon">
-              <img src="/images/azure-signalr.svg" alt="SignalR Service" width="36" height="36">
+              <img src="/images/azure-signalr.svg" alt="" width="36" height="36">
             </div>
             <span>SignalR Service</span>
             <small>Premium tier</small>
-          </div>
-          <div class="service-card">
+          </a>
+          <a class="service-card" href="/guide/service-integration#virtual-machines-and-other-workloads">
             <div class="service-icon">
-              <img src="/images/azure-virtual-machines.svg" alt="Virtual Machines" width="36" height="36">
+              <img src="/images/azure-virtual-machines.svg" alt="" width="36" height="36">
             </div>
             <span>Virtual Machines</span>
             <small>Custom certificate deployment</small>
-          </div>
+          </a>
         </div>
       </div>
     </section>
@@ -260,7 +260,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
               <li>ARI-aware timing</li>
               <li>Key Vault storage</li>
               <li>Private network support</li>
-              <li>Azure Monitor telemetry</li>
+              <li>Application Insights in your subscription</li>
             </ul>
             <div class="deploy-buttons">
               <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2Fazuredeploy.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fpolymind-inc%2Facmebot%2Fmaster%2Fdeploy%2FuiFormDefinition.json" class="btn btn-primary btn-deploy">Azure Public</a>
@@ -275,28 +275,40 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
     <section class="section">
       <div class="container">
-        <h2 class="section-title">From deployment to first certificate</h2>
-        <p class="section-subtitle">A small amount of Azure setup gives your team an automated certificate path it can keep using.</p>
+        <h2 class="section-title">From prerequisites to verified HTTPS</h2>
+        <p class="section-subtitle">Follow the setup guide, then verify both the Key Vault certificate and the certificate your application serves.</p>
         <div class="steps-grid">
           <div class="step-card">
             <div class="step-number">1</div>
-            <h3>Deploy</h3>
-            <p>Deploy the v5 template and choose the ACME endpoint, managed identity, Key Vault, and monitoring settings.</p>
+            <h3>Check prerequisites and deploy</h3>
+            <p>Review Azure permissions and DNS access, then deploy with your chosen ACME endpoint, managed identity, and Key Vault.</p>
           </div>
           <div class="step-card">
             <div class="step-number">2</div>
-            <h3>Configure DNS</h3>
-            <p>Grant the selected identity or provider credential permission to create and delete DNS-01 TXT records.</p>
+            <h3>Configure DNS and issue</h3>
+            <p>Grant DNS-01 TXT record permissions, secure dashboard access, and issue a certificate. Confirm its current version in Key Vault.</p>
           </div>
           <div class="step-card">
             <div class="step-number">3</div>
-            <h3>Issue Certificates</h3>
-            <p>Use the dashboard to issue a certificate, confirm the Key Vault version, and let scheduled renewals take over.</p>
+            <h3>Bind and verify HTTPS</h3>
+            <p>Connect the consuming service, verify its public HTTPS certificate, and check it again after renewal and service synchronization.</p>
           </div>
         </div>
         <div class="steps-cta">
           <a href="/guide/getting-started" class="btn btn-primary">Read the Documentation</a>
         </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" aria-labelledby="articles-title">
+      <div class="container">
+        <h2 id="articles-title" class="section-title">Technical articles</h2>
+        <p class="section-subtitle">Further reading on certificate lifetimes and operating Azure Functions. Use the guides here for deployment and integration steps.</p>
+        <ul class="article-list">
+          <li><a href="https://dev.to/polymind/working-with-lets-encrypts-short-lived-tlsserver-and-shortlived-profile-certificates-547o">Working with Let's Encrypt's short-lived certificate profiles</a><p>Understand how shorter certificate lifetimes affect renewal and rollout planning.</p></li>
+          <li><a href="https://dev.to/polymind/migrating-azure-functions-monitoring-to-opentelemetry-17o">Migrating Azure Functions monitoring to OpenTelemetry</a><p>Understand monitoring migration pitfalls for your own Azure Functions deployment.</p></li>
+        </ul>
+        <p class="section-note"><a href="https://dev.to/polymind">More articles from Polymind on DEV Community &rarr;</a></p>
       </div>
     </section>
 
@@ -396,7 +408,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   --card-bg: #ffffff;
   --text-primary: #1b1b1f;
   --text-secondary: #5c5c6d;
-  --text-muted: #8e8ea0;
+  --text-muted: #686878;
   --border-color: #e1e5eb;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -452,6 +464,10 @@ function scrollToSection(event: MouseEvent, selector: string) {
   text-align: center;
   margin-bottom: 12px;
   letter-spacing: 0;
+}
+
+.section-title[id] {
+  scroll-margin-top: 96px;
 }
 
 .section-subtitle {
@@ -593,14 +609,14 @@ function scrollToSection(event: MouseEvent, selector: string) {
 }
 
 .features-grid,
-.v5-grid {
+.operations-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 
 .feature-card,
-.v5-card,
+.operations-card,
 .step-card,
 .community-card,
 .service-card,
@@ -633,7 +649,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
 }
 
 .feature-card h3,
-.v5-card h3,
+.operations-card h3,
 .step-card h3 {
   font-size: 1.1rem;
   font-weight: 700;
@@ -641,20 +657,20 @@ function scrollToSection(event: MouseEvent, selector: string) {
 }
 
 .feature-card p,
-.v5-card p,
+.operations-card p,
 .step-card p {
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }
 
-.v5-card {
+.operations-card {
   padding: 32px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   text-align: center;}
 
-.v5-icon {
+.operations-icon {
   width: 56px;
   height: 56px;
   display: flex;
@@ -666,7 +682,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   color: var(--primary);
 }
 
-.v5-icon svg {
+.operations-icon svg {
   width: 28px;
   height: 28px;
 }
@@ -721,6 +737,48 @@ function scrollToSection(event: MouseEvent, selector: string) {
   color: var(--text-muted);
   line-height: 1.35;
   margin-top: 2px;
+}
+
+.landing-page a.service-card {
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.landing-page a.service-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.section-note {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.landing-page .section-note {
+  margin-top: 24px;
+}
+
+.article-list {
+  max-width: 720px;
+  margin: 0 auto;
+  list-style: none;
+}
+
+.article-list li + li {
+  margin-top: 24px;
+}
+
+.article-list a,
+.section-note a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-list p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-top: 4px;
 }
 
 .providers-grid {
@@ -1018,7 +1076,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 16px;
 }
 
@@ -1033,6 +1091,10 @@ function scrollToSection(event: MouseEvent, selector: string) {
   color: #ffffff;
 }
 
+.landing-page .footer a:focus-visible {
+  outline-color: #ffffff;
+}
+
 .footer-bottom {
   padding: 24px 0;
   text-align: center;
@@ -1040,7 +1102,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
 
 .footer-bottom p {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .hide-mobile {
@@ -1082,7 +1144,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   }
 
   .features-grid,
-  .v5-grid,
+  .operations-grid,
   .steps-grid,
   .community-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1160,7 +1222,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
   }
 
   .features-grid,
-  .v5-grid,
+  .operations-grid,
   .steps-grid,
   .community-grid {
     grid-template-columns: 1fr;
