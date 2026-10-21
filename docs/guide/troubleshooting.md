@@ -114,6 +114,8 @@ What to verify:
 
 Certificate operations are Durable Functions orchestrations, so a pending operation can be normal while Acmebot waits for DNS propagation or ACME validation.
 
+DNS TXT propagation checks and ACME order status checks each make up to 12 attempts. Retry delays start at 5 seconds, double after each retry, and stop increasing at 60 seconds. This allows a total of 8 minutes 15 seconds of retry delays per check, in addition to activity execution time and the DNS provider's initial propagation delay. Invalid ACME orders fail immediately. No additional app settings are required.
+
 If it remains pending longer than expected:
 
 - Check Application Insights for dependency failures.

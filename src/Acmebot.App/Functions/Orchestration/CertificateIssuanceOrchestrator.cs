@@ -38,13 +38,13 @@ public partial class CertificateIssuanceOrchestrator
                     await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
 
                     // 正しく追加した DNS TXT レコードが引けるか確認
-                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(_retryPolicy));
+                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(PollingRetryPolicy));
 
                     // ACME Answer Challenge を実行
                     await context.CallAnswerChallengesAsync(challengeResults);
 
-                    // ACME Order のステータスが ready になるまで 60 秒待機
-                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(_retryPolicy));
+                    // Wait for the ACME order to become ready using bounded exponential backoff.
+                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(PollingRetryPolicy));
                 }
                 finally
                 {
@@ -59,8 +59,8 @@ public partial class CertificateIssuanceOrchestrator
             // Finalize の時点でステータスが valid の時点はスキップ
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Valid)
             {
-                // Finalize 後のステータスが valid になるまで 60 秒待機
-                orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(_retryPolicy));
+                // Wait for the finalized order to become valid using bounded exponential backoff.
+                orderDetails = await context.CallCheckIsValidAsync(orderDetails, TaskOptions.FromRetryPolicy(PollingRetryPolicy));
             }
 
             // 証明書をダウンロードし Key Vault に保存された秘密鍵とマージ
@@ -81,7 +81,13 @@ public partial class CertificateIssuanceOrchestrator
         }
     }
 
-    private readonly RetryPolicy _retryPolicy = new(12, TimeSpan.FromSeconds(5))
+    // Allow slow DNS propagation and CA processing without increasing the number of queries.
+    // Twelve attempts wait for a total of 8 minutes 15 seconds, excluding activity execution time.
+    internal static RetryPolicy PollingRetryPolicy { get; } = new(
+        maxNumberOfAttempts: 12,
+        firstRetryInterval: TimeSpan.FromSeconds(5),
+        backoffCoefficient: 2,
+        maxRetryInterval: TimeSpan.FromMinutes(1))
     {
         HandleFailure = taskFailureDetails => taskFailureDetails.IsCausedBy<RetriableActivityException>()
     };
