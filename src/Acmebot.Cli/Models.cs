@@ -4,14 +4,26 @@ namespace Acmebot.Cli;
 
 internal sealed class AccountItem
 {
-    [JsonPropertyName("accountUri")]
-    public required Uri AccountUri { get; set; }
-
     [JsonPropertyName("directoryUrl")]
     public required Uri DirectoryUrl { get; set; }
 
     [JsonPropertyName("caaIdentities")]
     public required IReadOnlyList<string> CaaIdentities { get; set; }
+
+    [JsonPropertyName("dnsPersist01")]
+    public DnsPersist01MetadataItem? DnsPersist01 { get; set; }
+}
+
+internal sealed class DnsPersist01MetadataItem
+{
+    [JsonPropertyName("preProvisioningMetadataAvailable")]
+    public required bool PreProvisioningMetadataAvailable { get; set; }
+
+    [JsonPropertyName("issuerDomainNames")]
+    public required IReadOnlyList<string> IssuerDomainNames { get; set; }
+
+    [JsonPropertyName("accountHashPrefix")]
+    public string? AccountHashPrefix { get; set; }
 }
 
 internal sealed class CertificatePolicyItem

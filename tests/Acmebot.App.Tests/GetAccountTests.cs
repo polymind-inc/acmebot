@@ -17,15 +17,18 @@ public sealed class GetAccountTests
     private static readonly Uri s_accountUrl = new("https://acme.example/acct/123");
 
     [Fact]
-    public void CreateAccountItem_ProjectsAccountAndDirectoryMetadata()
+    public void CreateAccountItem_ProjectsDirectoryMetadataWithoutAccountUri()
     {
         using var context = CreateAcmeClientContext(["authority.example", "ca.example.net"]);
 
         var result = GetAccount.CreateAccountItem(context, s_directoryUrl);
 
-        Assert.Equal(s_accountUrl, result.AccountUri);
         Assert.Equal(s_directoryUrl, result.DirectoryUrl);
         Assert.Equal(["authority.example", "ca.example.net"], result.CaaIdentities);
+
+        var response = System.Text.Json.JsonSerializer.SerializeToElement(result);
+        Assert.False(response.TryGetProperty("accountUri", out _));
+        Assert.DoesNotContain(s_accountUrl.OriginalString, response.GetRawText());
     }
 
     [Fact]
@@ -36,6 +39,53 @@ public sealed class GetAccountTests
         var result = GetAccount.CreateAccountItem(context, s_directoryUrl);
 
         Assert.Empty(result.CaaIdentities);
+    }
+
+    [Theory]
+    [InlineData(null, null, false)]
+    [InlineData("ca.example", null, false)]
+    [InlineData(null, "https://ca.example/hash/", false)]
+    [InlineData("CA.EXAMPLE.", "https://ca.example/hash/", false)]
+    [InlineData("ca.example", "/relative/", false)]
+    [InlineData("ca.example", "https://ca.example/hash/", true)]
+    public void CreateAccountItem_ReportsValidatedPreProvisioningMetadata(string? issuer, string? prefix, bool available)
+    {
+        using var context = CreateAcmeClientContext([], new AcmeDirectoryMetadata
+        {
+            IssuerDomainNames = issuer is null ? [] : [issuer],
+            AccountHashPrefix = prefix
+        });
+
+        var result = GetAccount.CreateAccountItem(context, s_directoryUrl);
+
+        Assert.Empty(result.CaaIdentities);
+        Assert.Equal(available, result.DnsPersist01.PreProvisioningMetadataAvailable);
+        Assert.Equal(issuer is null ? Array.Empty<string>() : [issuer], result.DnsPersist01.IssuerDomainNames);
+        Assert.Equal(prefix, result.DnsPersist01.AccountHashPrefix);
+    }
+
+    [Fact]
+    public void CreateAccountItem_WithOnlyCaaIdentities_DoesNotInferPreProvisioningSupport()
+    {
+        using var context = CreateAcmeClientContext(["ca.example"]);
+
+        var result = GetAccount.CreateAccountItem(context, s_directoryUrl);
+
+        Assert.False(result.DnsPersist01.PreProvisioningMetadataAvailable);
+        Assert.Empty(result.DnsPersist01.IssuerDomainNames);
+        Assert.Null(result.DnsPersist01.AccountHashPrefix);
+    }
+
+    [Fact]
+    public void CreateAccountItem_WithoutDirectoryMetadata_ReturnsUnavailableMetadata()
+    {
+        using var context = CreateAcmeClientContext([], omitMetadata: true);
+
+        var result = GetAccount.CreateAccountItem(context, s_directoryUrl);
+
+        Assert.False(result.DnsPersist01.PreProvisioningMetadataAvailable);
+        Assert.Empty(result.DnsPersist01.IssuerDomainNames);
+        Assert.Null(result.DnsPersist01.AccountHashPrefix);
     }
 
     [Fact]
@@ -57,7 +107,7 @@ public sealed class GetAccountTests
         Assert.IsType<UnauthorizedResult>(result);
     }
 
-    private static AcmeClientContext CreateAcmeClientContext(IReadOnlyList<string> caaIdentities)
+    private static AcmeClientContext CreateAcmeClientContext(IReadOnlyList<string> caaIdentities, AcmeDirectoryMetadata? metadata = null, bool omitMetadata = false)
     {
         var signer = AcmeSigner.CreateP256();
 
@@ -69,7 +119,7 @@ public sealed class GetAccountTests
                 NewNonce = new Uri("https://acme.example/new-nonce"),
                 NewAccount = new Uri("https://acme.example/new-account"),
                 NewOrder = new Uri("https://acme.example/new-order"),
-                Metadata = new AcmeDirectoryMetadata
+                Metadata = omitMetadata ? null : metadata ?? new AcmeDirectoryMetadata
                 {
                     CaaIdentities = caaIdentities
                 }

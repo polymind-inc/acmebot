@@ -1,4 +1,5 @@
-﻿using Acmebot.App.Acme;
+﻿using Acmebot.Acme;
+using Acmebot.App.Acme;
 using Acmebot.App.Models;
 using Acmebot.App.Options;
 
@@ -39,9 +40,14 @@ public class GetAccount(
 
         return new AccountItem
         {
-            AccountUri = acmeContext.Account.AccountUrl,
             DirectoryUrl = directoryUrl,
-            CaaIdentities = acmeContext.Directory.Metadata?.CaaIdentities ?? []
+            CaaIdentities = acmeContext.Directory.Metadata?.CaaIdentities ?? [],
+            DnsPersist01 = new DnsPersist01MetadataItem
+            {
+                PreProvisioningMetadataAvailable = AcmeDnsPersist01Validation.IsPreProvisioningAvailable(acmeContext.Directory),
+                IssuerDomainNames = acmeContext.Directory.Metadata?.IssuerDomainNames ?? [],
+                AccountHashPrefix = acmeContext.Directory.Metadata?.AccountHashPrefix
+            }
         };
     }
 }

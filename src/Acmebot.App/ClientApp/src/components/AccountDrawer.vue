@@ -109,26 +109,8 @@ const emit = defineEmits<{
 
         <template v-else-if="account">
           <section class="detail-section">
-            <h3>Account</h3>
+            <h3>ACME directory</h3>
             <dl class="metadata-list">
-              <div class="metadata-row metadata-row--stacked">
-                <dt>Account URI</dt>
-                <dd class="metadata-value-line">
-                  <span class="metadata-value metadata-value--mono">{{ account.accountUri }}</span>
-                  <button
-                    class="copy-button"
-                    type="button"
-                    title="Copy account URI"
-                    aria-label="Copy account URI"
-                    @click="emit('copy', 'Account URI', account.accountUri)"
-                  >
-                    <Copy
-                      :size="15"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </dd>
-              </div>
               <div class="metadata-row metadata-row--stacked">
                 <dt>Directory URL</dt>
                 <dd class="metadata-value-line">
@@ -162,7 +144,7 @@ const emit = defineEmits<{
               />
               <div>
                 <strong>No CAA identities advertised</strong>
-                <p>The ACME directory did not provide any issuer domain names.</p>
+                <p>The ACME directory did not provide any CAA identities.</p>
               </div>
             </div>
             <ul
@@ -189,6 +171,33 @@ const emit = defineEmits<{
                 </button>
               </li>
             </ul>
+          </section>
+
+          <section class="detail-section">
+            <h3>DNS-PERSIST-01</h3>
+            <dl class="metadata-list">
+              <div class="metadata-row metadata-row--stacked">
+                <dt>CA pre-provisioning metadata</dt>
+                <dd>{{ account.dnsPersist01 ? (account.dnsPersist01.preProvisioningMetadataAvailable ? 'Available' : 'Not available') : 'Unknown (server did not report metadata)' }}</dd>
+              </div>
+              <template v-if="account.dnsPersist01">
+                <div class="metadata-row metadata-row--stacked">
+                  <dt>Issuer domain names</dt>
+                  <dd class="metadata-value metadata-value--mono">
+                    {{ account.dnsPersist01.issuerDomainNames.join(', ') || 'None advertised' }}
+                  </dd>
+                </div>
+                <div class="metadata-row metadata-row--stacked">
+                  <dt>Account hash prefix</dt>
+                  <dd class="metadata-value metadata-value--mono">
+                    {{ account.dnsPersist01.accountHashPrefix ?? 'None advertised' }}
+                  </dd>
+                </div>
+              </template>
+            </dl>
+            <p class="account-drawer__note">
+              Acmebot does not support DNS-PERSIST-01 issuance or record generation yet. Keep DNS-01 provider permissions in place.
+            </p>
           </section>
 
           <section class="detail-section account-drawer__note">

@@ -38,9 +38,13 @@ export function getMockConfiguration(): ConfigurationInfo {
 const day = 86_400_000;
 
 const mockAccount: AccountInfo = {
-  accountUri: 'https://acme-v02.api.letsencrypt.org/acme/acct/1234567890',
   directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
   caaIdentities: ['letsencrypt.org'],
+  dnsPersist01: {
+    preProvisioningMetadataAvailable: false,
+    issuerDomainNames: [],
+    accountHashPrefix: null,
+  },
 };
 
 function dateFromNow(days: number): string {

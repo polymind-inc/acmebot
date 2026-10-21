@@ -21,9 +21,13 @@ export interface ConfigurationInfo {
 }
 
 export interface AccountInfo {
-  accountUri: string;
   directoryUrl: string;
   caaIdentities: string[];
+  dnsPersist01?: {
+    preProvisioningMetadataAvailable: boolean;
+    issuerDomainNames: string[];
+    accountHashPrefix: string | null;
+  } | null;
 }
 
 export interface CertificateItem {

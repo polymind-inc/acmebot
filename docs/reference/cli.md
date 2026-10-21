@@ -126,17 +126,19 @@ Configuration precedence is:
 
 ### `account show`
 
-Shows the ACME account URI, configured directory URL, and CAA identities from `GET /api/account`. It accepts the global options and requires authentication, with no app role.
+Shows the configured directory URL, CAA identities, and DNS-PERSIST-01 discovery metadata from `GET /api/account`. It accepts the global options and requires authentication, with no app role.
 
 ```bash
 acmebot account show
 acmebot account show --format json
-acmebot account show --json | jq -r '.accountUri'
+acmebot account show --json | jq '.dnsPersist01'
 ```
 
-The default table format prints each field on its own line and joins CAA identities with commas. If the CA advertises none, it shows `<none>`. JSON output preserves the API response fields and values, including an empty `caaIdentities` array.
+The default table format prints each field on its own line and joins CAA identities and DNS-PERSIST-01 issuer domain names with commas. If the CA advertises none, it shows `<none>`. It also reports whether the directory provides valid pre-provisioning metadata and shows the account hash prefix. This status does not enable DNS-PERSIST-01 issuance or record generation. With an older API that omits `dnsPersist01`, the status is **Unknown**. JSON output includes the discovery object, or `null` for an older API.
 
 On a deployment with no ACME account, the first successful call registers one and saves its state. Configure contact and required external account binding settings first. The command does not generate or publish DNS records, and issuance through DNS-PERSIST-01 is not supported yet.
+
+The account URL is managed internally and omitted from both table and JSON output, including when an older API returns the former `accountUri` field.
 
 ### `certificate list`
 

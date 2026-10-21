@@ -24,9 +24,19 @@ internal static class OutputFormatter
             return;
         }
 
-        await writer.WriteLineAsync($"Account URI: {account.AccountUri.OriginalString}");
         await writer.WriteLineAsync($"Directory URL: {account.DirectoryUrl.OriginalString}");
         await writer.WriteLineAsync($"CAA Identities: {(account.CaaIdentities.Count == 0 ? "<none>" : string.Join(", ", account.CaaIdentities))}");
+        if (account.DnsPersist01 is { } metadata)
+        {
+            await writer.WriteLineAsync($"DNS-PERSIST-01 Pre-provisioning Metadata: {(metadata.PreProvisioningMetadataAvailable ? "Available" : "Not available")}");
+            await writer.WriteLineAsync($"DNS-PERSIST-01 Issuer Domain Names: {(metadata.IssuerDomainNames.Count == 0 ? "<none>" : string.Join(", ", metadata.IssuerDomainNames))}");
+            await writer.WriteLineAsync($"DNS-PERSIST-01 Account Hash Prefix: {metadata.AccountHashPrefix ?? "<none>"}");
+        }
+        else
+        {
+            await writer.WriteLineAsync("DNS-PERSIST-01 Pre-provisioning Metadata: Unknown (server did not report metadata)");
+        }
+        await writer.WriteLineAsync("DNS-PERSIST-01 issuance and record generation are not supported by Acmebot yet.");
     }
 
     public static async Task WriteCertificatesAsync(TextWriter writer, IReadOnlyList<CertificateItem> certificates, OutputFormat format, CancellationToken cancellationToken)

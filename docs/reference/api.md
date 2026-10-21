@@ -25,7 +25,7 @@ When app role enforcement is enabled, issue and renew operations require `Acmebo
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/account` | Show the ACME account URI, directory URL, and CAA identities. |
+| `GET` | `/api/account` | Show the directory URL, CAA identities, and DNS-PERSIST-01 discovery metadata. |
 | `GET` | `/api/configuration` | Show current ACME, general, and DNS provider settings without credential values. |
 | `GET` | `/api/certificates` | List certificates from Key Vault. |
 | `POST` | `/api/certificates` | Start certificate issuance. |
@@ -54,15 +54,21 @@ Accept: application/json
 
 ```json
 {
-  "accountUri": "https://acme-v02.api.letsencrypt.org/acme/acct/123456",
   "directoryUrl": "https://acme-v02.api.letsencrypt.org/directory",
-  "caaIdentities": ["letsencrypt.org"]
+  "caaIdentities": ["letsencrypt.org"],
+  "dnsPersist01": {
+    "preProvisioningMetadataAvailable": false,
+    "issuerDomainNames": [],
+    "accountHashPrefix": null
+  }
 }
 ```
 
-This endpoint requires authentication and no app role, including when `Acmebot__RequireAppRoles=true`. Unauthenticated requests return `401 Unauthorized`. The account URI is an identifier, not a private key; the response contains no private key material.
+This endpoint requires authentication and no app role, including when `Acmebot__RequireAppRoles=true`. Unauthenticated requests return `401 Unauthorized`. The response contains no account URL or private key material. Acmebot retains the account URL internally for ACME requests and future persistent-record generation; users do not need to copy it. Clients consuming the former `accountUri` response field must stop relying on it.
 
 `directoryUrl` is the configured `Acmebot__Endpoint`. `caaIdentities` comes from the ACME directory metadata and is an empty array when the CA does not advertise it. These identities do not establish DNS-PERSIST-01 support.
+
+`dnsPersist01` reports the directory's `issuerDomainNames` and `accountHashPrefix` separately from CAA identities. Missing values are represented by `[]` and `null`. `preProvisioningMetadataAvailable` is true only when the issuer names and hash prefix pass draft `-02` validation; false means the required inputs are missing or malformed, not that every interactive challenge is unsupported. Parsed metadata values are returned as advertised, even when they fail validation. No account hash or TXT record is generated, and this flag does not indicate that Acmebot supports DNS-PERSIST-01 issuance.
 
 The first successful call registers an ACME account and saves its key and account state when no account exists yet, even if this deployment has never issued a certificate. Configure the contact email and any required external account binding credentials before calling it. No DNS records are changed and no certificate order is created.
 

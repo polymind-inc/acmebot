@@ -8,9 +8,29 @@ DNS-PERSIST-01 is an ACME validation method being standardized for persistent DN
 
 ## Current Support
 
-Acmebot exposes ACME account information through the dashboard and API. Certificate issuance and renewal through DNS-PERSIST-01 are not supported yet. DNS-01 with a configured DNS provider remains the only issuance path; keep its DNS permissions in place.
+Acmebot exposes CA directory information and DNS-PERSIST-01 discovery metadata through the dashboard, API, and `acmebot account show` command. The account URL is managed internally and is omitted from these interfaces. Certificate issuance and renewal through DNS-PERSIST-01 are not supported yet. DNS-01 with a configured DNS provider remains the only issuance path; keep its DNS permissions in place.
 
 Acmebot does not generate `_validation-persist` TXT values, verify published persistent records, or report their wildcard policy or expiration. The record format is still under revision. Publishing a record does not enable a new validation mode in Acmebot.
+
+## Implementation Scope and Upstream Status
+
+Reviewed on **2026-10-21** against the latest published [draft revision `-02`](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist-02). It remains an Internet-Draft, not an RFC.
+
+- Revision `-02` requires hashed account URIs bound to the account key thumbprint. The raw account URI examples in the February Let's Encrypt announcement and earlier drafts are not the current record format. The upstream [client-computed binding issue #64](https://github.com/ietf-wg-acme/draft-ietf-acme-dns-persist/issues/64) and [privacy design issue #61](https://github.com/ietf-wg-acme/draft-ietf-acme-dns-persist/issues/61) are closed; do not treat those proposals as still undecided.
+- The [key rollover discussion #69](https://github.com/ietf-wg-acme/draft-ietf-acme-dns-persist/issues/69) remains open. Revision `-02` permits previously provisioned records after rollover, including records not previously validated; the remaining discussion concerns security and implementation costs. Do not assume key rollover immediately invalidates persistent authorization.
+- Neither the [Let's Encrypt production directory](https://acme-v02.api.letsencrypt.org/directory) nor its [staging directory](https://acme-staging-v02.api.letsencrypt.org/directory) advertised `issuerDomainNames` or `accountHashPrefix` at review time. The February announcement's rollout targets are not confirmation that the current draft is available.
+
+The current implementation reports directory metadata and validates whether the inputs needed for pre-provisioning are present. This is separate from confirming an offered challenge or completing an issuance. Missing directory metadata does not prove that a CA will never offer an interactive DNS-PERSIST-01 challenge.
+
+| Work | Timing and condition |
+| --- | --- |
+| Account and directory discovery in UI, CLI, and API | Available now; uses the existing draft `-02` metadata validation. |
+| Hashed TXT generation and read-only DNS verification | Deferred until a target CA's staging environment supports the intended draft and provides interoperable examples or test vectors. Recheck the latest draft before implementation. |
+| Wildcard scope and `persistUntil` reporting and warnings | Deferred with TXT generation and parsing; these must describe the actual published records. |
+| Separate issuance mode without DNS write credentials | Deferred until the provisioning and verification path is tested against that CA. Then carry the mode through certificate policy, storage, renewal, UI, CLI, and API. |
+| Automated account rollover or record migration | Deferred pending the applicable CA's behavior and the upstream rollover guidance. |
+
+These are implementation gates for Acmebot, not claims that all deferred features lack draft definitions. DNS writes to `_validation-persist` remain outside Acmebot's scope in every phase.
 
 ## DNS Change Management
 
@@ -20,7 +40,7 @@ For future provisioning, identify the domain, CA, and ACME account being authori
 
 ## Obtain Account Information
 
-Open **Account** in the dashboard header and copy the values, or call [GET /api/account](/reference/api#show-acme-account):
+Open **Account** in the dashboard header, run `acmebot account show --json`, or call [GET /api/account](/reference/api#show-acme-account):
 
 ```http
 GET /api/account
@@ -29,13 +49,15 @@ Accept: application/json
 
 | Value | Source and meaning |
 | --- | --- |
-| Account URI | Identifies the account registered with the configured CA. |
 | Directory URL | The configured `Acmebot__Endpoint`; use it to identify the CA environment. |
 | CAA identities | The CA's directory `caaIdentities` metadata; empty if absent. Confirm acceptable persistent-validation issuer names with the CA. |
+| DNS-PERSIST-01 issuer domain names | Directory `issuerDomainNames`; shown separately from CAA identities, with no fallback to them. |
+| Account hash prefix | Directory `accountHashPrefix`, or `null` when absent. This is public metadata, not an account key or a generated authorization value. |
+| Pre-provisioning metadata available | `dnsPersist01.preProvisioningMetadataAvailable`; true only when both draft `-02` inputs pass validation. It does not enable record generation or issuance. |
 
-The first successful request registers an account when none exists. Configure the contact email and any required external account binding settings first. Account information contains no private key material.
+The first successful request registers an account when none exists. Configure the contact email and any required external account binding settings first. The response contains neither the account URL nor private key material. Acmebot retains the account URL internally for ACME communication and future hash generation; no manual copy step is required.
 
-These values alone are not a ready-to-publish record. Draft revision `-02` introduces `issuerDomainNames`, `accountHashPrefix`, and an account URI hash using the account public key thumbprint. Acmebot's account response does not expose those additional inputs. Follow the [current draft](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist) and the CA's instructions for syntax and availability; do not paste the raw account URI into a record based on an older example.
+These values alone are not a ready-to-publish record. Draft revision `-02` introduces `issuerDomainNames`, `accountHashPrefix`, and an account URI hash using the account public key thumbprint. The account response exposes the directory inputs but does not compute the hash or expose the account key. Follow the [current draft](https://datatracker.ietf.org/doc/html/draft-ietf-acme-dns-persist) and the CA's instructions for syntax and availability; do not paste the raw account URI into a record based on an older example.
 
 Review `policy=wildcard` explicitly before authorizing wildcard scope. If using `persistUntil`, track its expiration in the DNS management workflow; Acmebot currently provides no expiry warning.
 

@@ -20,11 +20,11 @@ Change settings through the Function App configuration. The panel shows the sett
 
 ## ACME Account Information
 
-Select **Account** in the header to view the ACME account URI, directory URL, and CAA identities. Each value has a copy button. When the CA advertises no identities, the panel indicates that none are available.
+Select **Account** in the header to view the directory URL and CAA identities with copy buttons. The panel also shows DNS-PERSIST-01 issuer domain names, account hash prefix, and whether valid pre-provisioning metadata is available. CAA identities are separate from persistent-validation issuer names. Missing or malformed pre-provisioning inputs show **Not available**; an older API that omits the discovery object shows **Unknown**.
 
 The first successful load registers an ACME account if one does not exist yet. Configure the contact email and any required external account binding credentials before opening the panel. It does not create a certificate order or modify DNS records.
 
-These values identify the account and CA. Acmebot does not generate `_validation-persist` TXT values or support issuance through DNS-PERSIST-01 yet. See the [DNS-PERSIST-01 operating model](/guide/dns-persist-01).
+These values describe the configured CA and its advertised metadata. The account URL is managed internally and is not displayed. Acmebot does not generate `_validation-persist` TXT values or support issuance through DNS-PERSIST-01 yet. See the [DNS-PERSIST-01 operating model](/guide/dns-persist-01).
 
 ## Certificate List
 
