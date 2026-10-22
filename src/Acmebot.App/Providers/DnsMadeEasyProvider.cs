@@ -8,9 +8,19 @@ using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
 
-public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
+public class DnsMadeEasyProvider : IDnsProvider
 {
-    private readonly DnsMadeEasyClient _dnsMadeEasyClient = new(options.ApiKey, options.SecretKey);
+    private readonly DnsMadeEasyClient _dnsMadeEasyClient;
+
+    public DnsMadeEasyProvider(DnsMadeEasyOptions options)
+        : this(options, new HttpClientHandler())
+    {
+    }
+
+    internal DnsMadeEasyProvider(DnsMadeEasyOptions options, HttpMessageHandler handler)
+    {
+        _dnsMadeEasyClient = new DnsMadeEasyClient(options.ApiKey, options.SecretKey, handler);
+    }
 
     public string Name => "DNS Made Easy";
 
@@ -64,9 +74,9 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
 
     private class DnsMadeEasyClient
     {
-        public DnsMadeEasyClient(string apiKey, string secretKey)
+        public DnsMadeEasyClient(string apiKey, string secretKey, HttpMessageHandler handler)
         {
-            _httpClient = DnsProviderHttpClient.Create("https://api.dnsmadeeasy.com/V2.0/dns/", new ApiKeyHandler(apiKey, secretKey));
+            _httpClient = DnsProviderHttpClient.Create("https://api.dnsmadeeasy.com/V2.0/dns/", new ApiKeyHandler(apiKey, secretKey, handler));
         }
 
         private readonly HttpClient _httpClient;
@@ -114,33 +124,23 @@ public class DnsMadeEasyProvider(DnsMadeEasyOptions options) : IDnsProvider
             response.EnsureSuccessStatusCode();
         }
 
-        private sealed class ApiKeyHandler(string apiKey, string secretKey) : DelegatingHandler(new HttpClientHandler())
+        private sealed class ApiKeyHandler(string apiKey, string secretKey, HttpMessageHandler handler) : DelegatingHandler(handler)
         {
             private string ApiKey { get; } = apiKey;
 
-            // ReSharper disable once InconsistentNaming
-            private HMACSHA1 HMAC { get; } = new(Encoding.UTF8.GetBytes(secretKey));
+            private readonly byte[] _secretKey = Encoding.UTF8.GetBytes(secretKey);
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 var requestDate = DateTimeOffset.UtcNow.ToString("r");
-                var hmacHash = Convert.ToHexStringLower(HMAC.ComputeHash(Encoding.UTF8.GetBytes(requestDate)));
+                // The provider is shared across activities, so signing must not share mutable hash state.
+                var hmacHash = Convert.ToHexStringLower(HMACSHA1.HashData(_secretKey, Encoding.UTF8.GetBytes(requestDate)));
 
                 request.Headers.Add("x-dnsme-apiKey", ApiKey);
                 request.Headers.Add("x-dnsme-requestDate", requestDate);
                 request.Headers.Add("x-dnsme-hmac", hmacHash);
 
                 return base.SendAsync(request, cancellationToken);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-
-                if (disposing)
-                {
-                    HMAC.Dispose();
-                }
             }
         }
     }
