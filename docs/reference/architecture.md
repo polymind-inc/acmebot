@@ -64,6 +64,12 @@ Acmebot keeps ACME account state in one of two locations, depending on the envir
 
 The v5 deployment template creates the `acmebot-state` container.
 
+Each state store provides an exclusive initialization lock scoped to the endpoint host. The Blob store uses a 60-second lease on `account.lock`, renewed every 20 seconds. The file system store holds `account.lock` open with exclusive sharing on the shared file system. When account state is incomplete, workers acquire the lock and reread state before creating an account. They hold the lock until initialization finishes, so concurrent workers reuse the same account and key. Workers loading a complete account and cached clients do not acquire the lock.
+
+Initialization saves a new account key before registering it with the certificate authority. If registration or saving account details fails, the next attempt reuses that key to create or recover the same account. Losing or failing to renew a Blob lease cancels initialization. The lock coordinates participating workers; it does not make writes to the separate state files transactional.
+
+File system locking depends on the operating system and mount configuration. The exclusive file handle has been tested on local Windows storage; exclusion across hosts on mounted Azure Files has not been verified. On Linux, `FileShare.None` uses advisory locking, whose propagation across SMB mounts depends on the kernel and mount options. The file system store currently uses file locking rather than Blob leases.
+
 ## Identity
 
 Azure resource access uses managed identity. Acmebot is designed to run in Azure and does not fall back to developer credentials such as Azure CLI or Visual Studio sign-ins.

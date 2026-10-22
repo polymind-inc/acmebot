@@ -10,21 +10,27 @@ namespace Acmebot.App.Acme;
 public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeStateStore stateStore) : IDisposable
 {
     private readonly AcmebotOptions _options = options.Value;
+    private readonly Func<AcmeClient> _createClient = () => new AcmeClient(
+        options.Value.Endpoint,
+        new AcmeClientOptions { UserAgent = $"Acmebot/{Constants.ApplicationVersion}" });
     private readonly SemaphoreSlim _clientContextLock = new(1, 1);
     private AcmeClientContext? _clientContext;
     private bool _disposed;
 
-    public async Task<AcmeClientContext> CreateClientAsync()
+    internal AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeStateStore stateStore, Func<AcmeClient> createClient)
+        : this(options, stateStore) => _createClient = createClient;
+
+    public async Task<AcmeClientContext> CreateClientAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _clientContextLock.WaitAsync();
+        await _clientContextLock.WaitAsync(cancellationToken);
 
         try
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            return _clientContext ??= await CreateClientCoreAsync();
+            return _clientContext ??= await CreateClientCoreAsync(cancellationToken);
         }
         finally
         {
@@ -44,10 +50,23 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
         _clientContext?.Dispose();
     }
 
-    private async Task<AcmeClientContext> CreateClientCoreAsync()
+    private async Task<AcmeClientContext> CreateClientCoreAsync(CancellationToken cancellationToken)
     {
-        var account = await stateStore.LoadAsync<AccountDetails>("account.json");
-        var accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json");
+        var account = await stateStore.LoadAsync<AccountDetails>("account.json", cancellationToken);
+        var accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json", cancellationToken);
+
+        // Existing state is immutable during initialization, so established workers need no lock.
+        await using var stateLock = account is null || accountKey is null
+            ? await stateStore.AcquireLockAsync(cancellationToken)
+            : null;
+        var stateCancellationToken = stateLock?.CancellationToken ?? cancellationToken;
+
+        if (stateLock is not null)
+        {
+            // Another worker may have initialized state while this worker was waiting.
+            account = await stateStore.LoadAsync<AccountDetails>("account.json", stateCancellationToken);
+            accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json", stateCancellationToken);
+        }
         var contacts = GetContacts();
         var isNewAccountKey = false;
 
@@ -71,14 +90,9 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
         // them on every retry.
         try
         {
-            client = new AcmeClient(
-                _options.Endpoint,
-                new AcmeClientOptions
-                {
-                    UserAgent = $"Acmebot/{Constants.ApplicationVersion}"
-                });
+            client = _createClient();
 
-            var directory = await client.GetDirectoryAsync();
+            var directory = await client.GetDirectoryAsync(stateCancellationToken);
             AcmeAccountHandle accountHandle;
 
             if (account is null)
@@ -90,6 +104,12 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
                     throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
                 }
 
+                if (isNewAccountKey)
+                {
+                    // Persist the key before contacting the CA so a retry can recover the same account.
+                    await stateStore.SaveAsync(accountKey, "account_key.json", stateCancellationToken);
+                }
+
                 accountHandle = await client.CreateAccountAsync(
                     signer,
                     new AcmeNewAccountRequest
@@ -97,20 +117,18 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
                         Contact = contacts,
                         TermsOfServiceAgreed = true
                     },
-                    externalAccountBinding);
+                    externalAccountBinding,
+                    stateCancellationToken);
                 account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
 
-                if (isNewAccountKey)
-                {
-                    await stateStore.SaveAsync(accountKey, "account_key.json");
-                }
-
-                await stateStore.SaveAsync(account, "account.json");
+                await stateStore.SaveAsync(account, "account.json", stateCancellationToken);
             }
             else
             {
                 accountHandle = account.ToAccountHandle(signer);
             }
+
+            stateCancellationToken.ThrowIfCancellationRequested();
 
             return new AcmeClientContext
             {

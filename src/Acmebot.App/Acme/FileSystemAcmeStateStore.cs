@@ -6,15 +6,43 @@ using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-internal sealed class FileSystemAcmeStateStore(IOptions<AcmebotOptions> options) : IAcmeStateStore
+internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
 {
-    private readonly Uri _endpoint = options.Value.Endpoint;
+    private readonly string _stateDirectory;
+
+    public FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
+        : this(Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{options.Value.Endpoint.Host}"))
+    {
+    }
+
+    internal FileSystemAcmeStateStore(string stateDirectory) => _stateDirectory = stateDirectory;
 
     private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true
     };
+
+    public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(_stateDirectory);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var stream = new FileStream(ResolveStateFullPath("account.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+                return new FileSystemAcmeStateStoreLock(stream, cancellationToken);
+            }
+            catch (IOException ex) when ((ex.HResult & 0xffff) is 11 or 32 or 33)
+            {
+                await Task.Delay(Random.Shared.Next(250, 750), cancellationToken);
+            }
+        }
+    }
 
     public async Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default)
     {
@@ -52,6 +80,7 @@ internal sealed class FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
                 await JsonSerializer.SerializeAsync(stream, value, s_jsonSerializerOptions, cancellationToken);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(tempPath, fullPath, overwrite: true);
         }
         catch
@@ -74,5 +103,12 @@ internal sealed class FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
         }
     }
 
-    private string ResolveStateFullPath(string path) => Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{_endpoint.Host}/{path}");
+    private string ResolveStateFullPath(string path) => Path.Combine(_stateDirectory, path);
+
+    private sealed class FileSystemAcmeStateStoreLock(FileStream stream, CancellationToken cancellationToken) : IAcmeStateStoreLock
+    {
+        public CancellationToken CancellationToken => cancellationToken;
+
+        public ValueTask DisposeAsync() => stream.DisposeAsync();
+    }
 }
