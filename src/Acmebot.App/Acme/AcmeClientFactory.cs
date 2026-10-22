@@ -106,8 +106,12 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
 
                 if (isNewAccountKey)
                 {
-                    // Persist the key before contacting the CA so a retry can recover the same account.
-                    await stateStore.SaveAsync(accountKey, "account_key.json", stateCancellationToken);
+                    // Creation must be atomic even if this worker resumes after its lease has expired.
+                    // Never register with a key that lost a race to another initializer.
+                    if (!await stateStore.TryCreateAsync(accountKey, "account_key.json", stateCancellationToken))
+                    {
+                        throw new InvalidOperationException("The ACME account key was created by another worker. Retry initialization to use the existing account key.");
+                    }
                 }
 
                 accountHandle = await client.CreateAccountAsync(

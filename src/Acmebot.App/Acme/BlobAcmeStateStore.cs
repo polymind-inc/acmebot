@@ -79,7 +79,24 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
         }
     }
 
-    public async Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+    public async Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveCoreAsync(value, path, overwrite: false, cancellationToken);
+
+            return true;
+        }
+        catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists ||
+                                                ex.ErrorCode == BlobErrorCode.ConditionNotMet)
+        {
+            return false;
+        }
+    }
+
+    public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => SaveCoreAsync(value, path, overwrite: true, cancellationToken);
+
+    private async Task SaveCoreAsync<TState>(TState value, string path, bool overwrite, CancellationToken cancellationToken)
     {
         var blobClient = containerClient.GetBlobClient(CreateBlobName(path));
         var content = BinaryData.FromObjectAsJson(value, s_jsonSerializerOptions);
@@ -88,6 +105,7 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
             content,
             new BlobUploadOptions
             {
+                Conditions = overwrite ? null : new BlobRequestConditions { IfNoneMatch = ETag.All },
                 HttpHeaders = new BlobHttpHeaders
                 {
                     ContentType = ContentType

@@ -69,6 +69,77 @@ public sealed class BlobAcmeStateStoreTests
         Assert.Equal(1, handler.AcquireAttempts);
     }
 
+    [Fact]
+    public async Task TryCreateAsync_WhenMissing_CreatesStateWithServerCondition()
+    {
+        using var handler = new CreateStorageHandler(HttpStatusCode.Conflict, "BlobAlreadyExists");
+        using var httpClient = new HttpClient(handler);
+
+        var created = await CreateStore(httpClient).TryCreateAsync(new { Key = "winner" }, "account_key.json", TestContext.Current.CancellationToken);
+
+        Assert.True(created);
+        Assert.Contains("winner", handler.Content);
+        Assert.Equal("/acmebot-state/acme.example/account_key.json", handler.Path);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Conflict, "BlobAlreadyExists")]
+    [InlineData(HttpStatusCode.PreconditionFailed, "ConditionNotMet")]
+    public async Task TryCreateAsync_WhenStateAlreadyExists_DoesNotReplaceIt(HttpStatusCode status, string errorCode)
+    {
+        using var handler = new CreateStorageHandler(status, errorCode);
+        using var httpClient = new HttpClient(handler);
+        var store = CreateStore(httpClient);
+        Assert.True(await store.TryCreateAsync(new { Key = "winner" }, "account_key.json", TestContext.Current.CancellationToken));
+        var winningState = handler.Content;
+
+        var created = await store.TryCreateAsync(new { Key = "expired-owner" }, "account_key.json", TestContext.Current.CancellationToken);
+
+        Assert.False(created);
+        Assert.Equal(winningState, handler.Content);
+    }
+
+    [Fact]
+    public async Task TryCreateAsync_WhenForbidden_DoesNotTreatErrorAsExistingState()
+    {
+        using var handler = new CreateStorageHandler(HttpStatusCode.Forbidden, "AuthorizationPermissionMismatch") { Content = "existing-state" };
+        using var httpClient = new HttpClient(handler);
+
+        var error = await Assert.ThrowsAsync<RequestFailedException>(() => CreateStore(httpClient).TryCreateAsync(new { Key = "new-key" }, "account_key.json", TestContext.Current.CancellationToken));
+
+        Assert.Equal(403, error.Status);
+        Assert.Equal("existing-state", handler.Content);
+    }
+
+    private sealed class CreateStorageHandler(HttpStatusCode status, string errorCode) : HttpMessageHandler
+    {
+        public string? Content { get; set; }
+        public string? Path { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Assert.Equal(HttpMethod.Put, request.Method);
+            Assert.Equal("*", request.Headers.GetValues("If-None-Match").Single());
+            Path = request.RequestUri!.AbsolutePath;
+
+            if (Content is null)
+            {
+                Content = await request.Content!.ReadAsStringAsync(cancellationToken);
+
+                return new HttpResponseMessage(HttpStatusCode.Created);
+            }
+
+            var response = new HttpResponseMessage(status)
+            {
+                Content = new StringContent($"<Error><Code>{errorCode}</Code><Message>{errorCode}</Message></Error>")
+            };
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/xml");
+            response.Headers.Add("x-ms-error-code", errorCode);
+
+            return response;
+        }
+    }
+
     private static BlobAcmeStateStore CreateStore(HttpClient httpClient)
     {
         var clientOptions = new BlobClientOptions { Transport = new HttpClientTransport(httpClient) };

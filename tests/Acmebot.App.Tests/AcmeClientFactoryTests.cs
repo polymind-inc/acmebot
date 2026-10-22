@@ -139,6 +139,62 @@ public sealed class AcmeClientFactoryTests
         Assert.Equal(handler.RegistrationKeys[0], handler.RegistrationKeys[1]);
     }
 
+    [Fact]
+    public async Task CreateClientAsync_WhenExpiredOwnerResumes_DoesNotOverwriteWinningKey()
+    {
+        using var state = new TestStateDirectory();
+        var store = new FileSystemAcmeStateStore(state.Path);
+        var pausedStore = new PausedKeyStore(store);
+        using var handler = new AccountHandler();
+        using var httpClient = new HttpClient(handler);
+        using var expiredFactory = CreateFactory(pausedStore, httpClient);
+        using var winningFactory = CreateFactory(store, httpClient);
+        var initializing = expiredFactory.CreateClientAsync(TestContext.Current.CancellationToken);
+
+        try
+        {
+            await pausedStore.KeyWritePending.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+            // Model expiration before the old worker's renewal loop detects the lost lock.
+            var expiredLock = Assert.IsAssignableFrom<IAcmeStateStoreLock>(pausedStore.StateLock);
+            await expiredLock.DisposeAsync();
+            Assert.False(expiredLock.CancellationToken.IsCancellationRequested);
+
+            var winner = await winningFactory.CreateClientAsync(TestContext.Current.CancellationToken);
+            var keyPath = System.IO.Path.Combine(state.Path, "account_key.json");
+            var accountPath = System.IO.Path.Combine(state.Path, "account.json");
+            var winningKey = await File.ReadAllBytesAsync(keyPath, TestContext.Current.CancellationToken);
+            var winningAccount = await File.ReadAllBytesAsync(accountPath, TestContext.Current.CancellationToken);
+
+            pausedStore.Resume.TrySetResult();
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => initializing);
+
+            Assert.Contains("created by another worker", error.Message);
+            Assert.Equal(winningKey, await File.ReadAllBytesAsync(keyPath, TestContext.Current.CancellationToken));
+            Assert.Equal(winningAccount, await File.ReadAllBytesAsync(accountPath, TestContext.Current.CancellationToken));
+            Assert.Equal(1, handler.RegistrationCount);
+
+            var retry = await expiredFactory.CreateClientAsync(TestContext.Current.CancellationToken);
+
+            Assert.Equal(winner.Signer.GetThumbprint(), retry.Signer.GetThumbprint());
+            Assert.Equal(winner.Account.AccountUrl, retry.Account.AccountUrl);
+            Assert.Equal(1, handler.RegistrationCount);
+        }
+        finally
+        {
+            pausedStore.Resume.TrySetResult();
+
+            try
+            {
+                await initializing;
+            }
+            catch (InvalidOperationException)
+            {
+                // The expired initializer is expected to abort when the winning key already exists.
+            }
+        }
+    }
+
     private static AcmeClientFactory CreateFactory(IAcmeStateStore store, HttpClient httpClient)
     {
         var options = Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
@@ -172,6 +228,8 @@ public sealed class AcmeClientFactoryTests
 
         public Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default) => inner.LoadAsync<TState>(path, cancellationToken);
 
+        public Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.TryCreateAsync(value, path, cancellationToken);
+
         public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
         {
             if (path == "account.json" && _failSave)
@@ -190,6 +248,8 @@ public sealed class AcmeClientFactoryTests
 
         public Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default) => inner.LoadAsync<TState>(path, cancellationToken);
 
+        public Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.TryCreateAsync(value, path, cancellationToken);
+
         public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.SaveAsync(value, path, cancellationToken);
     }
 
@@ -204,6 +264,8 @@ public sealed class AcmeClientFactoryTests
 
         public Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default) => inner.LoadAsync<TState>(path, cancellationToken);
 
+        public Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.TryCreateAsync(value, path, cancellationToken);
+
         public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.SaveAsync(value, path, cancellationToken);
 
         private sealed class CancellingLock(IAcmeStateStoreLock inner, CancellationToken lockLost) : IAcmeStateStoreLock
@@ -216,6 +278,44 @@ public sealed class AcmeClientFactoryTests
             {
                 await inner.DisposeAsync();
                 _cancellation.Dispose();
+            }
+        }
+    }
+
+    private sealed class PausedKeyStore(IAcmeStateStore inner) : IAcmeStateStore
+    {
+        public IAcmeStateStoreLock? StateLock { get; private set; }
+        public TaskCompletionSource KeyWritePending { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
+        {
+            StateLock = await inner.AcquireLockAsync(cancellationToken);
+
+            return StateLock;
+        }
+
+        public Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default) => inner.LoadAsync<TState>(path, cancellationToken);
+
+        public async Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+        {
+            await WaitBeforeKeyWriteAsync(path, cancellationToken);
+
+            return await inner.TryCreateAsync(value, path, cancellationToken);
+        }
+
+        public async Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+        {
+            await WaitBeforeKeyWriteAsync(path, cancellationToken);
+            await inner.SaveAsync(value, path, cancellationToken);
+        }
+
+        private async Task WaitBeforeKeyWriteAsync(string path, CancellationToken cancellationToken)
+        {
+            if (path == "account_key.json")
+            {
+                KeyWritePending.TrySetResult();
+                await Resume.Task.WaitAsync(cancellationToken);
             }
         }
     }

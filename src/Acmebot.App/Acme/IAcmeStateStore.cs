@@ -7,6 +7,9 @@ public interface IAcmeStateStore
 
     Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default);
 
+    // Atomically create state without replacing an existing value, even if lock ownership is lost.
+    Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default);
+
     Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default);
 }
 

@@ -58,7 +58,23 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
         return await JsonSerializer.DeserializeAsync<TState>(stream, s_jsonSerializerOptions, cancellationToken);
     }
 
-    public async Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+    public async Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveCoreAsync(value, path, overwrite: false, cancellationToken);
+
+            return true;
+        }
+        catch (IOException ex) when ((ex.HResult & 0xffff) is 17 or 80 or 183)
+        {
+            return false;
+        }
+    }
+
+    public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => SaveCoreAsync(value, path, overwrite: true, cancellationToken);
+
+    private async Task SaveCoreAsync<TState>(TState value, string path, bool overwrite, CancellationToken cancellationToken)
     {
         var fullPath = ResolveStateFullPath(path);
         var directoryPath = Path.GetDirectoryName(fullPath);
@@ -81,7 +97,7 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            File.Move(tempPath, fullPath, overwrite: true);
+            File.Move(tempPath, fullPath, overwrite);
         }
         catch
         {
