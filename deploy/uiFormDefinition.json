@@ -1464,6 +1464,9 @@
         "monitoring": {
           "createLogAnalyticsWorkspace": "[equals(steps('loggingStep').createNew, 'create')]",
           "logAnalyticsWorkspaceResourceId": "[if(equals(steps('loggingStep').createNew, 'existing'), steps('loggingStep').logAnalyticsSelector.id, '')]"
+        },
+        "additionalAppSettings": {
+          "settings": []
         }
       }
     }

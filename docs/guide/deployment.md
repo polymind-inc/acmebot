@@ -98,7 +98,7 @@ For example, include this entry in the `parameters` object of an ARM parameters 
 }
 ```
 
-Existing template callers that pass an array directly must wrap that array in `{ "settings": [...] }`. In an ARM parameters file, the `value` changes from `[...]` to `{ "settings": [...] }`. Callers that omit the parameter do not need to change. The portal deployment form does not supply this parameter and continues to use the empty default.
+Existing template callers that pass an array directly must wrap that array in `{ "settings": [...] }`. In an ARM parameters file, the `value` changes from `[...]` to `{ "settings": [...] }`. Callers that omit the parameter do not need to change. The portal deployment form explicitly supplies `{ "settings": [] }` for this parameter.
 
 Azure Resource Manager treats the entire object as sensitive and does not retain its values in deployment parameter history. If a parent template forwards secret values, its input parameters must also be secure. Keep secrets out of committed parameter files and command-line arguments, and prefer App Service Key Vault references for secret app settings. See [Deployment Parameters](../reference/security#deployment-parameters) for security boundaries and handling values passed through earlier template versions.
 
