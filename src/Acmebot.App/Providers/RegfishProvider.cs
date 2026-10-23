@@ -19,7 +19,7 @@ public class RegfishProvider(RegfishOptions options) : IDnsProvider
         var zones = await _regfishClient.ListZonesAsync(cancellationToken);
 
         return zones
-            .Select(zone => new DnsZone(this)
+            .Select(zone => new DnsZone
             {
                 Id = NormalizeName(zone.Domain),
                 Name = NormalizeName(zone.Domain),

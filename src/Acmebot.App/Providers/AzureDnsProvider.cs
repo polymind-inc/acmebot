@@ -26,7 +26,7 @@ public class AzureDnsProvider(AzureDnsOptions options, ArmEnvironment environmen
 
         await foreach (var zone in subscription.GetDnsZonesAsync(cancellationToken: cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name, NameServers = zone.Data.NameServers });
+            zones.Add(new DnsZone { Id = zone.Id.ToString(), Name = zone.Data.Name, NameServers = zone.Data.NameServers });
         }
 
         return zones;

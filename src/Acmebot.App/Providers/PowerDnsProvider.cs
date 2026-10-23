@@ -19,7 +19,7 @@ public class PowerDnsProvider(PowerDnsOptions options) : IDnsProvider
         var zones = await _powerDnsClient.ListZonesAsync(cancellationToken);
 
         return zones
-            .Select(zone => new DnsZone(this) { Id = zone.Id, Name = StripTrailingDot(zone.Name), NameServers = [] })
+            .Select(zone => new DnsZone { Id = zone.Id, Name = StripTrailingDot(zone.Name), NameServers = [] })
             .ToArray();
     }
 

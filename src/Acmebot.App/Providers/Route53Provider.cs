@@ -34,7 +34,7 @@ public class Route53Provider(Route53Options options, string audience, TokenCrede
         } while (response.IsTruncated ?? false);
 
         return zones.Where(x => x.Config?.PrivateZone != true)
-                    .Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name.TrimEnd('.') })
+                    .Select(x => new DnsZone { Id = x.Id, Name = x.Name.TrimEnd('.') })
                     .ToArray();
     }
 

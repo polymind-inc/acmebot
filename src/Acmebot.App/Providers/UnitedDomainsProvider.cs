@@ -18,7 +18,7 @@ public class UnitedDomainsProvider(UnitedDomainsOptions options) : IDnsProvider
     {
         var zones = await _client.ListZonesAsync(cancellationToken);
 
-        return zones.Select(z => new DnsZone(this) { Id = z.Id, Name = z.Name }).ToList();
+        return zones.Select(z => new DnsZone { Id = z.Id, Name = z.Name }).ToList();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)

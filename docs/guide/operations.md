@@ -34,6 +34,8 @@ If automatic renewal fails, that certificate records a retrying state and checks
 
 ## Durable Functions History
 
+When upgrading from the issuance workflow that enumerates zones separately in each DNS activity, allow in-flight certificate issuance operations to finish before deploying. DNS activity inputs and the precondition output now carry zone data, so previously persisted issuance histories cannot be replayed with the new formats. Renewal schedulers waiting between issuance operations can continue normally.
+
 The `PurgeInstanceHistory` timer runs monthly and deletes completed or failed Durable Functions history older than one month, so the storage account does not accumulate old orchestration history.
 
 ## Monitoring

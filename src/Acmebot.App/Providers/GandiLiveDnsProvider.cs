@@ -22,7 +22,7 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
 
         await foreach (var domain in _gandiLiveDnsClient.ListDomainsAsync(cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = domain.Fqdn, Name = domain.Fqdn });
+            zones.Add(new DnsZone { Id = domain.Fqdn, Name = domain.Fqdn });
         }
 
         return zones;

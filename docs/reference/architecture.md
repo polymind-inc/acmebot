@@ -37,6 +37,10 @@ Acmebot is a Function App that coordinates ACME certificate orders, DNS-01 valid
 
 DNS records are always cleaned up after challenge processing, even when an operation fails.
 
+The precondition check enumerates DNS zones once, before creating the ACME order. It passes only the relevant `DnsZone` objects to authorization and cleanup activities, including more specific `_acme-challenge` zones. `DnsZone` contains only the zone identifier, name, and name servers, so it can be serialized directly without provider clients or credentials. Both activities reuse this snapshot and select the configured provider by name instead of enumerating zones again. Provider method definitions and record creation and deletion operations are unchanged.
+
+When there are no authorization URLs or all authorizations are already valid, issuance skips DNS writes, propagation waits, TXT checks, challenge answers, and cleanup. It still waits for the order to become ready before finalization. Orders that are immediately ready still run the precondition check first.
+
 ## Renewal Flow
 
 The scheduled renewal timer runs daily and starts certificate-level renewal evaluation.

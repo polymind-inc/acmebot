@@ -21,7 +21,7 @@ public class IonosDnsProvider(IonosDnsOptions options) : IDnsProvider
 
         await foreach (var zone in _ionosDnsClient.ListZonesAsync(cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Name });
+            zones.Add(new DnsZone { Id = zone.Id, Name = zone.Name });
         }
 
         return zones;

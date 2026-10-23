@@ -26,7 +26,7 @@ public class AzurePrivateDnsProvider(AzurePrivateDnsOptions options, ArmEnvironm
 
         await foreach (var zone in subscription.GetPrivateDnsZonesAsync(cancellationToken: cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id.ToString(), Name = zone.Data.Name });
+            zones.Add(new DnsZone { Id = zone.Id.ToString(), Name = zone.Data.Name });
         }
 
         return zones;

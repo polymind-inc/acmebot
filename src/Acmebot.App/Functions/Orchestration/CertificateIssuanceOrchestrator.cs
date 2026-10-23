@@ -1,5 +1,7 @@
 ﻿using Acmebot.Acme.Models;
+using Acmebot.App.Acme;
 using Acmebot.App.Models;
+using Acmebot.App.Providers;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
@@ -19,7 +21,7 @@ public partial class CertificateIssuanceOrchestrator
         try
         {
             // 前提条件をチェック
-            certificatePolicyItem.DnsProviderName = await context.CallDns01PreconditionAsync(certificatePolicyItem);
+            var zones = await context.CallDns01PreconditionAsync(certificatePolicyItem);
 
             // 新しく ACME Order を作成する (ARI で更新扱いにする場合は既存証明書の Certificate ID を replaces に指定)
             var orderDetails = await context.CallOrderAsync((certificatePolicyItem.DnsNames, certificatePolicyItem.CertificateId, certificatePolicyItem.Profile));
@@ -27,30 +29,7 @@ public partial class CertificateIssuanceOrchestrator
             // 既に確認済みの場合は Challenge をスキップする
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
             {
-                // ACME DNS-01 Challenge を実行
-                var (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations));
-
-                try
-                {
-                    // DNS Provider が指定した分だけ後続の処理を遅延させる
-                    LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
-
-                    await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
-
-                    // 正しく追加した DNS TXT レコードが引けるか確認
-                    await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(PollingRetryPolicy));
-
-                    // ACME Answer Challenge を実行
-                    await context.CallAnswerChallengesAsync(challengeResults);
-
-                    // Wait for the ACME order to become ready using bounded exponential backoff.
-                    await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(PollingRetryPolicy));
-                }
-                finally
-                {
-                    // 作成した DNS レコードを削除
-                    await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName, challengeResults));
-                }
+                await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
             }
 
             // Key Vault で CSR を作成し Finalize を実行
@@ -78,6 +57,43 @@ public partial class CertificateIssuanceOrchestrator
             await context.CallSendFailedEventAsync((certificatePolicyItem.CertificateName, certificatePolicyItem.DnsNames));
 
             throw;
+        }
+    }
+
+    private static async Task ValidateOrderAsync(
+        TaskOrchestrationContext context,
+        CertificatePolicyItem certificatePolicyItem,
+        OrderDetails orderDetails,
+        IReadOnlyList<DnsZone> zones,
+        ILogger logger)
+    {
+        IReadOnlyList<AcmeChallengeResult> challengeResults = [];
+        var propagationSeconds = 0;
+
+        if (orderDetails.Payload.Authorizations.Count > 0)
+        {
+            (challengeResults, propagationSeconds) = await context.CallDns01AuthorizationAsync((certificatePolicyItem.DnsProviderName, certificatePolicyItem.DnsAlias, orderDetails.Payload.Authorizations, zones));
+        }
+
+        if (challengeResults.Count == 0)
+        {
+            // Valid authorizations can precede the order's transition to Ready.
+            await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(PollingRetryPolicy));
+            return;
+        }
+
+        try
+        {
+            LogDnsChallengePropagationDelay(logger, certificatePolicyItem.CertificateName, propagationSeconds);
+
+            await context.CreateTimer(context.CurrentUtcDateTime.AddSeconds(propagationSeconds), CancellationToken.None);
+            await context.CallCheckDnsChallengeAsync(challengeResults, TaskOptions.FromRetryPolicy(PollingRetryPolicy));
+            await context.CallAnswerChallengesAsync(challengeResults);
+            await context.CallCheckIsReadyAsync((orderDetails, challengeResults), TaskOptions.FromRetryPolicy(PollingRetryPolicy));
+        }
+        finally
+        {
+            await context.CallCleanupDnsChallengeAsync((certificatePolicyItem.DnsProviderName, challengeResults, zones));
         }
     }
 

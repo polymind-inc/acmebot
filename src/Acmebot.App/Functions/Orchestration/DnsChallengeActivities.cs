@@ -18,11 +18,12 @@ public class DnsChallengeActivities(
     DnsZoneQueryService dnsZoneQueryService)
 {
     [Function(nameof(Dns01Precondition))]
-    public async Task<string> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
+    public async Task<IReadOnlyList<DnsZone>> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
     {
         var zones = await dnsZoneQueryService.ListZonesAsync(certificatePolicyItem.DnsProviderName);
 
-        var foundZones = new HashSet<DnsZone>();
+        var foundZones = new List<DnsZone>();
+        var recordZones = new List<DnsZone>();
         var notFoundZoneDnsNames = new List<string>();
 
         foreach (var dnsName in certificatePolicyItem.AliasedDnsNames)
@@ -36,6 +37,11 @@ public class DnsChallengeActivities(
             }
 
             foundZones.Add(zone);
+
+            // Resolve the record separately: an _acme-challenge child zone can be more specific
+            // than the zone used for the existing domain and name server precondition checks.
+            var identifier = dnsName.StartsWith("*.", StringComparison.Ordinal) ? dnsName[2..] : dnsName;
+            recordZones.Add(zones.FindDnsZone($"_acme-challenge.{identifier}") ?? zone);
         }
 
         if (notFoundZoneDnsNames.Count > 0)
@@ -43,7 +49,7 @@ public class DnsChallengeActivities(
             throw new PreconditionException($"No DNS zone was found for the following domain name(s): {string.Join(", ", notFoundZoneDnsNames)}.");
         }
 
-        foreach (var zone in foundZones.Where(x => x.NameServers is { Count: > 0 }))
+        foreach (var zone in foundZones.DistinctBy(x => x.Id).Where(x => x.NameServers is { Count: > 0 }))
         {
             var queryResult = await lookupClient.QueryAsync(zone.Name, QueryType.NS);
 
@@ -62,13 +68,18 @@ public class DnsChallengeActivities(
             }
         }
 
-        return certificatePolicyItem.DnsProviderName;
+        return recordZones.DistinctBy(zone => zone.Id).ToArray();
     }
 
     [Function(nameof(Dns01Authorization))]
-    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<Uri>) input, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<AcmeChallengeResult>, int)> Dns01Authorization([ActivityTrigger] (string, string?, IReadOnlyList<Uri>, IReadOnlyList<DnsZone>) input, CancellationToken cancellationToken)
     {
-        var (dnsProviderName, dnsAlias, authorizationUrls) = input;
+        var (dnsProviderName, dnsAlias, authorizationUrls, zones) = input;
+
+        if (authorizationUrls.Count == 0)
+        {
+            return ([], 0);
+        }
 
         var acmeContext = await acmeClientFactory.CreateClientAsync();
         var acmeClient = acmeContext.Client;
@@ -101,9 +112,12 @@ public class DnsChallengeActivities(
             });
         }
 
-        var zones = await dnsZoneQueryService.ListZonesAsync(dnsProviderName, cancellationToken);
+        if (challengeResults.Count == 0)
+        {
+            return ([], 0);
+        }
 
-        var propagationSeconds = 0;
+        var provider = dnsZoneQueryService.GetProvider(dnsProviderName);
 
         foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
         {
@@ -118,13 +132,11 @@ public class DnsChallengeActivities(
 
             var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
-            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
-            await zone.DnsProvider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
-
-            propagationSeconds = Math.Max(propagationSeconds, (int)zone.DnsProvider.PropagationDelay.TotalSeconds);
+            await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+            await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
         }
 
-        return (challengeResults, propagationSeconds);
+        return (challengeResults, (int)provider.PropagationDelay.TotalSeconds);
     }
 
     [Function(nameof(CheckDnsChallenge))]
@@ -160,11 +172,16 @@ public class DnsChallengeActivities(
     }
 
     [Function(nameof(CleanupDnsChallenge))]
-    public async Task CleanupDnsChallenge([ActivityTrigger] (string, IReadOnlyList<AcmeChallengeResult>) input, CancellationToken cancellationToken)
+    public async Task CleanupDnsChallenge([ActivityTrigger] (string, IReadOnlyList<AcmeChallengeResult>, IReadOnlyList<DnsZone>) input, CancellationToken cancellationToken)
     {
-        var (dnsProviderName, challengeResults) = input;
+        var (dnsProviderName, challengeResults, zones) = input;
 
-        var zones = await dnsZoneQueryService.ListZonesAsync(dnsProviderName, cancellationToken);
+        if (challengeResults.Count == 0)
+        {
+            return;
+        }
+
+        var provider = dnsZoneQueryService.GetProvider(dnsProviderName);
 
         foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
         {
@@ -179,7 +196,7 @@ public class DnsChallengeActivities(
 
             var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
-            await zone.DnsProvider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+            await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
         }
     }
 

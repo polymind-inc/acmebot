@@ -59,15 +59,18 @@ public partial class DnsZoneQueryService(IEnumerable<IDnsProvider> dnsProviders,
 
     public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(string dnsProviderName, CancellationToken cancellationToken = default)
     {
+        return await GetProvider(dnsProviderName).ListZonesAsync(cancellationToken);
+    }
+
+    public IDnsProvider GetProvider(string dnsProviderName)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(dnsProviderName);
 
         // Returning an empty zone list for an unknown provider would surface downstream as a misleading
         // "no DNS zone was found for <domain>" error, which sends operators looking at their DNS zones
         // instead of at the provider configuration that was renamed or removed.
-        var dnsProvider = dnsProviders.FirstOrDefault(x => x.Name == dnsProviderName)
+        return dnsProviders.FirstOrDefault(x => x.Name == dnsProviderName)
             ?? throw new PreconditionException($"The DNS provider '{dnsProviderName}' is not configured. Configured DNS providers: {FormatConfiguredProviderNames()}.");
-
-        return await dnsProvider.ListZonesAsync(cancellationToken);
     }
 
     private string FormatConfiguredProviderNames()

@@ -22,7 +22,7 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
     {
         var zones = await _ovhClient.ListZonesAsync(cancellationToken);
 
-        return zones.Select(x => new DnsZone(this) { Id = x, Name = x }).ToArray();
+        return zones.Select(x => new DnsZone { Id = x, Name = x }).ToArray();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)

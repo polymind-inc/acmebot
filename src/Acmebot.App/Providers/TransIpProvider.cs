@@ -34,7 +34,7 @@ public class TransIpProvider : IDnsProvider
     {
         var zones = await _transIpClient.ListDomainsAsync(cancellationToken);
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.Name, NameServers = x.NameServers?.Select(xs => xs.Hostname).ToArray() ?? [] }).ToArray();
+        return zones.Select(x => new DnsZone { Id = x.Name, Name = x.Name, NameServers = x.NameServers?.Select(xs => xs.Hostname).ToArray() ?? [] }).ToArray();
     }
 
     public async Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)

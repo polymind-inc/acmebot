@@ -22,7 +22,7 @@ public class CloudflareProvider(CloudflareOptions options) : IDnsProvider
 
         await foreach (var zone in _cloudflareClient.ListZonesAsync(cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = zone.Id, Name = zone.Name, NameServers = zone.ActualNameServers });
+            zones.Add(new DnsZone { Id = zone.Id, Name = zone.Name, NameServers = zone.ActualNameServers });
         }
 
         return zones;

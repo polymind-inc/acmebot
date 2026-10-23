@@ -12,11 +12,10 @@ public sealed class DnsZoneExtensionsTests
     [InlineData("www.staging.example.com")]
     public void FindDnsZone_WithParentAndChildZones_ReturnsMostSpecificZone(string dnsName)
     {
-        var provider = new TestDnsProvider("Test DNS");
         var zones = new[]
         {
-            CreateZone(provider, "root", "example.com"),
-            CreateZone(provider, "staging", "staging.example.com")
+            CreateZone("root", "example.com"),
+            CreateZone("staging", "staging.example.com")
         };
 
         var zone = zones.FindDnsZone(dnsName);
@@ -28,8 +27,7 @@ public sealed class DnsZoneExtensionsTests
     [Fact]
     public void FindDnsZone_WithDifferentCasing_ReturnsMatchingZone()
     {
-        var provider = new TestDnsProvider("Test DNS");
-        var zones = new[] { CreateZone(provider, "root", "example.com") };
+        var zones = new[] { CreateZone("root", "example.com") };
 
         var zone = zones.FindDnsZone("WWW.EXAMPLE.COM");
 
@@ -40,15 +38,14 @@ public sealed class DnsZoneExtensionsTests
     [Fact]
     public void FindDnsZone_WithNonBoundarySuffix_ReturnsNull()
     {
-        var provider = new TestDnsProvider("Test DNS");
-        var zones = new[] { CreateZone(provider, "root", "example.com") };
+        var zones = new[] { CreateZone("root", "example.com") };
 
         var zone = zones.FindDnsZone("badexample.com");
 
         Assert.Null(zone);
     }
 
-    private static DnsZone CreateZone(TestDnsProvider provider, string id, string name) => new(provider)
+    private static DnsZone CreateZone(string id, string name) => new()
     {
         Id = id,
         Name = name

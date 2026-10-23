@@ -85,7 +85,26 @@ public sealed class DnsZoneQueryServiceTests
 
         var zone = Assert.Single(zones);
         Assert.Equal("example.com", zone.Name);
-        Assert.Same(provider, zone.DnsProvider);
+    }
+
+    [Fact]
+    public void GetProvider_DoesNotCallProviderApi()
+    {
+        var provider = new TestDnsProvider("Test DNS", exception: new InvalidOperationException("Zone enumeration must not run."));
+        var service = CreateService(provider);
+
+        Assert.Same(provider, service.GetProvider("Test DNS"));
+    }
+
+    [Fact]
+    public void GetProvider_WithUnknownProvider_ReportsConfigurationError()
+    {
+        var service = CreateService(new TestDnsProvider("Configured DNS"));
+
+        var exception = Assert.Throws<PreconditionException>(() => service.GetProvider("Missing DNS"));
+
+        Assert.Contains("'Missing DNS' is not configured", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Configured DNS", exception.Message, StringComparison.Ordinal);
     }
 
     private static DnsZoneQueryService CreateService(params IDnsProvider[] dnsProviders)
@@ -93,9 +112,7 @@ public sealed class DnsZoneQueryServiceTests
 
     private static DnsZone CreateZone(string id, string name)
     {
-        var provider = new TestDnsProvider("Test DNS");
-
-        return new DnsZone(provider)
+        return new DnsZone
         {
             Id = id,
             Name = name

@@ -23,7 +23,7 @@ public class AkamaiEdgeDnsProvider(AkamaiEdgeDnsOptions options) : IDnsProvider
 
         await foreach (var zone in _akamaiEdgeDnsClient.ListZonesInternalAsync(cancellationToken))
         {
-            zones.Add(new DnsZone(this) { Id = zone.Zone, Name = zone.Zone, NameServers = [] });
+            zones.Add(new DnsZone { Id = zone.Zone, Name = zone.Zone, NameServers = [] });
         }
 
         return zones;
