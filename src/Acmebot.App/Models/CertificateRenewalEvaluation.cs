@@ -9,4 +9,6 @@ public sealed record CertificateRenewalEvaluation
     public required DateTimeOffset NextCheck { get; init; }
 
     public required string Reason { get; init; }
+
+    public CertificatePolicyItem? CertificatePolicy { get; init; }
 }

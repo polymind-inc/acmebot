@@ -57,6 +57,8 @@ The renewal flow:
 6. Renews after the suggested window has started, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
 7. Reissues each due certificate with its stored Key Vault policy and sends the previous certificate identifier as `replaces` when ARI is available.
 
+For certificates due for renewal, the evaluation activity includes the policy from the certificate it already fetched. Issuance uses this snapshot without reading the certificate again, so changes or deletion after evaluation are not rechecked before issuance starts. Evaluations that do not require renewal omit the policy. Older persisted evaluation results have no policy; the scheduler retains the separate policy retrieval activity for those histories to preserve their call sequence during replay.
+
 Automatic renewal failures put only that certificate into a retrying state. It waits six hours, then evaluates that certificate again.
 
 ## State Storage

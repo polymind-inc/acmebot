@@ -50,7 +50,8 @@ public partial class CertificateRenewalSchedulerOrchestrator
 
             try
             {
-                certificatePolicyItem = await context.CallGetCertificatePolicyAsync(certificateName);
+                // Older persisted evaluations have no policy. Keep their activity sequence during replay.
+                certificatePolicyItem = evaluation.CertificatePolicy ?? await context.CallGetCertificatePolicyAsync(certificateName);
             }
             catch (TaskFailedException ex) when (ex.FailureDetails.IsCausedBy<PreconditionException>())
             {

@@ -45,8 +45,15 @@ public class CertificateActivities(
             };
         }
 
-        var properties = certificate.Properties;
+        var evaluation = await EvaluateRenewalAsync(certificate.Properties, now);
 
+        return evaluation.ShouldRenew
+            ? evaluation with { CertificatePolicy = certificate.ToCertificatePolicyItem() }
+            : evaluation;
+    }
+
+    private async Task<CertificateRenewalEvaluation> EvaluateRenewalAsync(CertificateProperties properties, DateTimeOffset now)
+    {
         if (properties.Enabled == false)
         {
             return new CertificateRenewalEvaluation
