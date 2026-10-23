@@ -59,7 +59,7 @@ builder.Services.AddSingleton<CertificateQueryService>();
 builder.Services.AddSingleton<DnsZoneQueryService>();
 builder.Services.AddSingleton<CertificateOperationService>();
 
-builder.Services.AddSingleton(provider =>
+builder.Services.AddSingleton<ILookupClient>(provider =>
 {
     var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
 

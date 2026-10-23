@@ -41,6 +41,8 @@ The precondition check enumerates DNS zones once, before creating the ACME order
 
 When there are no authorization URLs or all authorizations are already valid, issuance skips DNS writes, propagation waits, TXT checks, challenge answers, and cleanup. It still waits for the order to become ready before finalization. Orders that are immediately ready still run the precondition check first.
 
+Each DNS propagation check queries each distinct TXT record name once, ignoring differences in name casing, and verifies every expected challenge value against that response. Checks do not reuse responses across retries, so later attempts can observe newly propagated records.
+
 ## Renewal Flow
 
 The scheduled renewal timer runs daily and starts certificate-level renewal evaluation.

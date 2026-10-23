@@ -13,6 +13,7 @@ using Acmebot.App.Providers;
 using Acmebot.App.Services;
 
 using DnsClient;
+using DnsClient.Protocol;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -213,6 +214,140 @@ public sealed class DnsChallengeActivitiesTests
         Assert.Equal(0, handler.RequestCount);
     }
 
+    [Theory]
+    [InlineData("_acme-challenge.example.com", "_acme-challenge.example.com")]
+    [InlineData("_acme-challenge.example.com", "_ACME-CHALLENGE.EXAMPLE.COM")]
+    [InlineData("_acme-challenge.validation.example.com", "_acme-challenge.validation.example.com")]
+    public async Task CheckDnsChallenge_WithSharedRecordName_QueriesOnce(string firstName, string secondName)
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name, "value-1", "value-2", "unrelated"));
+        var activities = CreateActivities(factory, lookupClient);
+
+        await activities.CheckDnsChallenge([CreateChallenge(firstName, "value-1"), CreateChallenge(secondName, "value-2")]);
+
+        Assert.Equal(new[] { firstName }, lookupClient.Queries);
+    }
+
+    [Fact]
+    public async Task CheckDnsChallenge_WithDistinctRecordNames_QueriesEachNameOnce()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        const string firstName = "_acme-challenge.example.com";
+        const string secondName = "_acme-challenge.example.net";
+        var lookupClient = new RecordingLookupClient(name => name == firstName
+            ? new TxtQueryResponse(name, "value-1", "value-3")
+            : new TxtQueryResponse(name, "value-2"));
+        var activities = CreateActivities(factory, lookupClient);
+
+        await activities.CheckDnsChallenge([
+            CreateChallenge(firstName, "value-1"),
+            CreateChallenge(secondName, "value-2"),
+            CreateChallenge(firstName, "value-3")
+        ]);
+
+        Assert.Equal(new[] { firstName, secondName }, lookupClient.Queries);
+    }
+
+    [Theory]
+    [InlineData("value-1", "value-2")]
+    [InlineData("value-2", "value-1")]
+    [InlineData("VALUE-1", "value-1")]
+    public async Task CheckDnsChallenge_WhenAnyValueIsMissing_Retries(string actualValue, string missingValue)
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        const string recordName = "_acme-challenge.example.com";
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name, actualValue));
+        var activities = CreateActivities(factory, lookupClient);
+
+        var exception = await Assert.ThrowsAsync<RetriableActivityException>(() => activities.CheckDnsChallenge([
+            CreateChallenge(recordName, "value-1"),
+            CreateChallenge(recordName, "value-2")
+        ]));
+
+        Assert.Contains($"Expected: '{missingValue}'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains($"Actual: '{actualValue}'", exception.Message, StringComparison.Ordinal);
+        Assert.Single(lookupClient.Queries);
+    }
+
+    [Fact]
+    public async Task CheckDnsChallenge_WithoutTxtRecords_Retries()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name));
+        var activities = CreateActivities(factory, lookupClient);
+
+        var exception = await Assert.ThrowsAsync<RetriableActivityException>(() => activities.CheckDnsChallenge([
+            CreateChallenge("_acme-challenge.example.com", "value-1"),
+            CreateChallenge("_acme-challenge.example.com", "value-2")
+        ]));
+
+        Assert.Contains("did not return any TXT records yet", exception.Message, StringComparison.Ordinal);
+        Assert.Single(lookupClient.Queries);
+    }
+
+    [Fact]
+    public async Task CheckDnsChallenge_WithDnsError_RetriesWithOriginalException()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var dnsException = new DnsResponseException(DnsResponseCode.ServerFailure);
+        var lookupClient = new RecordingLookupClient(_ => throw dnsException);
+        var activities = CreateActivities(factory, lookupClient);
+
+        var exception = await Assert.ThrowsAsync<RetriableActivityException>(() => activities.CheckDnsChallenge([
+            CreateChallenge("_acme-challenge.example.com", "value-1"),
+            CreateChallenge("_acme-challenge.example.com", "value-2")
+        ]));
+
+        Assert.Same(dnsException, exception.InnerException);
+        Assert.Contains("_acme-challenge.example.com", exception.Message, StringComparison.Ordinal);
+        Assert.Single(lookupClient.Queries);
+    }
+
+    [Fact]
+    public async Task CheckDnsChallenge_OnRetry_QueriesAgainAndAcceptsNewValues()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        string[] values = ["value-1"];
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name, values));
+        var activities = CreateActivities(factory, lookupClient);
+        AcmeChallengeResult[] challenges = [
+            CreateChallenge("_acme-challenge.example.com", "value-1"),
+            CreateChallenge("_acme-challenge.example.com", "value-2")
+        ];
+
+        await Assert.ThrowsAsync<RetriableActivityException>(() => activities.CheckDnsChallenge(challenges));
+        values = ["value-1", "value-2"];
+        await activities.CheckDnsChallenge(challenges);
+
+        Assert.Equal(new[] { "_acme-challenge.example.com", "_acme-challenge.example.com" }, lookupClient.Queries);
+    }
+
+    [Fact]
+    public async Task CheckDnsChallenge_WithoutChallenges_DoesNotQueryDns()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var lookupClient = new RecordingLookupClient(_ => throw new InvalidOperationException("DNS must not be queried."));
+
+        await CreateActivities(factory, lookupClient).CheckDnsChallenge([]);
+
+        Assert.Empty(lookupClient.Queries);
+    }
+
+    private static AcmeChallengeResult CreateChallenge(string recordName, string value) => new()
+    {
+        Url = new Uri($"https://acme.example/challenge/{value}"),
+        DnsRecordName = recordName,
+        DnsRecordValue = value
+    };
+
     private static T RoundTrip<T>(T value)
     {
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, IncludeFields = true };
@@ -232,6 +367,9 @@ public sealed class DnsChallengeActivitiesTests
 
     private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, params IDnsProvider[] providers)
         => new(new LookupClient(), factory, new DnsZoneQueryService(providers, NullLogger<DnsZoneQueryService>.Instance));
+
+    private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, ILookupClient lookupClient)
+        => new(lookupClient, factory, new DnsZoneQueryService([], NullLogger<DnsZoneQueryService>.Instance));
 
     private static AcmeClientFactory CreateFactory(HttpClient httpClient)
     {
@@ -278,6 +416,36 @@ public sealed class DnsChallengeActivitiesTests
             Deleted.Add((zone.Id, zone.Name, relativeRecordName));
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class RecordingLookupClient(Func<string, IDnsQueryResponse> query) : LookupClient, ILookupClient
+    {
+        public List<string> Queries { get; } = [];
+
+        Task<IDnsQueryResponse> IDnsQuery.QueryAsync(string name, QueryType queryType, QueryClass queryClass, CancellationToken cancellationToken)
+        {
+            Assert.Equal(QueryType.TXT, queryType);
+            Assert.Equal(QueryClass.IN, queryClass);
+            Queries.Add(name);
+            return Task.FromResult(query(name));
+        }
+    }
+
+    private sealed class TxtQueryResponse(string name, params string[] values) : IDnsQueryResponse
+    {
+        public IReadOnlyList<DnsResourceRecord> Answers { get; } = values.Select(value => (DnsResourceRecord)new TxtRecord(
+            new ResourceRecordInfo(name, ResourceRecordType.TXT, QueryClass.IN, 60, value.Length), [value], [value])).ToArray();
+        public IReadOnlyList<DnsQuestion> Questions => throw new NotSupportedException();
+        public IReadOnlyList<DnsResourceRecord> Additionals => throw new NotSupportedException();
+        public IEnumerable<DnsResourceRecord> AllRecords => throw new NotSupportedException();
+        public IReadOnlyList<DnsResourceRecord> Authorities => throw new NotSupportedException();
+        public string AuditTrail => throw new NotSupportedException();
+        public string ErrorMessage => throw new NotSupportedException();
+        public bool HasError => throw new NotSupportedException();
+        public DnsResponseHeader Header => throw new NotSupportedException();
+        public int MessageSize => throw new NotSupportedException();
+        public NameServer NameServer => throw new NotSupportedException();
+        public DnsQuerySettings Settings => throw new NotSupportedException();
     }
 
     private sealed class ExistingAccountStore : IAcmeStateStore

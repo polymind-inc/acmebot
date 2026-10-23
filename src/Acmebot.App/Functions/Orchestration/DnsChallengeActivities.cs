@@ -13,7 +13,7 @@ using Microsoft.Azure.Functions.Worker;
 namespace Acmebot.App.Functions.Orchestration;
 
 public class DnsChallengeActivities(
-    LookupClient lookupClient,
+    ILookupClient lookupClient,
     AcmeClientFactory acmeClientFactory,
     DnsZoneQueryService dnsZoneQueryService)
 {
@@ -142,17 +142,18 @@ public class DnsChallengeActivities(
     [Function(nameof(CheckDnsChallenge))]
     public async Task CheckDnsChallenge([ActivityTrigger] IReadOnlyList<AcmeChallengeResult> challengeResults)
     {
-        foreach (var challengeResult in challengeResults)
+        foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName, StringComparer.OrdinalIgnoreCase))
         {
+            var dnsRecordName = lookup.Key;
             IDnsQueryResponse queryResult;
 
             try
             {
-                queryResult = await lookupClient.QueryAsync(challengeResult.DnsRecordName, QueryType.TXT);
+                queryResult = await lookupClient.QueryAsync(dnsRecordName, QueryType.TXT);
             }
             catch (DnsResponseException ex)
             {
-                throw new RetriableActivityException($"DNS query for '{challengeResult.DnsRecordName}' returned an error response: {ex.DnsError}.", ex);
+                throw new RetriableActivityException($"DNS query for '{dnsRecordName}' returned an error response: {ex.DnsError}.", ex);
             }
 
             var txtRecords = queryResult.Answers
@@ -161,12 +162,15 @@ public class DnsChallengeActivities(
 
             if (txtRecords.Length == 0)
             {
-                throw new RetriableActivityException($"DNS query for '{challengeResult.DnsRecordName}' did not return any TXT records yet.");
+                throw new RetriableActivityException($"DNS query for '{dnsRecordName}' did not return any TXT records yet.");
             }
 
-            if (!txtRecords.Any(x => x.Text.Contains(challengeResult.DnsRecordValue)))
+            foreach (var challengeResult in lookup)
             {
-                throw new RetriableActivityException($"DNS TXT record '{challengeResult.DnsRecordName}' does not contain the expected value. Expected: '{challengeResult.DnsRecordValue}'. Actual: '{string.Join(", ", txtRecords.SelectMany(x => x.Text))}'.");
+                if (!txtRecords.Any(x => x.Text.Contains(challengeResult.DnsRecordValue)))
+                {
+                    throw new RetriableActivityException($"DNS TXT record '{dnsRecordName}' does not contain the expected value. Expected: '{challengeResult.DnsRecordValue}'. Actual: '{string.Join(", ", txtRecords.SelectMany(x => x.Text))}'.");
+                }
             }
         }
     }
