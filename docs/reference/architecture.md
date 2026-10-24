@@ -45,7 +45,7 @@ Each DNS propagation check queries each distinct TXT record name once, ignoring 
 
 ## Renewal Flow
 
-The scheduled renewal timer runs daily and starts certificate-level renewal evaluation.
+The scheduled renewal timer runs daily at midnight UTC and ensures a Durable Functions renewal scheduler is running for each eligible certificate. Each scheduler wakes at its own next check time independently of the daily timer.
 
 The renewal flow:
 
@@ -53,8 +53,8 @@ The renewal flow:
 2. Filters to enabled certificates tagged as Acmebot-managed.
 3. Filters to the current ACME endpoint.
 4. Maintains independent renewal state and next check time for each certificate.
-5. Uses ACME Renewal Information (ARI) when available, selecting that certificate's next check from the CA's suggested window and `Retry-After` timing.
-6. Renews after the suggested window has started, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate.
+5. Uses ACME Renewal Information (ARI) when available to select a renewal time within the CA's suggested window. The selection is stable for the same certificate identifier and window. The next check is the earlier of that time and the next ARI refresh, using `Retry-After` bounded to one minute through one day, or six hours when absent.
+6. Renews when the selected time is reached, or falls back to `RenewBeforeExpiry` lifetime-percentage renewal when renewal information is unavailable for the certificate. If an ARI refresh changes the suggested window, it updates the selected renewal time.
 7. Reissues each due certificate with its stored Key Vault policy and sends the previous certificate identifier as `replaces` when ARI is available.
 
 For certificates due for renewal, the evaluation activity includes the policy from the certificate it already fetched. Issuance uses this snapshot without reading the certificate again, so changes or deletion after evaluation are not rechecked before issuance starts. Evaluations that do not require renewal omit the policy. Older persisted evaluation results have no policy; the scheduler retains the separate policy retrieval activity for those histories to preserve their call sequence during replay.

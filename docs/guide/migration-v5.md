@@ -30,7 +30,7 @@ The in-place migration updates only the existing Function App worker setting, .N
 
 v5 does not store the package URL in `WEBSITE_RUN_FROM_PACKAGE`. The v5 GitHub Release asset URL is used only as the deployment source for the ARM template or `az webapp deploy`.
 
-Unlike v4, the v5 ACME client requires the full directory URL in `Acmebot:Endpoint`. Update the setting to include the `/directory` path. For Let's Encrypt the correct value is `https://acme-v02.api.letsencrypt.org/directory`.
+Unlike v4, the v5 ACME client requires the full directory URL in `Acmebot:Endpoint`. The migration template preserves this value, so update it explicitly as part of the steps below. For Let's Encrypt the correct value is `https://acme-v02.api.letsencrypt.org/directory`. For other CAs, use their full directory URL; the path is CA-specific.
 
 The migration preserves existing app settings. Do not remove `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING` or `WEBSITE_CONTENTSHARE` during an in-place migration; when those settings exist, v5 continues to use the existing Azure Files content share for ACME account state.
 
@@ -72,7 +72,8 @@ The automatic migration uses the ARM template in `deploy/migrate`. The template 
 3. Select the existing Acmebot v4 Function App.
 4. Review and create the deployment.
 5. Wait for the deployment to complete.
-6. Restart the Function App if the portal does not show the app as restarted.
+6. Open the Function App's **Settings > Environment variables** and update the existing `Acmebot:Endpoint` setting to the full ACME directory URL. For Let's Encrypt, use `https://acme-v02.api.letsencrypt.org/directory`. If the setting already uses the `Acmebot__Endpoint` name, update that entry instead; keep a single endpoint setting.
+7. Apply the app setting change and let the Function App restart before verifying the migration.
 
 ### Azure CLI
 
@@ -85,13 +86,33 @@ az deployment group create \
   --parameters functionAppName=<function-app-name>
 ```
 
+After the deployment completes, update the existing endpoint setting before verifying the migration. This example uses Let's Encrypt; replace the URL with your CA's full directory URL if different. If the existing setting is named `Acmebot__Endpoint`, use that name instead of `Acmebot:Endpoint` in the command, and keep a single endpoint setting.
+
+```bash
+az functionapp config appsettings set \
+  --resource-group <resource-group> \
+  --name <function-app-name> \
+  --settings "Acmebot:Endpoint=https://acme-v02.api.letsencrypt.org/directory"
+```
+
+Let the Function App restart after the app setting change, then continue with [Verify the Migration](#verify-the-migration).
+
 ## Manual Migration
 
 Manual migration is useful when the same changes must be applied through an internal deployment process.
 
 1. Stop the Function App.
 2. Preserve all existing Acmebot, DNS provider, Key Vault, Storage, Application Insights, authentication, and webhook settings.
-3. Set the Function App runtime app settings. This replaces the v4 URL-based Run From Package setting with `WEBSITE_RUN_FROM_PACKAGE=1`:
+3. Update the existing endpoint setting to the full ACME directory URL. This example uses Let's Encrypt; replace the URL for other CAs. If the existing setting is named `Acmebot__Endpoint`, use that name instead and keep a single endpoint setting:
+
+```bash
+az functionapp config appsettings set \
+  --resource-group <resource-group> \
+  --name <function-app-name> \
+  --settings "Acmebot:Endpoint=https://acme-v02.api.letsencrypt.org/directory"
+```
+
+4. Set the Function App runtime app settings. This replaces the v4 URL-based Run From Package setting with `WEBSITE_RUN_FROM_PACKAGE=1`:
 
 ```bash
 az functionapp config appsettings set \
@@ -100,7 +121,7 @@ az functionapp config appsettings set \
   --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated WEBSITE_RUN_FROM_PACKAGE=1
 ```
 
-4. Set the .NET site runtime:
+5. Set the .NET site runtime:
 
 ```bash
 az functionapp config set \
@@ -109,7 +130,7 @@ az functionapp config set \
   --net-framework-version v10.0
 ```
 
-5. Deploy the v5 package from the GitHub Release asset. The URL is used only as the deployment source and is not stored in `WEBSITE_RUN_FROM_PACKAGE`:
+6. Deploy the v5 package from the GitHub Release asset. The URL is used only as the deployment source and is not stored in `WEBSITE_RUN_FROM_PACKAGE`:
 
 ```bash
 az webapp deploy \
@@ -120,7 +141,7 @@ az webapp deploy \
   --async true
 ```
 
-6. Start or restart the Function App.
+7. Start or restart the Function App.
 
 ```bash
 az functionapp restart \

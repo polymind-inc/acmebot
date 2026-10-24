@@ -92,7 +92,7 @@ A staging CA certificate is useful for testing issuance but is not publicly trus
 
 ## 8. Let Renewals Run
 
-The `RenewCertificates` timer runs daily and maintains renewal state per managed certificate. When ACME Renewal Information (ARI) is available for a certificate, Acmebot evaluates the certificate authority's suggested renewal window and `Retry-After` timing before renewing. Otherwise, only that certificate falls back to the configured lifetime threshold, `Acmebot__RenewBeforeExpiry` percent (default 30).
+The `RenewCertificates` timer runs daily and ensures a renewal scheduler is running for each eligible managed certificate. Each scheduler wakes independently at its next check time. When ACME Renewal Information (ARI) is available, Acmebot renews at a selected time within the certificate authority's suggested window, refreshing ARI earlier when required by the refresh interval based on `Retry-After`. Otherwise, only that certificate falls back to the configured lifetime threshold, `Acmebot__RenewBeforeExpiry` percent (default 30).
 
 Repeat the public endpoint check after renewal, allowing for the consuming service's synchronization delay. See [Operations](./operations) for monitoring and troubleshooting guidance.
 

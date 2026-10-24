@@ -7,7 +7,7 @@
   (App Service / Container Apps / Application Gateway / Front Door / Web PubSub / Event Grid / others)
 </p>
 <p align="center">
-  <a href="https://github.com/polymind-inc/acmebot/actions/workflows/build.yml" rel="nofollow"><img src="https://github.com/polymind-inc/acmebot/workflows/Build/badge.svg" alt="Build" style="max-width: 100%;"></a>
+  <a href="https://github.com/polymind-inc/acmebot/actions/workflows/ci.yml" rel="nofollow"><img src="https://github.com/polymind-inc/acmebot/actions/workflows/ci.yml/badge.svg" alt="CI" style="max-width: 100%;"></a>
   <a href="https://github.com/polymind-inc/acmebot/releases/latest" rel="nofollow"><img src="https://badgen.net/github/release/polymind-inc/acmebot" alt="Release" style="max-width: 100%;"></a>
   <a href="https://github.com/polymind-inc/acmebot/stargazers" rel="nofollow"><img src="https://badgen.net/github/stars/polymind-inc/acmebot" alt="Stargazers" style="max-width: 100%;"></a>
   <a href="https://github.com/polymind-inc/acmebot/network/members" rel="nofollow"><img src="https://badgen.net/github/forks/polymind-inc/acmebot" alt="Forks" style="max-width: 100%;"></a>

@@ -88,11 +88,11 @@ Custom tags are written to the Key Vault certificate. The `Acmebot` tag is reser
 
 Manual renewal reuses the existing Key Vault certificate policy and starts a new issuance orchestration. Use it to rotate a certificate before its scheduled renewal window.
 
-Scheduled renewals run daily. Each managed certificate keeps its own renewal state and next check time. Certificates with ACME Renewal Information (ARI) use the CA's suggested window and `Retry-After` timing; certificates without renewal information use the configured fallback threshold.
+The daily `RenewCertificates` timer ensures a renewal scheduler is running for each eligible certificate. Each scheduler wakes independently at its next check time. Certificates with ACME Renewal Information (ARI) renew at a selected time within the CA's suggested window, with earlier ARI refreshes based on `Retry-After`; certificates without renewal information use the configured fallback threshold. See [Operations](./operations#scheduled-renewal) for the scheduling details.
 
 ## Revoke a Certificate
 
-Revocation sends the certificate to the configured ACME certificate authority's revoke endpoint. It does not delete the Key Vault certificate. After revocation, decide whether to delete, disable, or replace the certificate version according to your operational policy.
+Revocation sends the certificate to the configured ACME certificate authority's revoke endpoint, then automatically disables the current Key Vault certificate version. The certificate remains in Key Vault, and disabled certificates are excluded from automatic renewal. After revocation, decide whether to delete or replace the certificate according to your operational policy.
 
 ## Operation Status
 

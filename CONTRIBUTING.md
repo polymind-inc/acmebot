@@ -13,6 +13,7 @@ Thanks for your interest in contributing to Acmebot.
 ### Prerequisites
 
 - .NET SDK 10
+- Node.js 24 with npm
 - Azure CLI
 - Bicep CLI support through Azure CLI
 - Git
@@ -28,14 +29,45 @@ cd acmebot
 
 Run these commands from the repository root.
 
+### Backend
+
 ```bash
 dotnet restore ./Acmebot.slnx
-dotnet build -c Release ./Acmebot.slnx
 dotnet format --verify-no-changes --verbosity detailed --no-restore ./Acmebot.slnx
-az bicep build -f ./deploy/azuredeploy.bicep
+dotnet build -c Release --no-restore ./Acmebot.slnx
+dotnet test -c Release --no-build --no-restore ./Acmebot.slnx
 ```
 
-These commands cover the contributor-facing validation checks.
+### Dashboard
+
+```bash
+npm --prefix ./src/Acmebot.App/ClientApp ci
+npm --prefix ./src/Acmebot.App/ClientApp run lint
+npm --prefix ./src/Acmebot.App/ClientApp run build
+```
+
+### Documentation
+
+```bash
+npm --prefix ./docs ci
+npm --prefix ./docs run build
+```
+
+### Deployment templates
+
+Use the same Bicep version as CI when regenerating the ARM JSON templates:
+
+```bash
+az config set bicep.use_binary_from_path=false
+az bicep install --version v0.48.1
+az bicep build -f ./deploy/azuredeploy.bicep
+az bicep build -f ./deploy/update/azuredeploy.bicep
+az bicep build -f ./deploy/migrate/azuredeploy.bicep
+```
+
+Commit regenerated ARM JSON files alongside Bicep changes. CI checks that rebuilding the templates leaves the working tree unchanged.
+
+These commands match the checks in the [CI](.github/workflows/ci.yml) and [Docs](.github/workflows/docs.yml) workflows.
 
 ## Pull Request Guidelines
 
@@ -104,14 +136,17 @@ These release category labels are reserved for pull requests. For pull requests 
 
 ## Release Publishing
 
-The `Publish` workflow runs for version tags such as `v5.0.0`. Before pushing the tag, create a matching draft GitHub Release. The workflow uploads the Function App package, publishes the CLI package to NuGet, and then publishes the draft release.
+The [Release](.github/workflows/release.yml) workflow runs for version tags such as `v5.0.0`. Before pushing the tag, create a matching draft GitHub Release. The workflow uploads the Function App package, publishes the CLI package to NuGet, and then publishes the draft release.
 
-NuGet publishing uses Trusted Publishing. Configure a nuget.org trusted publishing policy for repository `polymind-inc/acmebot` and workflow file `publish.yml`, then set the repository secret `NUGET_USER` to the nuget.org profile name used by that policy.
+NuGet publishing uses Trusted Publishing. Configure a nuget.org trusted publishing policy under the `shibayan` profile for repository `polymind-inc/acmebot` and workflow file `release.yml`. The workflow sets the `NuGet/login` action's `user` input to `shibayan`; update that input and the matching policy together if the publishing profile changes.
 
 ## Submission Checklist
 
 - Build succeeds locally.
 - Formatting check passes locally.
+- Backend tests pass locally.
+- Dashboard lint and build pass when dashboard files change.
+- Documentation build passes when documentation files change.
 - Deployment template changes are validated with Bicep.
 - The pull request description explains the problem and the proposed fix.
 

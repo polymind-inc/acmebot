@@ -8,15 +8,17 @@ This page covers day-to-day operation after Acmebot has been deployed.
 
 ## Scheduled Renewal
 
-The `RenewCertificates` timer runs once per day. It lists Key Vault certificates and starts renewal schedulers for certificates that:
+The `RenewCertificates` timer runs once per day at midnight UTC. It lists Key Vault certificates and ensures a renewal scheduler is running for certificates that:
 
 - Are enabled.
 - Are tagged as issued by Acmebot.
 - Match the currently configured ACME endpoint.
 
-Each managed certificate has its own renewal state, next check time, and retry behavior. A certificate that is waiting, retrying, or falling back to an expiry-based policy does not reset the renewal schedule for other certificates.
+Each managed certificate has its own renewal state, next check time, and retry behavior. Once started, its Durable Functions scheduler wakes at the next check time independently of the daily timer. A certificate that is waiting, retrying, or falling back to an expiry-based policy does not reset the renewal schedule for other certificates.
 
-Acmebot supports ACME Renewal Information (ARI). When the CA provides renewal information for a certificate, Acmebot follows the certificate authority's `suggestedWindow` when choosing the next check. It selects a random time inside that window, but checks renewal information again first when `Retry-After` is earlier. When a renewal evaluation runs after the suggested window starts, Acmebot renews the certificate and marks the new order as replacing the previous certificate when the CA supports it.
+Acmebot supports ACME Renewal Information (ARI). When the CA provides renewal information for a certificate, Acmebot selects a renewal time inside the certificate authority's `suggestedWindow`. The selection spreads certificates across the window and stays the same for the same certificate identifier and window. Acmebot renews when that selected time is reached and marks the new order as replacing the previous certificate when the CA supports it.
+
+The next check is the earlier of the selected renewal time and the next ARI refresh. The refresh interval uses `Retry-After` when provided, bounded to one minute through one day, or six hours when absent. A refresh can update the renewal time if the CA changes its suggested window.
 
 When renewal information is unavailable for a certificate, only that certificate falls back to `Acmebot__RenewBeforeExpiry`.
 

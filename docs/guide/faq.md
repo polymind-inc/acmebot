@@ -6,9 +6,9 @@ description: "Frequently asked questions about Acmebot: ARI-aware automatic rene
 
 ## How does automatic renewal work?
 
-The `RenewCertificates` timer runs daily for enabled managed certificates. Each managed certificate keeps its own renewal state and next check time.
+The `RenewCertificates` timer runs daily and ensures a renewal scheduler is running for each enabled managed certificate for the configured endpoint. Each scheduler keeps its own renewal state and wakes at its next check time independently of the daily timer.
 
-When ACME Renewal Information (ARI) is available, Acmebot uses the CA's suggested renewal window and `Retry-After` timing to decide the next check for that certificate, then renews after the suggested window has started. Otherwise, that certificate falls back to the configured lifetime threshold and renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
+When ACME Renewal Information (ARI) is available, Acmebot selects a renewal time within the CA's suggested window and renews when that time is reached. It refreshes ARI before then when the refresh interval based on `Retry-After` is earlier. See [Operations](./operations#scheduled-renewal) for the interval bounds and default. Otherwise, that certificate falls back to the configured lifetime threshold and renews when the remaining certificate lifetime is no more than `Acmebot__RenewBeforeExpiry` percent (default 30):
 
 ```text
 Acmebot__RenewBeforeExpiry=30
