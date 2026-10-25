@@ -41,6 +41,11 @@ public partial class CertificatePolicyItem : IValidatableObject
     [JsonPropertyName("certificateId")]
     public string? CertificateId { get; set; }
 
+    // Carries the replaceExisting opt-in into the durable workflow so FinalizeOrder can recheck ownership
+    // right before writing to Key Vault. AddCertificate always overwrites any value bound from the request body.
+    [JsonPropertyName("replaceExisting")]
+    public bool ReplaceExisting { get; set; }
+
     public IEnumerable<string> AliasedDnsNames => string.IsNullOrEmpty(DnsAlias) ? DnsNames : [DnsAlias];
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

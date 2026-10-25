@@ -46,11 +46,12 @@ public partial class AddCertificate(
 
         // Replacing a certificate that Acmebot does not manage (for example, one bought from another CA)
         // must be an explicit decision, so require the caller to opt in before overwriting it.
+        var replaceExisting = IsReplaceExistingRequested(req);
         var existingCertificate = await certificateOperationService.FindCertificateAsync(certificatePolicyItem.CertificateName, req.HttpContext.RequestAborted);
 
         if (existingCertificate is not null && !existingCertificate.Properties.IsIssuedByAcmebot())
         {
-            if (!IsReplaceExistingRequested(req))
+            if (!replaceExisting)
             {
                 return Problem(
                     $"The certificate '{certificatePolicyItem.CertificateName}' already exists in Key Vault and is not managed by Acmebot. Retry with {ReplaceExistingQueryName}=true to replace it with an ACME certificate.",
@@ -60,6 +61,10 @@ public partial class AddCertificate(
 
             LogUnmanagedCertificateReplacing(logger, certificatePolicyItem.CertificateName, User.Identity?.Name);
         }
+
+        // An unmanaged certificate can still be imported before the workflow writes to Key Vault, so pass the
+        // opt-in along for FinalizeOrder to recheck. Only the query parameter may grant it, never the request body.
+        certificatePolicyItem.ReplaceExisting = replaceExisting;
 
         // Function input comes from the request content.
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);

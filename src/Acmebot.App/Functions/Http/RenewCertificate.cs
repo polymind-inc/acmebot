@@ -57,6 +57,10 @@ public partial class RenewCertificate(
         // current account cannot use the ARI certificate identifier issued to the previous account.
         certificatePolicyItem.CertificateId = null;
 
+        // Renewal never authorizes replacement. If an unmanaged certificate is imported under this name while
+        // the workflow runs, FinalizeOrder stops instead of overwriting it.
+        certificatePolicyItem.ReplaceExisting = false;
+
         var instanceId = await starter.ScheduleNewOrchestrationInstanceAsync(nameof(CertificateIssuanceOrchestrator.IssueCertificate), certificatePolicyItem);
 
         LogOrchestrationStarted(logger, certificateName, instanceId);

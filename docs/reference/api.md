@@ -137,6 +137,8 @@ Accept: application/json
 
 The issued certificate is added as a new version of the existing Key Vault certificate, so services that reference the certificate without a version start using it. Certificates that Acmebot already manages are reissued without this parameter.
 
+Ownership is checked again right before the certificate is written to Key Vault. If a certificate that Acmebot does not manage appears under the same name while issuance or renewal is in progress, the operation fails without replacing it unless `replaceExisting=true` was set.
+
 ## List Certificates
 
 ```http

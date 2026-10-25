@@ -99,6 +99,8 @@ public partial class AcmeOrderActivities(
     {
         var (certificatePolicyItem, orderDetails) = input;
 
+        await EnsureCertificateCanBeWrittenAsync(certificatePolicyItem);
+
         byte[] csr;
 
         try
@@ -180,6 +182,33 @@ public partial class AcmeOrderActivities(
         await certificateClient.UpdateCertificatePropertiesAsync(mergedCertificate.Properties);
 
         return mergedCertificate.ToCertificateItem();
+    }
+
+    // Ownership is checked when the operation is accepted, but the workflow can wait for minutes before it
+    // writes to Key Vault. Recheck right before writing so an unmanaged certificate imported in the meantime
+    // is only replaced when the caller explicitly opted in.
+    private async Task EnsureCertificateCanBeWrittenAsync(CertificatePolicyItem certificatePolicyItem)
+    {
+        if (certificatePolicyItem.ReplaceExisting)
+        {
+            return;
+        }
+
+        KeyVaultCertificateWithPolicy certificate;
+
+        try
+        {
+            certificate = await certificateClient.GetCertificateAsync(certificatePolicyItem.CertificateName);
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
+        {
+            return;
+        }
+
+        if (!certificate.Properties.IsIssuedByAcmebot())
+        {
+            throw new PreconditionException($"The certificate '{certificatePolicyItem.CertificateName}' is no longer managed by Acmebot and was not replaced. Issue it again with replaceExisting=true to replace it with an ACME certificate.");
+        }
     }
 
     [LoggerMessage(LogLevel.Error, "ACME domain validation failed. ProblemDetails: {ProblemDetailsJson}")]

@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using Acmebot.App.Acme;
 using Acmebot.App.Functions.Http;
+using Acmebot.App.Functions.Orchestration;
 using Acmebot.App.Models;
 using Acmebot.App.Options;
 using Acmebot.App.Services;
@@ -26,12 +27,13 @@ namespace Acmebot.App.Tests;
 public sealed class CertificateOwnershipTests
 {
     [Theory]
-    [InlineData(CertificateState.Missing, null)]
-    [InlineData(CertificateState.Managed, null)]
-    [InlineData(CertificateState.OtherEndpoint, null)]
-    [InlineData(CertificateState.Unmanaged, "true")]
-    [InlineData(CertificateState.Unmanaged, "True")]
-    public async Task AddCertificate_WhenReplacementIsAllowed_SchedulesIssuance(CertificateState state, string? replaceExisting)
+    [InlineData(CertificateState.Missing, null, false)]
+    [InlineData(CertificateState.Managed, null, false)]
+    [InlineData(CertificateState.OtherEndpoint, null, false)]
+    [InlineData(CertificateState.Managed, "true", true)]
+    [InlineData(CertificateState.Unmanaged, "true", true)]
+    [InlineData(CertificateState.Unmanaged, "True", true)]
+    public async Task AddCertificate_WhenReplacementIsAllowed_SchedulesIssuance(CertificateState state, string? replaceExisting, bool expectedReplaceExisting)
     {
         using var authentication = new AppServiceAuthenticationScope("true");
         var context = CreateHttpContext(replaceExisting);
@@ -39,21 +41,41 @@ public sealed class CertificateOwnershipTests
 
         await Assert.ThrowsAsync<ReachedOperationException>(() => CreateAddCertificate(context, state).HttpStart(context.Request, CreatePolicy(), starter));
 
-        Assert.Equal("example-com", Assert.IsType<CertificatePolicyItem>(starter.Input).CertificateName);
+        var policy = Assert.IsType<CertificatePolicyItem>(starter.Input);
+        Assert.Equal("example-com", policy.CertificateName);
+        Assert.Equal(expectedReplaceExisting, policy.ReplaceExisting);
+    }
+
+    [Fact]
+    public async Task AddCertificate_WhenRequestBodySetsReplaceExisting_UsesOnlyQueryParameter()
+    {
+        using var authentication = new AppServiceAuthenticationScope("true");
+        var context = CreateHttpContext();
+        var starter = new RecordingDurableTaskClient();
+        var policy = CreatePolicy();
+        policy.ReplaceExisting = true;
+
+        await Assert.ThrowsAsync<ReachedOperationException>(() => CreateAddCertificate(context, CertificateState.Managed).HttpStart(context.Request, policy, starter));
+
+        Assert.False(Assert.IsType<CertificatePolicyItem>(starter.Input).ReplaceExisting);
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("false")]
-    [InlineData("1")]
-    [InlineData("yes")]
-    public async Task AddCertificate_WhenUnmanagedCertificateExistsWithoutOptIn_ReturnsConflict(string? replaceExisting)
+    [InlineData(null, false)]
+    [InlineData("false", false)]
+    [InlineData("1", false)]
+    [InlineData("yes", false)]
+    // The request body alone can never authorize replacement.
+    [InlineData(null, true)]
+    public async Task AddCertificate_WhenUnmanagedCertificateExistsWithoutOptIn_ReturnsConflict(string? replaceExisting, bool bodyReplaceExisting)
     {
         using var authentication = new AppServiceAuthenticationScope("true");
         var context = CreateHttpContext(replaceExisting);
         var starter = new RecordingDurableTaskClient();
+        var policy = CreatePolicy();
+        policy.ReplaceExisting = bodyReplaceExisting;
 
-        var result = await CreateAddCertificate(context, CertificateState.Unmanaged).HttpStart(context.Request, CreatePolicy(), starter);
+        var result = await CreateAddCertificate(context, CertificateState.Unmanaged).HttpStart(context.Request, policy, starter);
 
         AssertProblem(result, StatusCodes.Status409Conflict, "replaceExisting=true");
         Assert.Null(starter.Input);
@@ -74,6 +96,35 @@ public sealed class CertificateOwnershipTests
         Assert.Equal("example-com", policy.CertificateName);
         Assert.Equal("Azure DNS", policy.DnsProviderName);
         Assert.Null(policy.CertificateId);
+        Assert.False(policy.ReplaceExisting);
+    }
+
+    [Theory]
+    [InlineData(CertificateState.Missing, false)]
+    [InlineData(CertificateState.Managed, false)]
+    [InlineData(CertificateState.OtherEndpoint, false)]
+    [InlineData(CertificateState.Unmanaged, true)]
+    public async Task FinalizeOrder_WhenCertificateCanBeWritten_CreatesKeyVaultCertificate(CertificateState state, bool replaceExisting)
+    {
+        var client = new FakeCertificateClient(state == CertificateState.Missing ? null : CreateCertificate(state));
+        var policy = CreatePolicy();
+        policy.ReplaceExisting = replaceExisting;
+
+        // The fake throws once a Key Vault certificate operation starts, proving the ownership recheck passed.
+        await Assert.ThrowsAsync<ReachedOperationException>(() => CreateOrderActivities(client).FinalizeOrder((policy, null!)));
+
+        Assert.Equal(1, client.CreateCount);
+    }
+
+    [Fact]
+    public async Task FinalizeOrder_WhenCertificateBecameUnmanagedWithoutOptIn_DoesNotWriteKeyVault()
+    {
+        var client = new FakeCertificateClient(CreateCertificate(CertificateState.Unmanaged));
+
+        var exception = await Assert.ThrowsAsync<PreconditionException>(() => CreateOrderActivities(client).FinalizeOrder((CreatePolicy(), null!)));
+
+        Assert.Contains("replaceExisting=true", exception.Message);
+        Assert.Equal(0, client.CreateCount);
     }
 
     [Theory]
@@ -148,6 +199,9 @@ public sealed class CertificateOwnershipTests
     private static CertificateOperationService CreateOperationService(CertificateState state)
         => new(new AcmeClientFactory(s_options, new ThrowingStateStore()), new FakeCertificateClient(state == CertificateState.Missing ? null : CreateCertificate(state)));
 
+    private static AcmeOrderActivities CreateOrderActivities(CertificateClient client)
+        => new(new AcmeClientFactory(s_options, new ThrowingStateStore()), client, s_options, NullLogger<AcmeOrderActivities>.Instance);
+
     private static DefaultHttpContext CreateHttpContext(string? replaceExisting = null)
     {
         var context = new DefaultHttpContext
@@ -220,6 +274,15 @@ public sealed class CertificateOwnershipTests
             return certificate is null
                 ? Task.FromException<Response<KeyVaultCertificateWithPolicy>>(new RequestFailedException(404, "Not found"))
                 : Task.FromResult(Response.FromValue(certificate, null!));
+        }
+
+        public int CreateCount { get; private set; }
+
+        public override Task<CertificateOperation> StartCreateCertificateAsync(string certificateName, CertificatePolicy policy, bool? enabled = null, IDictionary<string, string>? tags = null, bool? preserveCertificateOrder = null, CancellationToken cancellationToken = default)
+        {
+            CreateCount++;
+
+            throw new ReachedOperationException();
         }
     }
 
