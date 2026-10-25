@@ -31,6 +31,7 @@ internal static class CliOptionNames
     {
         "json",
         "reuse-key",
+        "replace-existing",
         "no-wait",
         "help"
     };

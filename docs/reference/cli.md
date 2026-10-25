@@ -170,15 +170,18 @@ acmebot certificate issue --dns-name "*.example.com" --dns-provider "Azure DNS"
 | `--dns-alias <value>` | DNS-01 validation alias. Omit the `_acme-challenge` prefix. |
 | `--profile <value>` | ACME profile to request for this certificate. If omitted, Acmebot uses the deployment-level preferred profile when configured. |
 | `--tag <name=value>` | Key Vault certificate tag. Repeatable. The `Acmebot` tag name is reserved. |
+| `--replace-existing` | Replace an existing Key Vault certificate with the same name that Acmebot does not manage. Without this option, the CLI fails instead of replacing it. |
 | `--no-wait` | Return after the operation is accepted instead of polling until completion. |
 
 By default, `certificate issue` waits for the Durable Functions operation to complete and prints the operation instance ID. Use `--no-wait` for asynchronous scripts.
+
+To switch a certificate imported from another certificate authority to an ACME certificate, issue a certificate with the same `--name` and `--replace-existing`. The ACME certificate is added as a new version of the existing Key Vault certificate.
 
 For delegated DNS-01 validation, pass full certificate DNS names with `--dns-name`, pass a unique alias record with `--dns-alias`, and create CNAME records from `_acme-challenge.<dns-name>` to `_acme-challenge.<dns-alias>` before issuing.
 
 ### `certificate renew`
 
-Starts manual renewal for an existing Key Vault certificate.
+Starts manual renewal for an existing Key Vault certificate managed by Acmebot. To switch a certificate that Acmebot does not manage, use `certificate issue --replace-existing` instead.
 
 ```bash
 acmebot certificate renew wildcard-example-com
@@ -188,7 +191,7 @@ Use `--no-wait` to return after Acmebot accepts the renewal operation.
 
 ### `certificate revoke`
 
-Revokes an existing certificate through the configured ACME certificate authority and disables the current Key Vault certificate version.
+Revokes an existing certificate through the configured ACME certificate authority and disables the current Key Vault certificate version. Only certificates that Acmebot issued through the configured ACME endpoint can be revoked.
 
 ```bash
 acmebot certificate revoke wildcard-example-com

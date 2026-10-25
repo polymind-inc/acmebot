@@ -125,6 +125,18 @@ Accept: application/json
 
 For delegated DNS-01 validation, set `dnsNames` to the certificate names and set `dnsAlias` to a unique record in a zone Acmebot can update. For each DNS name, create a CNAME from `_acme-challenge.<dnsName>` to `_acme-challenge.<dnsAlias>` in the authoritative DNS provider for the certificate domain.
 
+### Replacing a Certificate Not Managed by Acmebot
+
+If `certificateName` matches a Key Vault certificate that Acmebot does not manage, such as one imported from another certificate authority, the request returns `409 Conflict` and starts nothing. To replace that certificate with an ACME certificate, send the request again with the `replaceExisting` query parameter:
+
+```http
+POST /api/certificates?replaceExisting=true
+Content-Type: application/json
+Accept: application/json
+```
+
+The issued certificate is added as a new version of the existing Key Vault certificate, so services that reference the certificate without a version start using it. Certificates that Acmebot already manages are reissued without this parameter.
+
 ## List Certificates
 
 ```http
@@ -208,6 +220,8 @@ Accept: application/json
 
 Returns `202 Accepted` with a `Location` header for operation polling. Renewal restores the per-certificate ACME profile saved in Acmebot metadata; certificates without one use the deployment-level `Acmebot__PreferredProfile` setting when configured.
 
+Only certificates with Acmebot metadata can be renewed, including those issued through a different ACME endpoint. A missing certificate returns `404 Not Found`, and a certificate not managed by Acmebot returns `409 Conflict`; to replace it, see [Replacing a Certificate Not Managed by Acmebot](#replacing-a-certificate-not-managed-by-acmebot).
+
 ## Revocation
 
 ```http
@@ -216,6 +230,8 @@ Accept: application/json
 ```
 
 Revocation waits for the ACME revoke operation to complete, disables the current Key Vault certificate version, and returns `200 OK` on success.
+
+Only certificates that Acmebot issued through the currently configured ACME endpoint can be revoked. A missing certificate returns `404 Not Found`, and any other certificate returns `409 Conflict`; revoke those through the account or certificate authority that issued them.
 
 ## Errors
 

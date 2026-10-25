@@ -33,9 +33,9 @@ public sealed class HttpAuthenticationTests
 
         var result = functionName switch
         {
-            nameof(AddCertificate) => await new AddCertificate(accessor, roles, null!).HttpStart(context.Request, null!, null!),
+            nameof(AddCertificate) => await new AddCertificate(accessor, roles, null!, null!).HttpStart(context.Request, null!, null!),
             nameof(RenewCertificate) => await new RenewCertificate(accessor, roles, null!, null!).HttpStart(context.Request, "certificate", null!),
-            nameof(RevokeCertificate) => await new RevokeCertificate(accessor, roles, null!, null!).HttpStart(context.Request, "certificate"),
+            nameof(RevokeCertificate) => await new RevokeCertificate(accessor, roles, null!, null!, null!).HttpStart(context.Request, "certificate"),
             _ => throw new ArgumentOutOfRangeException(nameof(functionName))
         };
 
@@ -80,7 +80,7 @@ public sealed class HttpAuthenticationTests
         // Null dependencies make any access to certificate, DNS, ACME or orchestration services fail.
         var result = functionName switch
         {
-            nameof(AddCertificate) => await new AddCertificate(accessor, null!, null!).HttpStart(context.Request, null!, null!),
+            nameof(AddCertificate) => await new AddCertificate(accessor, null!, null!, null!).HttpStart(context.Request, null!, null!),
             nameof(GetAccount) => await new GetAccount(accessor, null!, options).HttpStart(context.Request),
             nameof(GetCertificateRenewals) => await new GetCertificateRenewals(accessor, null!, null!).HttpStart(context.Request, null!),
             nameof(GetCertificates) => await new GetCertificates(accessor, null!, null!).HttpStart(context.Request),
@@ -88,7 +88,7 @@ public sealed class HttpAuthenticationTests
             nameof(GetDnsZones) => await new GetDnsZones(accessor, null!, null!).HttpStart(context.Request),
             nameof(GetOperation) => await new GetOperation(accessor, null!).HttpStart(context.Request, "operation", null!),
             nameof(RenewCertificate) => await new RenewCertificate(accessor, null!, null!, null!).HttpStart(context.Request, "certificate", null!),
-            nameof(RevokeCertificate) => await new RevokeCertificate(accessor, null!, null!, null!).HttpStart(context.Request, "certificate"),
+            nameof(RevokeCertificate) => await new RevokeCertificate(accessor, null!, null!, null!, null!).HttpStart(context.Request, "certificate"),
             nameof(StaticPage) => new StaticPage(accessor).Serve(context.Request),
             _ => throw new ArgumentOutOfRangeException(nameof(functionName))
         };

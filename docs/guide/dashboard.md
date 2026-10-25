@@ -68,6 +68,8 @@ The default is RSA 2048. Use EC only when the downstream service supports the se
 
 Certificate names can contain letters, numbers, and hyphens. If omitted in the dashboard, the dashboard derives a name from the first DNS name by replacing `*` with `wildcard` and dots with hyphens before sending the request.
 
+To switch a certificate that Acmebot does not manage, such as one imported from another certificate authority, issue a certificate with the same name. The dashboard asks for confirmation before replacing it; the ACME certificate is added as a new version of the existing Key Vault certificate.
+
 ### Delegated DNS-01
 
 Use the delegated DNS-01 issue mode when the DNS provider selected in Acmebot manages only the validation zone, not the certificate's public DNS zone. Enter full DNS names for the certificate, select the DNS alias zone that Acmebot can update, and create the displayed CNAME records in the authoritative DNS provider before submitting.
@@ -86,13 +88,13 @@ Custom tags are written to the Key Vault certificate. The `Acmebot` tag is reser
 
 ## Renew a Certificate
 
-Manual renewal reuses the existing Key Vault certificate policy and starts a new issuance orchestration. Use it to rotate a certificate before its scheduled renewal window.
+Manual renewal reuses the existing Key Vault certificate policy and starts a new issuance orchestration. Use it to rotate a certificate before its scheduled renewal window. Renew is available only for certificates managed by Acmebot.
 
 The daily `RenewCertificates` timer ensures a renewal scheduler is running for each eligible certificate. Each scheduler wakes independently at its next check time. Certificates with ACME Renewal Information (ARI) renew at a selected time within the CA's suggested window, with earlier ARI refreshes based on `Retry-After`; certificates without renewal information use the configured fallback threshold. See [Operations](./operations#scheduled-renewal) for the scheduling details.
 
 ## Revoke a Certificate
 
-Revocation sends the certificate to the configured ACME certificate authority's revoke endpoint, then automatically disables the current Key Vault certificate version. The certificate remains in Key Vault, and disabled certificates are excluded from automatic renewal. After revocation, decide whether to delete or replace the certificate according to your operational policy.
+Revocation sends the certificate to the configured ACME certificate authority's revoke endpoint, then automatically disables the current Key Vault certificate version. Only certificates that Acmebot issued through the configured ACME endpoint can be revoked. The certificate remains in Key Vault, and disabled certificates are excluded from automatic renewal. After revocation, decide whether to delete or replace the certificate according to your operational policy.
 
 ## Operation Status
 

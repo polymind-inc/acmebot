@@ -19,7 +19,10 @@
     "http": {
       "routePrefix": "",
       "customHeaders": {
-        "Cache-Control": "no-store"
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "frame-ancestors 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
       }
     }
   }

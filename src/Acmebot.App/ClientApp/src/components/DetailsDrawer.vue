@@ -346,6 +346,7 @@ function getRenewalMessage(): string {
 
         <footer class="drawer__footer">
           <button
+            v-if="certificate.isIssuedByAcmebot"
             class="primary-button"
             type="button"
             :disabled="busy"
@@ -378,7 +379,12 @@ function getRenewalMessage(): string {
               :size="15"
               aria-hidden="true"
             />
-            Revoke is unavailable for this certificate.
+            <template v-if="certificate.isIssuedByAcmebot">
+              Revoke is unavailable for this certificate.
+            </template>
+            <template v-else>
+              Not managed by Acmebot. Issue a certificate with the same name to replace it.
+            </template>
           </div>
         </footer>
       </aside>

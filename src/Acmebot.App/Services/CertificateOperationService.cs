@@ -2,6 +2,7 @@
 using Acmebot.App.Extensions;
 using Acmebot.App.Models;
 
+using Azure;
 using Azure.Security.KeyVault.Certificates;
 
 namespace Acmebot.App.Services;
@@ -10,6 +11,20 @@ public class CertificateOperationService(
     AcmeClientFactory acmeClientFactory,
     CertificateClient certificateClient)
 {
+    public async Task<KeyVaultCertificateWithPolicy?> FindCertificateAsync(string certificateName, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(certificateName);
+
+        try
+        {
+            return await certificateClient.GetCertificateAsync(certificateName, cancellationToken);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+    }
+
     public async Task<CertificatePolicyItem> GetCertificatePolicyAsync(string certificateName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(certificateName);
@@ -19,18 +34,16 @@ public class CertificateOperationService(
         return certificate.ToCertificatePolicyItem();
     }
 
-    public async Task RevokeCertificateAsync(string certificateName, CancellationToken cancellationToken = default)
+    public async Task RevokeCertificateAsync(KeyVaultCertificateWithPolicy certificate, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(certificateName);
-
-        var response = await certificateClient.GetCertificateAsync(certificateName, cancellationToken);
+        ArgumentNullException.ThrowIfNull(certificate);
 
         var acmeContext = await acmeClientFactory.CreateClientAsync();
 
-        await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, response.Value.Cer, cancellationToken: cancellationToken);
+        await acmeContext.Client.RevokeCertificateAsync(acmeContext.Account, certificate.Cer, cancellationToken: cancellationToken);
 
-        response.Value.Properties.Enabled = false;
+        certificate.Properties.Enabled = false;
 
-        await certificateClient.UpdateCertificatePropertiesAsync(response.Value.Properties, cancellationToken);
+        await certificateClient.UpdateCertificatePropertiesAsync(certificate.Properties, cancellationToken);
     }
 }

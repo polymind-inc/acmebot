@@ -16,6 +16,10 @@ The dashboard and every API endpoint return `401` unless App Service Authenticat
 
 The HTTP triggers are configured with anonymous trigger authorization so App Service Authentication can provide the authenticated user principal to the application. Do not rely on a Functions host key as the only protection for the dashboard or API in v5 deployments.
 
+### Response Headers
+
+All responses include `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`, and `X-Content-Type-Options: nosniff`, so the dashboard cannot be embedded in another site's frame for clickjacking.
+
 ## App Roles
 
 By default, any authenticated dashboard user can issue, manually renew, and revoke certificates. To require app roles for sensitive operations, set:

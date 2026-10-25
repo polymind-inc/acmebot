@@ -164,7 +164,7 @@ public sealed class AcmebotApiClientTests
             KeyType = "RSA",
             KeySize = 2048,
             Profile = "tlsserver"
-        }, TestContext.Current.CancellationToken);
+        }, replaceExisting: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(new Uri("https://acmebot.example/api/operations/abc"), location);
 

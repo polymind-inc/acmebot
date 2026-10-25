@@ -2,12 +2,13 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { AlertTriangle, BadgeCheck, CircleSlash, ExternalLink, Info, PowerOff, Settings, Shield, ShieldAlert, ShieldCheck, UserRound, X } from 'lucide-vue-next';
 
-import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getConfiguration, getDnsZones, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
+import { formatApiError, getAccount, getCertificateRenewals, getCertificates, getConfiguration, getDnsZones, isUnmanagedCertificateConflict, issueCertificate, renewCertificate, revokeCertificate } from '@/api/acmebotApi';
 import { getLatestRelease } from '@/api/releases';
 import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, ConfigurationInfo, DnsZoneGroup, ReleaseInfo } from '@/api/types';
 import AccountDrawer from '@/components/AccountDrawer.vue';
 import AddCertificateDialog from '@/components/AddCertificateDialog.vue';
 import CertificateTable from '@/components/CertificateTable.vue';
+import ConfirmReplaceDialog from '@/components/ConfirmReplaceDialog.vue';
 import ConfirmRevokeDialog from '@/components/ConfirmRevokeDialog.vue';
 import ConfigurationDrawer from '@/components/ConfigurationDrawer.vue';
 import DetailsDrawer from '@/components/DetailsDrawer.vue';
@@ -22,6 +23,7 @@ const renewals = ref<CertificateRenewalItem[]>([]);
 const accountInfo = ref<AccountInfo | null>(null);
 const selectedCertificate = ref<CertificateItem | null>(null);
 const pendingRevokeCertificate = ref<CertificateItem | null>(null);
+const pendingReplacePolicy = ref<CertificatePolicyItem | null>(null);
 const accountDrawerOpen = ref(false);
 const configurationDrawerOpen = ref(false);
 const configuration = ref<ConfigurationInfo | null>(null);
@@ -257,7 +259,7 @@ async function refreshCertificates(): Promise<void> {
   await Promise.all([loadCertificates(), loadRenewals()]);
 }
 
-async function runCertificateOperation(title: string, message: string, action: () => Promise<void>): Promise<void> {
+async function runCertificateOperation(title: string, message: string, action: () => Promise<void>, handleError?: (error: unknown) => boolean): Promise<void> {
   operation.active = true;
   operation.title = title;
   operation.message = message;
@@ -269,14 +271,36 @@ async function runCertificateOperation(title: string, message: string, action: (
     selectedCertificate.value = null;
     await refreshCertificates();
   } catch (error) {
-    pushToast('error', 'Operation failed', formatApiError(error));
+    if (!handleError?.(error)) {
+      pushToast('error', 'Operation failed', formatApiError(error));
+    }
   } finally {
     operation.active = false;
   }
 }
 
 async function handleIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
-  await runCertificateOperation('Issuing certificate', 'Issuing certificate...', () => issueCertificate(policy));
+  await runCertificateOperation('Issuing certificate', 'Issuing certificate...', () => issueCertificate(policy), (error) => {
+    if (!isUnmanagedCertificateConflict(error)) {
+      return false;
+    }
+
+    // Replacing a certificate that Acmebot does not manage needs explicit confirmation before resending.
+    pendingReplacePolicy.value = policy;
+    return true;
+  });
+}
+
+async function confirmReplaceCertificate(): Promise<void> {
+  if (!pendingReplacePolicy.value) {
+    return;
+  }
+
+  const policy = pendingReplacePolicy.value;
+
+  pendingReplacePolicy.value = null;
+
+  await runCertificateOperation('Issuing certificate', 'Issuing certificate...', () => issueCertificate(policy, { replaceExisting: true }));
 }
 
 async function handleRenewCertificate(certificate: CertificateItem): Promise<void> {
@@ -580,6 +604,14 @@ async function confirmRevokeCertificate(): Promise<void> {
       :busy="detailsBusy || operation.active"
       @cancel="pendingRevokeCertificate = null"
       @confirm="confirmRevokeCertificate"
+    />
+
+    <ConfirmReplaceDialog
+      :open="pendingReplacePolicy !== null"
+      :certificate-name="pendingReplacePolicy?.certificateName ?? ''"
+      :busy="operation.active"
+      @cancel="pendingReplacePolicy = null"
+      @confirm="confirmReplaceCertificate"
     />
 
     <OperationOverlay

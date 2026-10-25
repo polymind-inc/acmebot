@@ -44,6 +44,7 @@ internal static class HelpText
         await writer.WriteLineAsync("  --dns-alias <value>                    DNS-01 validation alias.");
         await writer.WriteLineAsync("  --profile <value>                      ACME certificate profile.");
         await writer.WriteLineAsync("  --tag <name=value>                     Certificate tag. Repeatable.");
+        await writer.WriteLineAsync("  --replace-existing                     Replace an existing certificate not managed by Acmebot.");
         await writer.WriteLineAsync("  --no-wait                              Return after the operation is accepted.");
     }
 

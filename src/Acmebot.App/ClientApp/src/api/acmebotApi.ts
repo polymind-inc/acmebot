@@ -145,14 +145,19 @@ export async function getCertificateRenewals(): Promise<CertificateRenewalItem[]
   return requestJson<CertificateRenewalItem[]>('/api/renewals');
 }
 
-export async function issueCertificate(policy: CertificatePolicyItem): Promise<void> {
+export interface IssueCertificateOptions {
+  replaceExisting?: boolean;
+}
+
+export async function issueCertificate(policy: CertificatePolicyItem, options: IssueCertificateOptions = {}): Promise<void> {
   if (useMockApi) {
     const { mockIssueCertificate } = await import('./mockData');
-    await mockIssueCertificate(policy);
+    await mockIssueCertificate(policy, options.replaceExisting === true);
     return;
   }
 
-  const location = await startOperation('/api/certificates', {
+  const url = options.replaceExisting ? '/api/certificates?replaceExisting=true' : '/api/certificates';
+  const location = await startOperation(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(policy),
@@ -185,6 +190,11 @@ export async function revokeCertificate(certificateName: string): Promise<void> 
   await requestJson(`/api/certificates/${encodeURIComponent(certificateName)}/revoke`, {
     method: 'POST',
   });
+}
+
+// AddCertificate returns 409 when the name belongs to a certificate that Acmebot does not manage.
+export function isUnmanagedCertificateConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409;
 }
 
 export function formatApiError(error: unknown): string {

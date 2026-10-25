@@ -1,3 +1,4 @@
+import { ApiError } from './acmebotApi';
 import type { AccountInfo, CertificateItem, CertificatePolicyItem, CertificateRenewalItem, ConfigurationInfo, DnsZoneGroup } from './types';
 
 export function getMockConfiguration(): ConfigurationInfo {
@@ -262,11 +263,20 @@ export async function getMockCertificateRenewals(): Promise<CertificateRenewalIt
   return structuredClone(mockCertificates.map(createMockCertificateRenewal)).toSorted(compareCertificateRenewals);
 }
 
-export async function mockIssueCertificate(policy: CertificatePolicyItem): Promise<void> {
+export async function mockIssueCertificate(policy: CertificatePolicyItem, replaceExisting: boolean): Promise<void> {
   await delay(700);
 
+  const existingCertificate = mockCertificates.find((certificate) => certificate.name === policy.certificateName);
+
+  if (existingCertificate && !existingCertificate.isIssuedByAcmebot && !replaceExisting) {
+    throw new ApiError(
+      `The certificate '${policy.certificateName}' already exists in Key Vault and is not managed by Acmebot. Retry with replaceExisting=true to replace it with an ACME certificate.`,
+      409,
+    );
+  }
+
   mockCertificates = [
-    ...mockCertificates,
+    ...mockCertificates.filter((certificate) => certificate.name !== policy.certificateName),
     {
       id: `https://mock.vault/certificates/${policy.certificateName}`,
       name: policy.certificateName,

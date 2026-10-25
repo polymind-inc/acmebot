@@ -1,4 +1,6 @@
-﻿using Azure.Identity;
+﻿using System.Net;
+
+using Azure.Identity;
 
 namespace Acmebot.Cli;
 
@@ -297,7 +299,21 @@ internal static class CliApplication
         EnsureNoExtraArguments(commandLine, commandOffset);
 
         var policy = CertificatePolicyFactory.Create(commandLine);
-        var operationLocation = await client.IssueCertificateAsync(policy, cancellationToken);
+        var replaceExisting = commandLine.GetFlag("replace-existing");
+        Uri operationLocation;
+
+        try
+        {
+            operationLocation = await client.IssueCertificateAsync(policy, replaceExisting, cancellationToken);
+        }
+        catch (AcmebotApiException ex) when (ex.StatusCode == HttpStatusCode.Conflict && !replaceExisting)
+        {
+            throw new AcmebotApiException(
+                ex.StatusCode,
+                $"The certificate '{policy.CertificateName}' already exists in Key Vault and is not managed by Acmebot. Specify '--replace-existing' to replace it with an ACME certificate.",
+                ex.ProblemDetails);
+        }
+
         var operationInstanceId = GetOperationInstanceId(operationLocation);
         var wait = ShouldWait(commandLine);
 

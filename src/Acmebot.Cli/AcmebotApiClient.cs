@@ -26,9 +26,11 @@ internal sealed class AcmebotApiClient(HttpClient httpClient, Uri endpoint, Toke
 
     public async Task<IReadOnlyList<DnsZoneGroup>> GetDnsZonesAsync(CancellationToken cancellationToken) => await GetJsonAsync<IReadOnlyList<DnsZoneGroup>>("api/dns-zones", cancellationToken);
 
-    public async Task<Uri> IssueCertificateAsync(CertificatePolicyItem policy, CancellationToken cancellationToken)
+    public async Task<Uri> IssueCertificateAsync(CertificatePolicyItem policy, bool replaceExisting, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, BuildUri("api/certificates"))
+        var path = replaceExisting ? "api/certificates?replaceExisting=true" : "api/certificates";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, BuildUri(path))
         {
             Content = JsonContent.Create(policy, options: s_jsonOptions)
         };
