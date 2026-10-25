@@ -9,13 +9,15 @@ using Acmebot.App.Services;
 using DnsClient;
 
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Orchestration;
 
-public class DnsChallengeActivities(
+public partial class DnsChallengeActivities(
     ILookupClient lookupClient,
     AcmeClientFactory acmeClientFactory,
-    DnsZoneQueryService dnsZoneQueryService)
+    DnsZoneQueryService dnsZoneQueryService,
+    ILogger<DnsChallengeActivities> logger)
 {
     [Function(nameof(Dns01Precondition))]
     public async Task<IReadOnlyList<DnsZone>> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
@@ -118,25 +120,52 @@ public class DnsChallengeActivities(
         }
 
         var provider = dnsZoneQueryService.GetProvider(dnsProviderName);
+        var attemptedRecords = new List<(DnsZone Zone, string RecordName)>();
 
-        foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
+        try
         {
-            var dnsRecordName = lookup.Key;
-
-            var zone = zones.FindDnsZone(dnsRecordName);
-
-            if (zone is null)
+            foreach (var lookup in challengeResults.ToLookup(x => x.DnsRecordName))
             {
-                throw new PreconditionException($"No DNS zone was found for record '{dnsRecordName}'.");
+                var dnsRecordName = lookup.Key;
+
+                var zone = zones.FindDnsZone(dnsRecordName);
+
+                if (zone is null)
+                {
+                    throw new PreconditionException($"No DNS zone was found for record '{dnsRecordName}'.");
+                }
+
+                var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
+
+                await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+
+                // Creation may succeed remotely even when its response fails or is cancelled.
+                attemptedRecords.Add((zone, acmeDnsRecordName));
+                await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
             }
 
-            var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
-
-            await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
-            await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
+            return (challengeResults, (int)provider.PropagationDelay.TotalSeconds);
         }
+        catch
+        {
+            // Cleanup must remain possible after cancellation, but must not wait indefinitely.
+            using var cleanupTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(1));
 
-        return (challengeResults, (int)provider.PropagationDelay.TotalSeconds);
+            foreach (var (zone, recordName) in attemptedRecords)
+            {
+                try
+                {
+                    await provider.DeleteTxtRecordAsync(zone, recordName, cleanupTimeout.Token);
+                }
+                catch (Exception ex)
+                {
+                    // Continue cleaning up the other records and preserve the original failure.
+                    LogDnsRecordCleanupFailed(logger, ex, dnsProviderName, zone.Name, recordName);
+                }
+            }
+
+            throw;
+        }
     }
 
     [Function(nameof(CheckDnsChallenge))]
@@ -217,4 +246,7 @@ public class DnsChallengeActivities(
             ? dnsRecordName[..^zoneSuffix.Length]
             : dnsRecordName;
     }
+
+    [LoggerMessage(LogLevel.Error, "DNS challenge cleanup after record creation failed. DnsProviderName: {DnsProviderName}. ZoneName: {ZoneName}. RecordName: {RecordName}")]
+    private static partial void LogDnsRecordCleanupFailed(ILogger logger, Exception exception, string dnsProviderName, string zoneName, string recordName);
 }

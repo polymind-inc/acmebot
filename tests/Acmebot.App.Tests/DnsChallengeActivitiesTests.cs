@@ -203,6 +203,162 @@ public sealed class DnsChallengeActivitiesTests
     }
 
     [Fact]
+    public async Task Authorization_WhenInitialDeleteFails_CleansUpOnlyAttemptedCreations()
+    {
+        using var handler = new AuthorizationHandler { IdentifierValues = new() { [2] = "www.example.com" } };
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var failure = new InvalidOperationException("Initial deletion failed.");
+        var provider = new RecordingProvider
+        {
+            OnDelete = (name, _) =>
+            {
+                if (name == "_acme-challenge.www")
+                {
+                    throw failure;
+                }
+            }
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com", "www.example.com"]));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2)], zones), TestContext.Current.CancellationToken));
+
+        Assert.Same(failure, exception);
+        Assert.Single(provider.Created);
+        Assert.Equal(new[] { "_acme-challenge", "_acme-challenge.www", "_acme-challenge" }, provider.Deleted.Select(record => record.RecordName));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task Authorization_WhenCreationFails_CleansUpThroughFailedRecordOnly(int failedCreation)
+    {
+        using var handler = new AuthorizationHandler
+        {
+            IdentifierValues = new() { [2] = "www.example.com", [3] = "api.example.com" }
+        };
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var failure = new InvalidOperationException("Creation response was lost.");
+        var creationCount = 0;
+        var provider = new RecordingProvider
+        {
+            OnCreate = (_, _) =>
+            {
+                if (++creationCount == failedCreation)
+                {
+                    throw failure;
+                }
+            }
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com", "www.example.com", "api.example.com"]));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2), AuthorizationUrl(3)], RoundTrip(zones)), TestContext.Current.CancellationToken));
+
+        Assert.Same(failure, exception);
+        string[] recordNames = ["_acme-challenge", "_acme-challenge.www", "_acme-challenge.api"];
+        var attemptedNames = recordNames.Take(failedCreation).ToArray();
+        Assert.Equal(attemptedNames, provider.Created.Select(record => record.RecordName));
+        Assert.Equal(attemptedNames.Concat(attemptedNames), provider.Deleted.Select(record => record.RecordName));
+        Assert.All(provider.Deleted, record => Assert.Equal(("zone-1", "example.com"), (record.ZoneId, record.ZoneName)));
+        Assert.Equal(1, provider.ListCount);
+    }
+
+    [Fact]
+    public async Task Authorization_WhenLaterZoneIsMissing_CleansUpEarlierCreation()
+    {
+        using var handler = new AuthorizationHandler { IdentifierValues = new() { [2] = "example.net" } };
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider();
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        await Assert.ThrowsAsync<PreconditionException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2)], zones), TestContext.Current.CancellationToken));
+
+        Assert.Single(provider.Created);
+        Assert.Equal(2, provider.Deleted.Count);
+        Assert.All(provider.Deleted, record => Assert.Equal(("zone-1", "example.com", "_acme-challenge"), record));
+    }
+
+    [Fact]
+    public async Task Authorization_WhenCleanupFails_PreservesCreationFailureAndAttemptsRemainingRecords()
+    {
+        using var handler = new AuthorizationHandler
+        {
+            IdentifierValues = new() { [2] = "www.example.com", [3] = "api.example.com" }
+        };
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var failure = new InvalidOperationException("Creation failed.");
+        var creationFailed = false;
+        var provider = new RecordingProvider
+        {
+            OnCreate = (name, _) =>
+            {
+                if (name == "_acme-challenge.api")
+                {
+                    creationFailed = true;
+                    throw failure;
+                }
+            },
+            OnDelete = (name, _) =>
+            {
+                if (creationFailed && name == "_acme-challenge")
+                {
+                    throw new IOException("Cleanup failed.");
+                }
+            }
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com", "www.example.com", "api.example.com"]));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2), AuthorizationUrl(3)], zones), TestContext.Current.CancellationToken));
+
+        Assert.Same(failure, exception);
+        string[] recordNames = ["_acme-challenge", "_acme-challenge.www", "_acme-challenge.api"];
+        Assert.Equal(recordNames.Concat(recordNames), provider.Deleted.Select(record => record.RecordName));
+    }
+
+    [Fact]
+    public async Task Authorization_WhenCreationIsCancelled_CleansUpWithIndependentToken()
+    {
+        using var handler = new AuthorizationHandler();
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var failure = new OperationCanceledException(cancellation.Token);
+        var provider = new RecordingProvider
+        {
+            OnCreate = (_, _) =>
+            {
+                cancellation.Cancel();
+                throw failure;
+            },
+            OnDelete = (_, token) => token.ThrowIfCancellationRequested()
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), cancellation.Token));
+
+        Assert.Same(failure, exception);
+        Assert.Single(provider.Created);
+        Assert.Equal(2, provider.Deleted.Count);
+        Assert.True(provider.DeletedTokens[^1].CanBeCanceled);
+        Assert.False(provider.DeletedTokens[^1].IsCancellationRequested);
+        Assert.NotEqual(cancellation.Token, provider.DeletedTokens[^1]);
+    }
+
+    [Fact]
     public async Task Cleanup_WithoutChallenges_DoesNotResolveProvider()
     {
         using var handler = new AuthorizationHandler();
@@ -366,10 +522,10 @@ public sealed class DnsChallengeActivitiesTests
     };
 
     private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, params IDnsProvider[] providers)
-        => new(new LookupClient(), factory, new DnsZoneQueryService(providers, NullLogger<DnsZoneQueryService>.Instance));
+        => new(new LookupClient(), factory, new DnsZoneQueryService(providers, NullLogger<DnsZoneQueryService>.Instance), NullLogger<DnsChallengeActivities>.Instance);
 
     private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, ILookupClient lookupClient)
-        => new(lookupClient, factory, new DnsZoneQueryService([], NullLogger<DnsZoneQueryService>.Instance));
+        => new(lookupClient, factory, new DnsZoneQueryService([], NullLogger<DnsZoneQueryService>.Instance), NullLogger<DnsChallengeActivities>.Instance);
 
     private static AcmeClientFactory CreateFactory(HttpClient httpClient)
     {
@@ -388,9 +544,12 @@ public sealed class DnsChallengeActivitiesTests
         public TimeSpan PropagationDelay => TimeSpan.FromSeconds(60);
         public string? ChallengeZone { get; init; }
         public IReadOnlyList<DnsZone> AdditionalZones { get; init; } = [];
+        public Action<string, CancellationToken>? OnCreate { get; init; }
+        public Action<string, CancellationToken>? OnDelete { get; init; }
         public int ListCount { get; private set; }
         public List<(string ZoneId, string RecordName, string[] Values)> Created { get; } = [];
         public List<(string ZoneId, string ZoneName, string RecordName)> Deleted { get; } = [];
+        public List<CancellationToken> DeletedTokens { get; } = [];
 
         public Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
         {
@@ -408,12 +567,15 @@ public sealed class DnsChallengeActivitiesTests
         public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
         {
             Created.Add((zone.Id, relativeRecordName, values));
+            OnCreate?.Invoke(relativeRecordName, cancellationToken);
             return Task.CompletedTask;
         }
 
         public Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
         {
             Deleted.Add((zone.Id, zone.Name, relativeRecordName));
+            DeletedTokens.Add(cancellationToken);
+            OnDelete?.Invoke(relativeRecordName, cancellationToken);
             return Task.CompletedTask;
         }
     }
