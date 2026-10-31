@@ -24,10 +24,10 @@
     "@types/node": "26.6.5",
     "@vitejs/plugin-vue": "6.0.10",
     "eslint": "10.13.0",
-    "eslint-plugin-vue": "10.11.1",
+    "eslint-plugin-vue": "10.12.0",
     "globals": "17.13.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.0",
+    "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vue-eslint-parser": "10.4.1",
     "vue-tsc": "3.3.13"
