@@ -21,7 +21,9 @@ public partial class CertificateIssuanceOrchestrator
         try
         {
             // 前提条件をチェック
-            var zones = await context.CallDns01PreconditionAsync(certificatePolicyItem);
+            var zones = certificatePolicyItem.UsePrevalidatedAuthorization
+                ? Array.Empty<DnsZone>()
+                : await context.CallDns01PreconditionAsync(certificatePolicyItem);
 
             // 新しく ACME Order を作成する (ARI で更新扱いにする場合は既存証明書の Certificate ID を replaces に指定)
             var orderDetails = await context.CallOrderAsync((certificatePolicyItem.DnsNames, certificatePolicyItem.CertificateId, certificatePolicyItem.Profile));
@@ -29,7 +31,15 @@ public partial class CertificateIssuanceOrchestrator
             // 既に確認済みの場合は Challenge をスキップする
             if (orderDetails.Payload.Status != AcmeOrderStatuses.Ready)
             {
-                await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
+                if (certificatePolicyItem.UsePrevalidatedAuthorization)
+                {
+                    await context.CallCheckPrevalidatedAuthorizationsAsync(orderDetails.Payload.Authorizations);
+                    await context.CallCheckIsReadyAsync((orderDetails, (IReadOnlyList<AcmeChallengeResult>)[]), TaskOptions.FromRetryPolicy(PollingRetryPolicy));
+                }
+                else
+                {
+                    await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
+                }
             }
 
             // Key Vault で CSR を作成し Finalize を実行

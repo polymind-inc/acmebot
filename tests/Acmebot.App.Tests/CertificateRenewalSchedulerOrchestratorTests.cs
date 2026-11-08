@@ -21,6 +21,8 @@ public sealed class CertificateRenewalSchedulerOrchestratorTests
     public async Task ScheduleCertificateRenewal_WithPolicySnapshot_SkipsPolicyRetrieval(bool replaying)
     {
         var evaluation = ReadLegacyEvaluation() with { CertificatePolicy = CreatePolicy("snapshot.example.com") };
+        evaluation.CertificatePolicy.UsePrevalidatedAuthorization = true;
+        evaluation.CertificatePolicy.DnsProviderName = "";
         evaluation = JsonSerializer.Deserialize<CertificateRenewalEvaluation>(JsonSerializer.Serialize(evaluation, s_jsonOptions), s_jsonOptions)!;
         var context = new RenewalContext(evaluation)
         {
@@ -34,6 +36,8 @@ public sealed class CertificateRenewalSchedulerOrchestratorTests
         Assert.Same(evaluation.CertificatePolicy, context.IssuedPolicy);
         Assert.Equal(new[] { "snapshot.example.com" }, context.IssuedPolicy!.DnsNames);
         Assert.Equal("certificate-id", context.IssuedPolicy.CertificateId);
+        Assert.True(context.IssuedPolicy.UsePrevalidatedAuthorization);
+        Assert.Equal("", context.IssuedPolicy.DnsProviderName);
         Assert.Equal("production", context.IssuedPolicy.Tags!["environment"]);
         Assert.Equal(1, context.ContinueCount);
         Assert.Empty(context.Timers);

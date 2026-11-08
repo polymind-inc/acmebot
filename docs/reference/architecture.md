@@ -41,6 +41,8 @@ The precondition check enumerates DNS zones once, before creating the ACME order
 
 When there are no authorization URLs or all authorizations are already valid, issuance skips DNS writes, propagation waits, TXT checks, challenge answers, and cleanup. It still waits for the order to become ready before finalization. Orders that are immediately ready still run the precondition check first.
 
+REST API callers can opt into `usePrevalidatedAuthorization`. In that mode, issuance also skips the DNS precondition and requires no DNS provider. An order that is already ready proceeds to finalization; otherwise, the `CheckPrevalidatedAuthorizations` activity requires every authorization to be valid before polling for order readiness. Any other authorization state fails without challenge processing or DNS-01 fallback. The default DNS-01 activity sequence is unchanged.
+
 Each DNS propagation check queries each distinct TXT record name once, ignoring differences in name casing, and verifies every expected challenge value against that response. Checks do not reuse responses across retries, so later attempts can observe newly propagated records.
 
 ## Renewal Flow
@@ -100,6 +102,7 @@ Acmebot stores internal metadata in the `Acmebot` certificate tag as JSON. The m
 - ACME endpoint host.
 - DNS provider name.
 - Optional DNS alias.
+- Whether issuance uses prevalidated authorization, restored for manual and automatic renewal (defaults to false for older certificates).
 - ACME certificate identifier used for renewal information.
 
 Older certificates with legacy tags are still read for compatibility.

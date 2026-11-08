@@ -16,6 +16,9 @@ public class CertificateItem
     [JsonPropertyName("dnsProviderName")]
     public required string DnsProviderName { get; set; }
 
+    [JsonPropertyName("usePrevalidatedAuthorization")]
+    public bool UsePrevalidatedAuthorization { get; set; }
+
     [JsonPropertyName("createdOn")]
     public DateTimeOffset CreatedOn { get; set; }
 

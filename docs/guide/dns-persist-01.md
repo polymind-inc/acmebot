@@ -8,7 +8,7 @@ DNS-PERSIST-01 is an ACME validation method being standardized for persistent DN
 
 ## Current Support
 
-Acmebot exposes CA directory information and DNS-PERSIST-01 discovery metadata through the dashboard, API, and `acmebot account show` command. The account URL is managed internally and is omitted from these interfaces. Certificate issuance and renewal through DNS-PERSIST-01 are not supported yet. DNS-01 with a configured DNS provider remains the only issuance path; keep its DNS permissions in place.
+Acmebot exposes CA directory information and DNS-PERSIST-01 discovery metadata through the dashboard, API, and `acmebot account show` command. The account URL is managed internally and is omitted from these interfaces. Certificate issuance and renewal through DNS-PERSIST-01 challenges are not supported yet. DNS-01 with a configured DNS provider remains the default issuance path; keep its DNS permissions in place. For CAs that validate domains outside ACME, the REST API also supports [prevalidated authorization](/reference/api#using-prevalidated-authorization), which does not answer DNS-PERSIST-01 challenges.
 
 Acmebot does not generate `_validation-persist` TXT values, verify published persistent records, or report their wildcard policy or expiration. The record format is still under revision. Publishing a record does not enable a new validation mode in Acmebot.
 
