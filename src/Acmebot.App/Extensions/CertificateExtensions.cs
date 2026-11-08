@@ -119,6 +119,17 @@ internal static class CertificateExtensions
         tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
     }
 
+    public static void SetUsePrevalidatedAuthorization(this IDictionary<string, string> tags, bool usePrevalidatedAuthorization)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+
+        var metadata = tags.GetAcmebotMetadata() ?? new AcmebotCertificateMetadata();
+
+        metadata.UsePrevalidatedAuthorization = usePrevalidatedAuthorization;
+
+        tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
+    }
+
     public static bool TryGetCertificateId(this CertificateProperties properties, [NotNullWhen(true)] out string? certificateId)
     {
         var metadata = properties.Tags.GetAcmebotMetadata();
@@ -197,7 +208,7 @@ internal static class CertificateExtensions
 
         [JsonPropertyName("usePrevalidatedAuthorization")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public bool UsePrevalidatedAuthorization { get; init; }
+        public bool UsePrevalidatedAuthorization { get; set; }
 
         [JsonPropertyName("dnsAlias")]
         public string? DnsAlias { get; init; }

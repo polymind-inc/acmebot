@@ -138,6 +138,7 @@ public sealed class CertificateIssuanceOrchestratorTests
 
     private sealed class IssuanceContext(bool hasChallenges) : TaskOrchestrationContext
     {
+        private bool _requestedAuthorizationMode;
         private readonly IReadOnlyList<DnsZone> _zones = [new() { Id = "zone-1", Name = "example.com" }];
         private readonly IReadOnlyList<AcmeChallengeResult> _challenges = hasChallenges
             ? [new() { Url = new Uri("https://acme.example/challenge"), DnsRecordName = "_acme-challenge.example.com", DnsRecordValue = "value" }]
@@ -189,9 +190,14 @@ public sealed class CertificateIssuanceOrchestratorTests
                     Assert.Equal(NoAuthorizationUrls ? 0 : 1, authorizationUrls.Count);
                     break;
                 case nameof(AcmeOrderActivities.FinalizeOrder):
+                    var finalization = Assert.IsType<(CertificatePolicyItem, OrderDetails)>(input);
+                    _requestedAuthorizationMode = finalization.Item1.UsePrevalidatedAuthorization;
                     result = Order(AcmeOrderStatuses.Valid);
                     break;
                 case nameof(AcmeOrderActivities.MergeCertificate):
+                    var merge = Assert.IsType<(string, OrderDetails, bool?)>(input);
+                    Assert.Equal("certificate", merge.Item1);
+                    Assert.Equal(_requestedAuthorizationMode, merge.Item3);
                     result = new CertificateItem { Id = new Uri("https://vault.example/certificates/certificate"), Name = "certificate", DnsNames = ["example.com"], DnsProviderName = "Test DNS" };
                     break;
                 case nameof(DnsChallengeActivities.CheckDnsChallenge):

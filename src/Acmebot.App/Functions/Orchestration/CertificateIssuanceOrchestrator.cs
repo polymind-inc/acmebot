@@ -53,7 +53,7 @@ public partial class CertificateIssuanceOrchestrator
             }
 
             // 証明書をダウンロードし Key Vault に保存された秘密鍵とマージ
-            var certificate = await context.CallMergeCertificateAsync((certificatePolicyItem.CertificateName, orderDetails));
+            var certificate = await context.CallMergeCertificateAsync((certificatePolicyItem.CertificateName, orderDetails, (bool?)certificatePolicyItem.UsePrevalidatedAuthorization));
 
             // 証明書の更新が完了後に Webhook を送信する
             await context.CallSendCompletedEventAsync((certificate.Name, certificate.ExpiresOn, certificatePolicyItem.DnsNames));
