@@ -58,6 +58,19 @@ Configure one or more provider sections. Acmebot creates all providers whose opt
 
 Provider credentials are secrets. Use scoped provider tokens where possible, and consider App Service Key Vault references for secret values stored in Function App settings.
 
+### acme-dns
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `Acmebot__AcmeDns__Endpoint` | Required | Base URL of the acme-dns API. |
+| `Acmebot__AcmeDns__PropagationSeconds` | `30` | Initial wait after writing TXT values. |
+| `Acmebot__AcmeDns__Zones__0__Name` | Required | Domain being validated, without `_acme-challenge` or a wildcard prefix. |
+| `Acmebot__AcmeDns__Zones__0__Subdomain` | Required | Subdomain identifier returned by acme-dns registration. |
+| `Acmebot__AcmeDns__Zones__0__Username` | Required | Registration username sent in `X-Api-User`. |
+| `Acmebot__AcmeDns__Zones__0__Password` | Required | Registration password sent in `X-Api-Key`. |
+
+Use successive zone indices for additional domain mappings. See [acme-dns setup and limits](../guide/dns-providers#acme-dns) for CNAME delegation and TXT value handling.
+
 ### Akamai Edge DNS
 
 | Setting | Description |

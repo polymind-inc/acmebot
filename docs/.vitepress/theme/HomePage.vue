@@ -207,6 +207,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
           <div class="provider-card">OVH</div>
           <div class="provider-card">TransIP DNS</div>
           <div class="provider-card">PowerDNS</div>
+          <div class="provider-card">acme-dns</div>
           <div class="provider-card">Custom DNS</div>
         </div>
         <p class="providers-note">Need another provider? The Custom DNS provider can connect Acmebot to your own DNS automation API.</p>
