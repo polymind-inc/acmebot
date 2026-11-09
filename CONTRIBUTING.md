@@ -13,7 +13,7 @@ Thanks for your interest in contributing to Acmebot.
 ### Prerequisites
 
 - .NET SDK 10
-- Node.js 24 with npm
+- Node.js 26 with npm
 - Azure CLI
 - Bicep CLI support through Azure CLI
 - Git

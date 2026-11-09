@@ -8,7 +8,7 @@ on:
 
 env:
   DOTNET_VERSION: 10.0.x
-  NODE_VERSION: 24.x
+  NODE_VERSION: 26.x
   BICEP_VERSION: 0.48.1
 
 permissions: {}
