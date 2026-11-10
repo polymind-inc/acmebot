@@ -16,7 +16,7 @@
     "lucide-vue-next": "1.0.0",
     "punycode": "2.3.1",
     "reka-ui": "2.11.0",
-    "vue": "3.5.44"
+    "vue": "3.5.45"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -28,8 +28,8 @@
     "globals": "17.14.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",
-    "vite": "8.3.5",
-    "vue-eslint-parser": "10.4.1",
+    "vite": "8.3.6",
+    "vue-eslint-parser": "10.4.2",
     "vue-tsc": "3.3.14"
   }
 }
