@@ -139,6 +139,8 @@ public sealed class CertificateIssuanceOrchestratorTests
     private sealed class IssuanceContext(bool hasChallenges) : TaskOrchestrationContext
     {
         private bool _requestedAuthorizationMode;
+        private string? _requestedDnsProvider;
+        private string? _requestedDnsAlias;
         private readonly IReadOnlyList<DnsZone> _zones = [new() { Id = "zone-1", Name = "example.com" }];
         private readonly IReadOnlyList<AcmeChallengeResult> _challenges = hasChallenges
             ? [new() { Url = new Uri("https://acme.example/challenge"), DnsRecordName = "_acme-challenge.example.com", DnsRecordValue = "value" }]
@@ -192,12 +194,16 @@ public sealed class CertificateIssuanceOrchestratorTests
                 case nameof(AcmeOrderActivities.FinalizeOrder):
                     var finalization = Assert.IsType<(CertificatePolicyItem, OrderDetails)>(input);
                     _requestedAuthorizationMode = finalization.Item1.UsePrevalidatedAuthorization;
+                    _requestedDnsProvider = finalization.Item1.DnsProviderName;
+                    _requestedDnsAlias = finalization.Item1.DnsAlias;
                     result = Order(AcmeOrderStatuses.Valid);
                     break;
                 case nameof(AcmeOrderActivities.MergeCertificate):
-                    var merge = Assert.IsType<(string, OrderDetails, bool?)>(input);
+                    var merge = Assert.IsType<(string, OrderDetails, bool?, string?, string?)>(input);
                     Assert.Equal("certificate", merge.Item1);
                     Assert.Equal(_requestedAuthorizationMode, merge.Item3);
+                    Assert.Equal(_requestedDnsProvider, merge.Item4);
+                    Assert.Equal(_requestedDnsAlias, merge.Item5);
                     result = new CertificateItem { Id = new Uri("https://vault.example/certificates/certificate"), Name = "certificate", DnsNames = ["example.com"], DnsProviderName = "Test DNS" };
                     break;
                 case nameof(DnsChallengeActivities.CheckDnsChallenge):

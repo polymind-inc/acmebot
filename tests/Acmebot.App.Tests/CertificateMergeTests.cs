@@ -26,11 +26,16 @@ namespace Acmebot.App.Tests;
 public sealed class CertificateMergeTests
 {
     [Theory]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(false, null)]
-    [InlineData(true, null)]
-    public async Task MergeCertificate_AfterReusingPendingOperation_PersistsRequestedModeOrPreservesLegacyMode(bool savedMode, bool? requestedMode)
+    [InlineData(true, false, "", null, "Azure DNS", "validation.example.net", 5)]
+    [InlineData(false, true, "Azure DNS", "old.example.net", "", null, 5)]
+    [InlineData(false, false, "Azure DNS", "old.example.net", "Custom DNS", "new.example.net", 5)]
+    [InlineData(false, false, "Custom DNS", "old.example.net", "Azure DNS", null, 5)]
+    [InlineData(false, true, "Azure DNS", "old.example.net", "Custom DNS", null, 3)]
+    [InlineData(true, false, "Azure DNS", "old.example.net", "Custom DNS", null, 3)]
+    [InlineData(false, null, "Azure DNS", "old.example.net", "Custom DNS", null, 2)]
+    [InlineData(true, null, "", null, "Azure DNS", "validation.example.net", 2)]
+    public async Task MergeCertificate_AfterReusingPendingOperation_PersistsRequestedSettingsOrPreservesLegacySettings(
+        bool savedMode, bool? requestedMode, string savedProvider, string? savedAlias, string requestedProvider, string? requestedAlias, int inputVersion)
     {
         using var key = RSA.Create(2048);
         var request = new CertificateRequest("CN=example.com", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -44,7 +49,8 @@ public sealed class CertificateMergeTests
         {
             CertificateName = "example-com",
             DnsNames = ["example.com"],
-            DnsProviderName = "Azure DNS",
+            DnsProviderName = savedProvider,
+            DnsAlias = savedAlias,
             KeyType = "RSA",
             KeySize = 2048,
             UsePrevalidatedAuthorization = savedMode,
@@ -70,6 +76,8 @@ public sealed class CertificateMergeTests
         using var factory = new AcmeClientFactory(options, new ExistingAccountStore(), () => new AcmeClient(httpClient, endpoint));
         var activities = new AcmeOrderActivities(factory, vaultClient, options, NullLogger<AcmeOrderActivities>.Instance);
         policy.UsePrevalidatedAuthorization = requestedMode ?? savedMode;
+        policy.DnsProviderName = requestedProvider;
+        policy.DnsAlias = requestedAlias;
         var order = new OrderDetails
         {
             OrderUrl = new Uri("https://acme.example/order/1"),
@@ -78,21 +86,29 @@ public sealed class CertificateMergeTests
 
         var finalized = await activities.FinalizeOrder((policy, order));
         var jsonOptions = new JsonSerializerOptions { IncludeFields = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        // Old durable histories contain only Item1 and Item2; Item3 must remain null.
-        var inputJson = requestedMode.HasValue
-            ? JsonSerializer.Serialize((policy.CertificateName, finalized, requestedMode), jsonOptions)
-            : JsonSerializer.Serialize((policy.CertificateName, finalized), jsonOptions);
-        var input = JsonSerializer.Deserialize<(string, OrderDetails, bool?)>(inputJson, jsonOptions);
+        // Cover both earlier durable input formats as well as the current DNS settings snapshot.
+        var inputJson = inputVersion switch
+        {
+            2 => JsonSerializer.Serialize((policy.CertificateName, finalized), jsonOptions),
+            3 => JsonSerializer.Serialize((policy.CertificateName, finalized, requestedMode), jsonOptions),
+            _ => JsonSerializer.Serialize((policy.CertificateName, finalized, requestedMode, requestedProvider, requestedAlias), jsonOptions)
+        };
+        var input = JsonSerializer.Deserialize<(string, OrderDetails, bool?, string?, string?)>(inputJson, jsonOptions);
         var result = await activities.MergeCertificate(input);
 
         Assert.Equal(1, vaultClient.ReusedOperationCount);
         Assert.Equal(1, vaultClient.MergeCount);
         Assert.Equal(1, vaultClient.UpdateCount);
         Assert.Equal(requestedMode ?? savedMode, result.UsePrevalidatedAuthorization);
+        var expectedProvider = inputVersion == 5 ? requestedProvider : savedProvider;
+        var expectedAlias = (inputVersion == 5 ? requestedAlias : savedAlias) ?? "";
+        Assert.Equal(expectedProvider, result.DnsProviderName);
+        Assert.Equal(expectedAlias, result.DnsAlias);
         var renewalPolicy = storedCertificate.ToCertificatePolicyItem();
         Assert.Equal(requestedMode ?? savedMode, renewalPolicy.UsePrevalidatedAuthorization);
         Assert.Equal(AcmeClient.CreateCertificateIdentifier(certificate), renewalPolicy.CertificateId);
-        Assert.Equal("Azure DNS", renewalPolicy.DnsProviderName);
+        Assert.Equal(expectedProvider, renewalPolicy.DnsProviderName);
+        Assert.Equal(expectedAlias, renewalPolicy.DnsAlias);
         Assert.Equal("tlsserver", renewalPolicy.Profile);
         Assert.Equal("platform", renewalPolicy.Tags!["owner"]);
         Assert.True(storedCertificate.Properties.IsSameEndpoint(endpoint));

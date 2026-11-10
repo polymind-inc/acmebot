@@ -119,13 +119,20 @@ internal static class CertificateExtensions
         tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
     }
 
-    public static void SetUsePrevalidatedAuthorization(this IDictionary<string, string> tags, bool usePrevalidatedAuthorization)
+    public static void SetAuthorizationSettings(this IDictionary<string, string> tags, bool usePrevalidatedAuthorization, string? dnsProviderName, string? dnsAlias)
     {
         ArgumentNullException.ThrowIfNull(tags);
 
         var metadata = tags.GetAcmebotMetadata() ?? new AcmebotCertificateMetadata();
 
         metadata.UsePrevalidatedAuthorization = usePrevalidatedAuthorization;
+
+        // A missing provider means a legacy merge input, while an empty provider deliberately clears it.
+        if (dnsProviderName is not null)
+        {
+            metadata.DnsProvider = dnsProviderName;
+            metadata.DnsAlias = string.IsNullOrEmpty(dnsAlias) ? null : dnsAlias;
+        }
 
         tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
     }
@@ -204,14 +211,14 @@ internal static class CertificateExtensions
         public string? Endpoint { get; init; }
 
         [JsonPropertyName("dnsProvider")]
-        public string? DnsProvider { get; init; }
+        public string? DnsProvider { get; set; }
 
         [JsonPropertyName("usePrevalidatedAuthorization")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool UsePrevalidatedAuthorization { get; set; }
 
         [JsonPropertyName("dnsAlias")]
-        public string? DnsAlias { get; init; }
+        public string? DnsAlias { get; set; }
 
         [JsonPropertyName("profile")]
         public string? Profile { get; init; }

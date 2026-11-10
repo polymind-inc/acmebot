@@ -175,10 +175,10 @@ public partial class AcmeOrderActivities(
     }
 
     [Function(nameof(MergeCertificate))]
-    public async Task<CertificateItem> MergeCertificate([ActivityTrigger] (string, OrderDetails, bool?) input)
+    public async Task<CertificateItem> MergeCertificate([ActivityTrigger] (string, OrderDetails, bool?, string?, string?) input)
     {
-        // Older durable inputs have no third item. Preserve their saved authorization mode.
-        var (certificateName, orderDetails, usePrevalidatedAuthorization) = input;
+        // Older durable inputs omit the mode or DNS settings. Preserve values that were not supplied.
+        var (certificateName, orderDetails, usePrevalidatedAuthorization, dnsProviderName, dnsAlias) = input;
 
         var acmeContext = await acmeClientFactory.CreateClientAsync();
 
@@ -204,7 +204,7 @@ public partial class AcmeOrderActivities(
         if (usePrevalidatedAuthorization is { } requestedMode)
         {
             // A pending Key Vault operation can retain tags from an earlier issuance attempt.
-            mergedCertificate.Properties.Tags.SetUsePrevalidatedAuthorization(requestedMode);
+            mergedCertificate.Properties.Tags.SetAuthorizationSettings(requestedMode, dnsProviderName, dnsAlias);
         }
 
         await certificateClient.UpdateCertificatePropertiesAsync(mergedCertificate.Properties);
