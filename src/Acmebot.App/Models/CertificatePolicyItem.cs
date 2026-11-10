@@ -13,7 +13,10 @@ public partial class CertificatePolicyItem : IValidatableObject
     public required string[] DnsNames { get; set; }
 
     [JsonPropertyName("dnsProviderName")]
-    public required string DnsProviderName { get; set; }
+    public string DnsProviderName { get; set; } = "";
+
+    [JsonPropertyName("usePrevalidatedAuthorization")]
+    public bool UsePrevalidatedAuthorization { get; set; }
 
     [JsonPropertyName("keyType")]
     [RegularExpression("^(RSA|RSA-HSM|EC|EC-HSM)$")]
@@ -60,7 +63,7 @@ public partial class CertificatePolicyItem : IValidatableObject
             yield return result;
         }
 
-        if (string.IsNullOrWhiteSpace(DnsProviderName))
+        if (!UsePrevalidatedAuthorization && string.IsNullOrWhiteSpace(DnsProviderName))
         {
             yield return new ValidationResult($"The {nameof(DnsProviderName)} is required.", [nameof(DnsProviderName)]);
         }

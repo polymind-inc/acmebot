@@ -25,6 +25,27 @@ public partial class AcmeOrderActivities(
 {
     private readonly AcmebotOptions _options = options.Value;
 
+    [Function(nameof(CheckPrevalidatedAuthorizations))]
+    public async Task CheckPrevalidatedAuthorizations([ActivityTrigger] IReadOnlyList<Uri> authorizationUrls, CancellationToken cancellationToken)
+    {
+        var acmeContext = await acmeClientFactory.CreateClientAsync(cancellationToken);
+
+        await CheckPrevalidatedAuthorizationsAsync(acmeContext, authorizationUrls, cancellationToken);
+    }
+
+    internal static async Task CheckPrevalidatedAuthorizationsAsync(AcmeClientContext acmeContext, IReadOnlyList<Uri> authorizationUrls, CancellationToken cancellationToken)
+    {
+        foreach (var authorizationUrl in authorizationUrls)
+        {
+            var authorization = (await acmeContext.Client.GetAuthorizationAsync(acmeContext.Account, authorizationUrl, cancellationToken)).Resource;
+
+            if (authorization.Status != AcmeAuthorizationStatuses.Valid)
+            {
+                throw new PreconditionException($"The certificate authority has not prevalidated authorization for '{authorization.Identifier.Value}'. Current status: {authorization.Status}. Complete domain validation with the certificate authority before retrying with usePrevalidatedAuthorization=true.");
+            }
+        }
+    }
+
     [Function(nameof(Order))]
     public async Task<OrderDetails> Order([ActivityTrigger] (IReadOnlyList<string>, string?, string?) input)
     {
@@ -154,9 +175,10 @@ public partial class AcmeOrderActivities(
     }
 
     [Function(nameof(MergeCertificate))]
-    public async Task<CertificateItem> MergeCertificate([ActivityTrigger] (string, OrderDetails) input)
+    public async Task<CertificateItem> MergeCertificate([ActivityTrigger] (string, OrderDetails, bool?, string?, string?) input)
     {
-        var (certificateName, orderDetails) = input;
+        // Older durable inputs omit the mode or DNS settings. Preserve values that were not supplied.
+        var (certificateName, orderDetails, usePrevalidatedAuthorization, dnsProviderName, dnsAlias) = input;
 
         var acmeContext = await acmeClientFactory.CreateClientAsync();
 
@@ -178,6 +200,12 @@ public partial class AcmeOrderActivities(
         var certificateIdentifier = AcmeClient.CreateCertificateIdentifier(x509Certificates[0]);
 
         mergedCertificate.Properties.Tags.SetCertificateId(certificateIdentifier);
+
+        if (usePrevalidatedAuthorization is { } requestedMode)
+        {
+            // A pending Key Vault operation can retain tags from an earlier issuance attempt.
+            mergedCertificate.Properties.Tags.SetAuthorizationSettings(requestedMode, dnsProviderName, dnsAlias);
+        }
 
         await certificateClient.UpdateCertificatePropertiesAsync(mergedCertificate.Properties);
 

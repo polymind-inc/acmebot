@@ -13,6 +13,43 @@ public sealed class CertificateExtensionsTests
 {
     private static readonly Uri s_endpoint = new("https://acme-v02.api.letsencrypt.org/directory");
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrevalidatedAuthorization_RoundTripsThroughMetadataAndCertificateIdUpdate(bool usePrevalidatedAuthorization)
+    {
+        var policy = CreatePolicy(profile: null);
+        policy.UsePrevalidatedAuthorization = usePrevalidatedAuthorization;
+        policy.DnsProviderName = "";
+        var tags = policy.ToCertificateTags(s_endpoint);
+
+        tags.SetCertificateId("certificate-id");
+
+        using var metadata = JsonDocument.Parse(tags["Acmebot"]);
+        Assert.Equal(usePrevalidatedAuthorization, metadata.RootElement.TryGetProperty("usePrevalidatedAuthorization", out _));
+        var certificate = CreateCertificate(tags);
+        var restoredPolicy = certificate.ToCertificatePolicyItem();
+        Assert.Equal(usePrevalidatedAuthorization, restoredPolicy.UsePrevalidatedAuthorization);
+        Assert.Equal("", restoredPolicy.DnsProviderName);
+        Assert.Equal("certificate-id", restoredPolicy.CertificateId);
+        Assert.Equal(usePrevalidatedAuthorization, certificate.ToCertificateItem().UsePrevalidatedAuthorization);
+    }
+
+    [Theory]
+    [InlineData("""{"endpoint":"acme-v02.api.letsencrypt.org","dnsProvider":"Azure DNS"}""")]
+    [InlineData(null)]
+    public void ToCertificatePolicyItem_WithoutPrevalidatedMetadata_UsesDnsValidation(string? metadata)
+    {
+        var tags = metadata is null
+            ? new Dictionary<string, string> { ["Issuer"] = "Acmebot", ["DnsProvider"] = "Azure DNS" }
+            : new Dictionary<string, string> { ["Acmebot"] = metadata };
+
+        var policy = CreateCertificate(tags).ToCertificatePolicyItem();
+
+        Assert.False(policy.UsePrevalidatedAuthorization);
+        Assert.Equal("Azure DNS", policy.DnsProviderName);
+    }
+
     [Fact]
     public void IsIssuedByAcmebot_WithMetadataTag_ReturnsTrue()
     {
@@ -172,7 +209,10 @@ public sealed class CertificateExtensionsTests
             KeySize = 2048
         };
 
-        var properties = new CertificateProperties("example-com");
+        var properties = CertificateModelFactory.CertificateProperties(
+            id: new Uri("https://vault.example/certificates/example-com/version"),
+            name: "example-com",
+            x509thumbprint: [1, 2, 3]);
 
         foreach (var tag in tags)
         {

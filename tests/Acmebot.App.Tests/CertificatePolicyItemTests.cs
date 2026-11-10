@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 using Acmebot.App.Models;
 
@@ -8,6 +9,25 @@ namespace Acmebot.App.Tests;
 
 public sealed class CertificatePolicyItemTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_WithoutDnsProvider_RequiresPrevalidatedAuthorization(bool usePrevalidatedAuthorization)
+    {
+        var policy = JsonSerializer.Deserialize<CertificatePolicyItem>(JsonSerializer.Serialize(new
+        {
+            certificateName = "example-com",
+            dnsNames = new[] { "example.com" },
+            keyType = "RSA",
+            keySize = 2048,
+            usePrevalidatedAuthorization
+        }))!;
+
+        Assert.Equal(usePrevalidatedAuthorization, policy.UsePrevalidatedAuthorization);
+        Assert.Equal("", policy.DnsProviderName);
+        Assert.Equal(usePrevalidatedAuthorization ? 0 : 1, Validate(policy).Count);
+    }
+
     [Fact]
     public void Validate_WithEmptyDnsNames_ReturnsError()
     {

@@ -15,6 +15,50 @@ namespace Acmebot.App.Tests;
 public sealed class CertificateIssuanceOrchestratorTests
 {
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task IssueCertificate_WithPrevalidatedAuthorization_SkipsDnsAndFinalizes(bool orderReady, bool noAuthorizationUrls)
+    {
+        var context = new IssuanceContext(false) { OrderReady = orderReady, NoAuthorizationUrls = noAuthorizationUrls };
+        var policy = CreatePolicy();
+        policy.UsePrevalidatedAuthorization = true;
+        policy.DnsProviderName = "";
+
+        await new CertificateIssuanceOrchestrator().IssueCertificate(context, policy);
+
+        Assert.Equal(nameof(AcmeOrderActivities.Order), context.Calls[0]);
+        Assert.Equal(!orderReady, context.Calls.Contains(nameof(AcmeOrderActivities.CheckPrevalidatedAuthorizations)));
+        Assert.Equal(!orderReady, context.Calls.Contains(nameof(AcmeOrderActivities.CheckIsReady)));
+        Assert.Contains(nameof(AcmeOrderActivities.FinalizeOrder), context.Calls);
+        Assert.Contains(nameof(AcmeOrderActivities.MergeCertificate), context.Calls);
+        Assert.Contains(nameof(WebhookActivities.SendCompletedEvent), context.Calls);
+        Assert.DoesNotContain(context.Calls, name => name is nameof(DnsChallengeActivities.Dns01Precondition)
+            or nameof(DnsChallengeActivities.Dns01Authorization)
+            or nameof(DnsChallengeActivities.CheckDnsChallenge)
+            or nameof(DnsChallengeActivities.CleanupDnsChallenge)
+            or nameof(AcmeOrderActivities.AnswerChallenges));
+        Assert.Equal(0, context.TimerCount);
+    }
+
+    [Fact]
+    public async Task IssueCertificate_WhenPrevalidationFails_DoesNotFinalizeOrFallBackToDns()
+    {
+        var context = new IssuanceContext(true) { FailActivity = nameof(AcmeOrderActivities.CheckPrevalidatedAuthorizations) };
+        var policy = CreatePolicy();
+        policy.UsePrevalidatedAuthorization = true;
+
+        await Assert.ThrowsAsync<PreconditionException>(() => new CertificateIssuanceOrchestrator().IssueCertificate(context, policy));
+
+        Assert.Equal(new[]
+        {
+            nameof(AcmeOrderActivities.Order),
+            nameof(AcmeOrderActivities.CheckPrevalidatedAuthorizations),
+            nameof(WebhookActivities.SendFailedEvent)
+        }, context.Calls);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task IssueCertificate_PreservesOrder_AndSkipsEmptyDnsWork(bool hasChallenges)
@@ -94,6 +138,9 @@ public sealed class CertificateIssuanceOrchestratorTests
 
     private sealed class IssuanceContext(bool hasChallenges) : TaskOrchestrationContext
     {
+        private bool _requestedAuthorizationMode;
+        private string? _requestedDnsProvider;
+        private string? _requestedDnsAlias;
         private readonly IReadOnlyList<DnsZone> _zones = [new() { Id = "zone-1", Name = "example.com" }];
         private readonly IReadOnlyList<AcmeChallengeResult> _challenges = hasChallenges
             ? [new() { Url = new Uri("https://acme.example/challenge"), DnsRecordName = "_acme-challenge.example.com", DnsRecordValue = "value" }]
@@ -140,10 +187,23 @@ public sealed class CertificateIssuanceOrchestratorTests
                     Assert.Same(_challenges, cleanup.Item2);
                     Assert.Same(_zones, cleanup.Item3);
                     break;
+                case nameof(AcmeOrderActivities.CheckPrevalidatedAuthorizations):
+                    var authorizationUrls = Assert.IsAssignableFrom<IReadOnlyList<Uri>>(input);
+                    Assert.Equal(NoAuthorizationUrls ? 0 : 1, authorizationUrls.Count);
+                    break;
                 case nameof(AcmeOrderActivities.FinalizeOrder):
+                    var finalization = Assert.IsType<(CertificatePolicyItem, OrderDetails)>(input);
+                    _requestedAuthorizationMode = finalization.Item1.UsePrevalidatedAuthorization;
+                    _requestedDnsProvider = finalization.Item1.DnsProviderName;
+                    _requestedDnsAlias = finalization.Item1.DnsAlias;
                     result = Order(AcmeOrderStatuses.Valid);
                     break;
                 case nameof(AcmeOrderActivities.MergeCertificate):
+                    var merge = Assert.IsType<(string, OrderDetails, bool?, string?, string?)>(input);
+                    Assert.Equal("certificate", merge.Item1);
+                    Assert.Equal(_requestedAuthorizationMode, merge.Item3);
+                    Assert.Equal(_requestedDnsProvider, merge.Item4);
+                    Assert.Equal(_requestedDnsAlias, merge.Item5);
                     result = new CertificateItem { Id = new Uri("https://vault.example/certificates/certificate"), Name = "certificate", DnsNames = ["example.com"], DnsProviderName = "Test DNS" };
                     break;
                 case nameof(DnsChallengeActivities.CheckDnsChallenge):

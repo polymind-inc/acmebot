@@ -26,6 +26,23 @@ namespace Acmebot.App.Tests;
 [Collection(AppServiceAuthenticationCollection.Name)]
 public sealed class CertificateOwnershipTests
 {
+    [Fact]
+    public async Task AddCertificate_WithPrevalidatedAuthorization_AllowsMissingDnsProvider()
+    {
+        using var authentication = new AppServiceAuthenticationScope("true");
+        var context = CreateHttpContext();
+        var starter = new RecordingDurableTaskClient();
+        var policy = JsonSerializer.Deserialize<CertificatePolicyItem>("""
+            {"certificateName":"example-com","dnsNames":["example.com"],"keyType":"RSA","keySize":2048,"usePrevalidatedAuthorization":true}
+            """)!;
+
+        await Assert.ThrowsAsync<ReachedOperationException>(() => CreateAddCertificate(context, CertificateState.Missing).HttpStart(context.Request, policy, starter));
+
+        var scheduledPolicy = Assert.IsType<CertificatePolicyItem>(starter.Input);
+        Assert.True(scheduledPolicy.UsePrevalidatedAuthorization);
+        Assert.Equal("", scheduledPolicy.DnsProviderName);
+    }
+
     [Theory]
     [InlineData(CertificateState.Missing, null, false)]
     [InlineData(CertificateState.Managed, null, false)]
@@ -95,6 +112,7 @@ public sealed class CertificateOwnershipTests
         var policy = Assert.IsType<CertificatePolicyItem>(starter.Input);
         Assert.Equal("example-com", policy.CertificateName);
         Assert.Equal("Azure DNS", policy.DnsProviderName);
+        Assert.True(policy.UsePrevalidatedAuthorization);
         Assert.Null(policy.CertificateId);
         Assert.False(policy.ReplaceExisting);
     }
@@ -247,6 +265,7 @@ public sealed class CertificateOwnershipTests
             {
                 endpoint = state == CertificateState.Managed ? "acme.example" : "other.example",
                 dnsProvider = "Azure DNS",
+                usePrevalidatedAuthorization = true,
                 certificateId = "certificate-id"
             });
         }

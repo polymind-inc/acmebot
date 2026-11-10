@@ -17,6 +17,63 @@ namespace Acmebot.App.Tests;
 
 public sealed class AcmeOrderActivitiesTests
 {
+    [Theory]
+    [InlineData("valid")]
+    [InlineData("pending")]
+    [InlineData("invalid")]
+    [InlineData("deactivated")]
+    [InlineData("expired")]
+    [InlineData("revoked")]
+    public async Task CheckPrevalidatedAuthorizationsAsync_RequiresEveryAuthorizationToBeValid(string status)
+    {
+        using var signer = AcmeSigner.CreateP256();
+        using var handler = new RecordingHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmeClient(httpClient, new Uri("https://example.com/acme/directory"));
+        handler.Enqueue(_ => CreateJsonResponse(HttpStatusCode.OK, new
+        {
+            newNonce = "https://example.com/acme/new-nonce",
+            newAccount = "https://example.com/acme/new-account",
+            newOrder = "https://example.com/acme/new-order"
+        }));
+        var directory = await client.GetDirectoryAsync(TestContext.Current.CancellationToken);
+        var context = new AcmeClientContext
+        {
+            Client = client,
+            Directory = directory,
+            Signer = signer,
+            Account = CreateAccountHandle(signer)
+        };
+        handler.Enqueue(_ => CreateResponse(HttpStatusCode.OK, "", null, replayNonce: "bm9uY2Ux"));
+        handler.Enqueue(_ => CreateJsonResponse(HttpStatusCode.OK, new
+        {
+            status = "valid",
+            identifier = new { type = "dns", value = "example.com" }
+        }, replayNonce: "bm9uY2Uy"));
+        handler.Enqueue(_ => CreateJsonResponse(HttpStatusCode.OK, new
+        {
+            status,
+            identifier = new { type = "dns", value = "www.example.com" }
+        }, replayNonce: "bm9uY2Uz"));
+        var authorizationUrls = new[] { new Uri("https://example.com/acme/authz/1"), new Uri("https://example.com/acme/authz/2") };
+
+        var action = () => AcmeOrderActivities.CheckPrevalidatedAuthorizationsAsync(context, authorizationUrls, TestContext.Current.CancellationToken);
+
+        if (status == "valid")
+        {
+            await action();
+        }
+        else
+        {
+            var exception = await Assert.ThrowsAsync<PreconditionException>(action);
+            Assert.Contains("www.example.com", exception.Message);
+            Assert.Contains(status, exception.Message);
+            Assert.Contains("usePrevalidatedAuthorization=true", exception.Message);
+        }
+
+        Assert.Equal(authorizationUrls, handler.Requests.Where(request => request.Method == HttpMethod.Post).Select(request => request.RequestUri));
+    }
+
     [Fact]
     public async Task CreateOrderAsync_WithAlreadyReplacedProblem_RetriesWithoutReplaces()
     {

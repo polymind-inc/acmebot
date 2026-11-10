@@ -46,6 +46,7 @@ public sealed class CertificateActivitiesTests
         Assert.Equal("example-com", policy.CertificateName);
         Assert.Equal(new[] { "example.com", "*.example.com" }, policy.DnsNames);
         Assert.Equal("Azure DNS", policy.DnsProviderName);
+        Assert.True(policy.UsePrevalidatedAuthorization);
         Assert.Equal("RSA", policy.KeyType);
         Assert.Equal(2048, policy.KeySize);
         Assert.True(policy.ReuseKey);
@@ -188,6 +189,7 @@ public sealed class CertificateActivitiesTests
         {
             endpoint = "acme.example",
             dnsProvider = "Azure DNS",
+            usePrevalidatedAuthorization = true,
             dnsAlias = "validation.example.com",
             profile = "tlsserver",
             certificateId

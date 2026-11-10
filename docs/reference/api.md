@@ -114,7 +114,8 @@ Accept: application/json
 | --- | --- | --- |
 | `certificateName` | Yes | Key Vault certificate name. API clients must provide this value. It must be 1 to 127 characters and contain only letters, numbers, and hyphens. |
 | `dnsNames` | Yes | ASCII/punycode DNS names to include in the certificate. Omit trailing dots. Wildcards are allowed only as the leftmost label. |
-| `dnsProviderName` | Yes | Provider display name, such as `Azure DNS` or `Cloudflare`. When `dnsAlias` is set, this provider must manage the DNS alias zone. |
+| `dnsProviderName` | Unless `usePrevalidatedAuthorization=true` | Provider display name, such as `Azure DNS` or `Cloudflare`. When `dnsAlias` is set, this provider must manage the DNS alias zone. Ignored when using prevalidated authorization. |
+| `usePrevalidatedAuthorization` | No | Defaults to `false`. Use only authorization already validated by the configured CA, without DNS provider access or DNS challenge processing. Saved for manual and automatic renewal. |
 | `keyType` | Yes | `RSA`, `RSA-HSM`, `EC`, or `EC-HSM`. The `-HSM` variants require a Premium-tier Key Vault and are only available through the API and CLI — the dashboard's Add Certificate dialog does not offer them. Certificates issued with an HSM key type still display correctly in the dashboard's list and details views. |
 | `keySize` | For RSA/RSA-HSM | `2048`, `3072`, or `4096`. |
 | `keyCurveName` | For EC/EC-HSM | `P-256`, `P-384`, `P-521`, or `P-256K`. |
@@ -124,6 +125,26 @@ Accept: application/json
 | `tags` | No | Custom Key Vault certificate tags. `Acmebot` is reserved. |
 
 For delegated DNS-01 validation, set `dnsNames` to the certificate names and set `dnsAlias` to a unique record in a zone Acmebot can update. For each DNS name, create a CNAME from `_acme-challenge.<dnsName>` to `_acme-challenge.<dnsAlias>` in the authoritative DNS provider for the certificate domain.
+
+### Using Prevalidated Authorization
+
+For a CA that validates domains outside ACME, set `usePrevalidatedAuthorization` to `true`. This option is available through the REST API; the dashboard and CLI do not offer an issuance option for it. A DNS provider does not need to be configured, and `dnsProviderName` can be omitted:
+
+```json
+{
+  "certificateName": "prevalidated-example-com",
+  "dnsNames": ["example.com"],
+  "usePrevalidatedAuthorization": true,
+  "keyType": "RSA",
+  "keySize": 2048
+}
+```
+
+Acmebot skips DNS zone checks, DNS record writes and cleanup, TXT propagation checks, and challenge answers. If the order is already ready, issuance proceeds directly to finalization. Otherwise, every authorization returned by the CA must already be `valid`; Acmebot then waits for the order to become ready. Any authorization in another state fails the operation without falling back to DNS-01 or waiting for external challenge completion. Complete validation with the CA before retrying.
+
+The setting is stored in the certificate's internal Key Vault metadata and reused by both manual and automatic renewal. If the CA requires fresh validation on a later renewal, renewal fails until validation is completed externally. Existing certificates without this setting continue to use DNS-01. Certificate objects returned by `GET /api/certificates` include `usePrevalidatedAuthorization` so API clients can inspect the saved mode.
+
+This option does not implement DNS-PERSIST-01 challenges or make static CNAME delegation alone sufficient for DNS-01 validation.
 
 ### Replacing a Certificate Not Managed by Acmebot
 

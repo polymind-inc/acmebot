@@ -38,6 +38,7 @@ internal static class CertificateExtensions
             Name = certificate.Name,
             DnsNames = dnsNames is { Length: > 0 } ? dnsNames : [certificate.Policy.Subject[3..]],
             DnsProviderName = metadata?.DnsProvider ?? "",
+            UsePrevalidatedAuthorization = metadata?.UsePrevalidatedAuthorization ?? false,
             CreatedOn = certificate.Properties.CreatedOn.GetValueOrDefault(DateTimeOffset.MinValue),
             ExpiresOn = certificate.Properties.ExpiresOn.GetValueOrDefault(DateTimeOffset.MaxValue),
             X509Thumbprint = Convert.ToHexString(certificate.Properties.X509Thumbprint),
@@ -63,6 +64,7 @@ internal static class CertificateExtensions
             CertificateName = certificate.Name,
             DnsNames = dnsNames.Length > 0 ? dnsNames : [certificate.Policy.Subject[3..]],
             DnsProviderName = metadata?.DnsProvider ?? "",
+            UsePrevalidatedAuthorization = metadata?.UsePrevalidatedAuthorization ?? false,
             KeyType = certificate.Policy.KeyType.GetValueOrDefault(CertificateKeyType.Rsa).ToString(),
             KeySize = certificate.Policy.KeySize,
             KeyCurveName = certificate.Policy.KeyCurveName?.ToString(),
@@ -95,6 +97,7 @@ internal static class CertificateExtensions
         {
             Endpoint = endpoint.Host,
             DnsProvider = certificatePolicyItem.DnsProviderName,
+            UsePrevalidatedAuthorization = certificatePolicyItem.UsePrevalidatedAuthorization,
             DnsAlias = string.IsNullOrEmpty(certificatePolicyItem.DnsAlias) ? null : certificatePolicyItem.DnsAlias,
             Profile = string.IsNullOrWhiteSpace(certificatePolicyItem.Profile) ? null : certificatePolicyItem.Profile.Trim()
         };
@@ -112,6 +115,24 @@ internal static class CertificateExtensions
         var metadata = tags.GetAcmebotMetadata() ?? new AcmebotCertificateMetadata();
 
         metadata.CertificateId = certificateId;
+
+        tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
+    }
+
+    public static void SetAuthorizationSettings(this IDictionary<string, string> tags, bool usePrevalidatedAuthorization, string? dnsProviderName, string? dnsAlias)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+
+        var metadata = tags.GetAcmebotMetadata() ?? new AcmebotCertificateMetadata();
+
+        metadata.UsePrevalidatedAuthorization = usePrevalidatedAuthorization;
+
+        // A missing provider means a legacy merge input, while an empty provider deliberately clears it.
+        if (dnsProviderName is not null)
+        {
+            metadata.DnsProvider = dnsProviderName;
+            metadata.DnsAlias = string.IsNullOrEmpty(dnsAlias) ? null : dnsAlias;
+        }
 
         tags[AcmebotTagKey] = JsonSerializer.Serialize(metadata, s_jsonOptions);
     }
@@ -190,10 +211,14 @@ internal static class CertificateExtensions
         public string? Endpoint { get; init; }
 
         [JsonPropertyName("dnsProvider")]
-        public string? DnsProvider { get; init; }
+        public string? DnsProvider { get; set; }
+
+        [JsonPropertyName("usePrevalidatedAuthorization")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool UsePrevalidatedAuthorization { get; set; }
 
         [JsonPropertyName("dnsAlias")]
-        public string? DnsAlias { get; init; }
+        public string? DnsAlias { get; set; }
 
         [JsonPropertyName("profile")]
         public string? Profile { get; init; }
