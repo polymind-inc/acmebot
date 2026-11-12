@@ -35,7 +35,12 @@ public partial class DnsChallengeActivities(
 
         foreach (var dnsName in certificatePolicyItem.AliasedDnsNames)
         {
-            var zone = zones.FindDnsZone(dnsName);
+            var identifier = dnsName.StartsWith("*.", StringComparison.Ordinal) ? dnsName[2..] : dnsName;
+            var challengeRecordName = $"_acme-challenge.{identifier}";
+
+            // An explicitly NS-delegated challenge zone is valid even when
+            // the parent domain is not hosted by this DNS provider.
+            var zone = zones.FindDnsZone(dnsName) ?? zones.FindDnsZone(challengeRecordName);
 
             if (zone is null)
             {
@@ -47,8 +52,7 @@ public partial class DnsChallengeActivities(
 
             // Resolve the record separately: an _acme-challenge child zone can be more specific
             // than the zone used for the existing domain and name server precondition checks.
-            var identifier = dnsName.StartsWith("*.", StringComparison.Ordinal) ? dnsName[2..] : dnsName;
-            recordZones.Add(zones.FindDnsZone($"_acme-challenge.{identifier}") ?? zone);
+            recordZones.Add(zones.FindDnsZone(challengeRecordName) ?? zone);
         }
 
         if (notFoundZoneDnsNames.Count > 0)
@@ -141,6 +145,17 @@ public partial class DnsChallengeActivities(
                 }
 
                 var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
+
+                if (string.IsNullOrEmpty(acmeDnsRecordName))
+                {
+                    // At the delegated zone apex, do not destroy unrelated TXT values.
+                    // This conservative guard requires an empty apex before issuance.
+                    var existingRecords = await lookupClient.QueryAsync(dnsRecordName, QueryType.TXT);
+                    if (existingRecords.Answers.OfType<DnsClient.Protocol.TxtRecord>().Any())
+                    {
+                        throw new PreconditionException($"TXT record '{dnsRecordName}' already contains values. Refusing to replace an existing delegated-zone apex record set.");
+                    }
+                }
 
                 await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
 

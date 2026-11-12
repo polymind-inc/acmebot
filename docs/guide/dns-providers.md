@@ -1,4 +1,4 @@
----
+﻿---
 description: "Configure ACME DNS-01 validation for Acmebot with Azure DNS, Cloudflare, Route 53, Google Cloud DNS, and 15+ supported DNS providers."
 ---
 
@@ -86,6 +86,21 @@ Acmebot__AzureDns__ManagedIdentityClientId=<user-assigned-client-id>
 Assign the identity a role that can list DNS zones and manage TXT records, such as `DNS Zone Contributor`, on the DNS zone or a tightly scoped resource group.
 
 If the DNS zone is in a different subscription than the Function App, set `SubscriptionId` to the DNS zone subscription and assign the identity in that subscription.
+
+### NS-delegated Azure DNS challenge zones
+
+You can issue a certificate without managing its parent DNS zone when its `_acme-challenge` name is delegated with **NS records** to a separate public Azure DNS zone. For example:
+
+- The certificate identifiers are `example.org`, `*.example.org`, or both.
+- The parent `example.org` zone is managed externally.
+- The DNS administrator delegates `_acme-challenge.example.org` to the Azure DNS zone's authoritative name servers.
+- The Azure DNS zone is named `_acme-challenge.example.org`; its ACME TXT challenge lives at the zone apex (`@`).
+
+In the **Issue Certificate** dashboard, select **NS delegation**, select the existing `_acme-challenge.example.org` Azure DNS zone, and add the domain and/or wildcard. This does not require a CNAME alias or access to the parent zone. Acmebot checks the delegated name servers and uses the selected DNS provider to write and clean up TXT records at `@`.
+
+**Important:** Existing TXT records at the delegated zone apex block issuance, because Acmebot replaces/deletes the entire TXT record set during challenge processing. Remove obsolete TXT values before issuing, and do not use that apex for other TXT records or simultaneous independent certificate automation. This check is a safety guard, not concurrency control. Renewals use the same DNS-01 path, so the apex must be available for renewal too.
+
+The NS delegation mode is intended for root and wildcard certificates of the selected delegated zone. Other requested names require their corresponding challenge zones.
 
 ## Azure Private DNS
 
