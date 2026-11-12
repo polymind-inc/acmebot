@@ -23,6 +23,28 @@ namespace Acmebot.App.Tests;
 
 public sealed class DnsChallengeActivitiesTests
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task Precondition_WithMissingDnsProvider_ReportsCertificateAndRecoverySteps(string? dnsProviderName)
+    {
+        using var handler = new AuthorizationHandler();
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider();
+        var activities = CreateActivities(factory, provider);
+        var policy = CreatePolicy(["example.com"]);
+        policy.DnsProviderName = dnsProviderName!;
+
+        var exception = await Assert.ThrowsAsync<PreconditionException>(() => activities.Dns01Precondition(policy));
+
+        Assert.Contains($"'{policy.CertificateName}' has no DNS provider recorded", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("DnsProvider tag in Key Vault", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("retry renewal", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, provider.ListCount);
+    }
+
     [Fact]
     public async Task AuthorizationAndCleanup_AcrossWorkers_EnumerateZonesOnlyDuringPrecondition()
     {
