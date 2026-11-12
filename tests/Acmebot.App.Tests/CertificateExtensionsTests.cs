@@ -51,6 +51,31 @@ public sealed class CertificateExtensionsTests
     }
 
     [Fact]
+    public void ToCertificatePolicyItem_WithRepairedLegacyProvider_PreservesSettingsInNewMetadata()
+    {
+        var tags = new Dictionary<string, string>
+        {
+            ["Issuer"] = "Acmebot",
+            ["Endpoint"] = "https://acme-v02.api.letsencrypt.org/",
+            ["DnsAlias"] = "validation.example.net",
+            ["environment"] = "production"
+        };
+        Assert.Empty(CreateCertificate(tags).ToCertificatePolicyItem().DnsProviderName);
+
+        tags["DnsProvider"] = "Azure DNS";
+        var policy = CreateCertificate(tags).ToCertificatePolicyItem();
+        var renewedTags = policy.ToCertificateTags(s_endpoint);
+        var renewedPolicy = CreateCertificate(renewedTags).ToCertificatePolicyItem();
+
+        Assert.Equal("Azure DNS", renewedPolicy.DnsProviderName);
+        Assert.Equal("validation.example.net", renewedPolicy.DnsAlias);
+        Assert.Equal("production", renewedPolicy.Tags!["environment"]);
+        Assert.False(renewedPolicy.UsePrevalidatedAuthorization);
+        Assert.True(renewedTags.ContainsKey("Acmebot"));
+        Assert.False(renewedTags.ContainsKey("DnsProvider"));
+    }
+
+    [Fact]
     public void IsIssuedByAcmebot_WithMetadataTag_ReturnsTrue()
     {
         var properties = CreateCertificateProperties(("Acmebot", """{"endpoint":"acme-v02.api.letsencrypt.org"}"""));

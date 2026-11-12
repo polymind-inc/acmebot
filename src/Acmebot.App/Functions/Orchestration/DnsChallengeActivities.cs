@@ -22,6 +22,11 @@ public partial class DnsChallengeActivities(
     [Function(nameof(Dns01Precondition))]
     public async Task<IReadOnlyList<DnsZone>> Dns01Precondition([ActivityTrigger] CertificatePolicyItem certificatePolicyItem)
     {
+        if (string.IsNullOrWhiteSpace(certificatePolicyItem.DnsProviderName))
+        {
+            throw new PreconditionException($"The certificate '{certificatePolicyItem.CertificateName}' has no DNS provider recorded. Set the DNS provider in the certificate's Acmebot metadata or, for a legacy certificate, add the DnsProvider tag in Key Vault, then retry renewal. Use the exact provider name shown in the dashboard.");
+        }
+
         var zones = await dnsZoneQueryService.ListZonesAsync(certificatePolicyItem.DnsProviderName);
 
         var foundZones = new List<DnsZone>();

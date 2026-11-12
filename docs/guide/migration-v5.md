@@ -47,6 +47,7 @@ Before changing the app:
 3. Export the current app settings and store the file securely because it may include DNS provider credentials.
 4. Confirm the configured managed identities still have Key Vault and DNS provider permissions.
 5. Keep the dashboard authentication configuration in place.
+6. Check that existing certificates record a DNS provider. For certificates with legacy tags, confirm the `DnsProvider` tag is set. See [Certificates Without a DNS Provider](#certificates-without-a-dns-provider) if it is missing.
 
 You can export the current app settings with Azure CLI:
 
@@ -161,6 +162,20 @@ After the Function App starts:
 4. Load DNS zones from the dashboard.
 5. Renew a low-risk certificate or issue a test certificate from a staging ACME endpoint.
 6. Check Application Insights for startup errors, configuration validation failures, and DNS or Key Vault authorization failures.
+
+## Certificates Without a DNS Provider
+
+Some older v4 certificates may have only the `Issuer=Acmebot` and `Endpoint` tags, with no `DnsProvider` tag. Earlier versions could infer the provider during renewal and save it, so certificates that renewed through that path already have a provider recorded. Certificates that still lack it need a metadata update before v5 can renew them.
+
+v5 requires an explicit DNS provider for DNS-01 validation, even when only one provider is configured. If renewal reports that a certificate has no DNS provider recorded:
+
+1. Open the Acmebot dashboard and identify the exact provider name that owns the validation zone, such as `Azure DNS`.
+2. In Azure Portal, open the Key Vault, select **Certificates**, and open the affected certificate's current version.
+3. If the certificate uses legacy `Issuer` and `Endpoint` tags and has no `Acmebot` tag, add `DnsProvider` with the exact provider name. Preserve all existing tags, including `Issuer`, `Endpoint`, and any `DnsAlias` or custom tags.
+4. If the certificate has an `Acmebot` JSON tag, set its `dnsProvider` property instead, preserving the other JSON properties and tags. The `Acmebot` tag takes precedence over legacy tags.
+5. Save the tags and retry renewal from the dashboard.
+
+This updates metadata on the existing certificate; reissuing it first is unnecessary. After successful renewal, v5 stores the provider in its `Acmebot` JSON tag for future renewals. Certificates that explicitly use prevalidated authorization do not need a DNS provider.
 
 ## Roll Back
 
