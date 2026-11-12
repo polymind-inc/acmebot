@@ -38,6 +38,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | Cloudflare | `Acmebot__Cloudflare` | `ApiToken` | 10 seconds |
 | Custom DNS | `Acmebot__CustomDns` | `Endpoint`, `ApiKey` | 180 seconds (configurable via `PropagationSeconds`) |
 | DNS Made Easy | `Acmebot__DnsMadeEasy` | `ApiKey`, `SecretKey` | 30 seconds |
+| EasyDNS | `Acmebot__EasyDns` | `ApiToken`, `ApiKey` | 60 seconds |
 | Gandi LiveDNS | `Acmebot__GandiLiveDns` | `ApiKey` | 300 seconds |
 | GoDaddy | `Acmebot__GoDaddy` | `ApiKey`, `ApiSecret` | 600 seconds |
 | Google Cloud DNS | `Acmebot__GoogleDns` | `KeyFile64` or `ProjectId`, `PoolProvider`, `ServiceAccount` | 60 seconds |
@@ -179,6 +180,20 @@ Use DNS Made Easy API credentials that can list managed domains and edit TXT rec
 ```text
 Acmebot__DnsMadeEasy__ApiKey=<api-key>
 Acmebot__DnsMadeEasy__SecretKey=<secret-key>
+```
+
+## EasyDNS
+
+Use EasyDNS REST API credentials that can list domains and manage DNS records.
+
+| Option | Description |
+| --- | --- |
+| `ApiToken` | EasyDNS API token. |
+| `ApiKey` | EasyDNS API key. Acmebot sends `ApiToken:ApiKey` with HTTP Basic authentication. |
+
+```text
+Acmebot__EasyDns__ApiToken=<api-token>
+Acmebot__EasyDns__ApiKey=<api-key>
 ```
 
 ## Gandi LiveDNS

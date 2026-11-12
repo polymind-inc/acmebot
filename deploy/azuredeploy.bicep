@@ -141,6 +141,7 @@ var azurePrivateDnsProvider = dnsProvider.?azurePrivateDns ?? {}
 var cloudflareDnsProvider = dnsProvider.?cloudflare ?? {}
 var customDnsProvider = dnsProvider.?customDns ?? {}
 var dnsMadeEasyProvider = dnsProvider.?dnsMadeEasy ?? {}
+var easyDnsProvider = dnsProvider.?easyDns ?? {}
 var gandiLiveDnsProvider = dnsProvider.?gandiLiveDns ?? {}
 var goDaddyProvider = dnsProvider.?goDaddy ?? {}
 var googleDnsProvider = dnsProvider.?googleDns ?? {}
@@ -222,6 +223,15 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
   {
     name: 'Acmebot__DnsMadeEasy__SecretKey'
     value: dnsMadeEasyProvider.?secretKey ?? ''
+  }
+] : dnsProviderType == 'EasyDns' ? [
+  {
+    name: 'Acmebot__EasyDns__ApiToken'
+    value: easyDnsProvider.?apiToken ?? ''
+  }
+  {
+    name: 'Acmebot__EasyDns__ApiKey'
+    value: easyDnsProvider.?apiKey ?? ''
   }
 ] : dnsProviderType == 'GandiLiveDns' ? [
   {

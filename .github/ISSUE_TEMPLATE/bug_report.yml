@@ -46,6 +46,7 @@ body:
         - Cloudflare
         - Custom DNS
         - DNS Made Easy
+        - EasyDNS
         - Gandi LiveDNS
         - GoDaddy
         - Google Cloud DNS

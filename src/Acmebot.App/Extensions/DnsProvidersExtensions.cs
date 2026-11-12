@@ -34,6 +34,7 @@ internal static class DnsProvidersExtensions
             dnsProviders.TryAdd(options.Cloudflare, o => new CloudflareProvider(o));
             dnsProviders.TryAdd(options.CustomDns, o => new CustomDnsProvider(o));
             dnsProviders.TryAdd(options.DnsMadeEasy, o => new DnsMadeEasyProvider(o));
+            dnsProviders.TryAdd(options.EasyDns, o => new EasyDnsProvider(o));
             dnsProviders.TryAdd(options.GandiLiveDns, o => new GandiLiveDnsProvider(o));
             dnsProviders.TryAdd(options.GoDaddy, o => new GoDaddyProvider(o));
             dnsProviders.TryAdd(options.GoogleDns, o => new GoogleDnsProvider(
