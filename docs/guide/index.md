@@ -87,7 +87,7 @@ Certificates live in Key Vault, so Azure services that consume a Key Vault certi
 
 ### DNS Providers
 
-Built-in providers are Azure DNS, Azure Private DNS, Cloudflare, Amazon Route 53, Google Cloud DNS, GoDaddy, Akamai Edge DNS, DNS Made Easy, Gandi LiveDNS, IONOS DNS, OVH, PowerDNS, Regfish, TransIP DNS, UnitedDomains, and a custom HTTP provider.
+Built-in providers are Azure DNS, Azure Private DNS, Cloudflare, Amazon Route 53, Google Cloud DNS, GoDaddy, Akamai Edge DNS, DNS Made Easy, EasyDNS, Gandi LiveDNS, IONOS DNS, OVH, PowerDNS, Regfish, TransIP DNS, UnitedDomains, and a custom HTTP provider.
 
 ## Before You Deploy
 

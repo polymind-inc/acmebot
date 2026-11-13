@@ -434,6 +434,11 @@
                     "value": "DnsMadeEasy"
                   },
                   {
+                    "label": "EasyDNS",
+                    "description": "Use EasyDNS with an API token and key.",
+                    "value": "EasyDns"
+                  },
+                  {
                     "label": "Gandi LiveDNS",
                     "description": "Use Gandi LiveDNS with an API key.",
                     "value": "GandiLiveDns"
@@ -819,6 +824,46 @@
                 }
               ],
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), true, false)]"
+            },
+            {
+              "name": "easyDnsSection",
+              "type": "Microsoft.Common.Section",
+              "label": "EasyDNS",
+              "elements": [
+                {
+                  "name": "apiToken",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API token",
+                    "confirmPassword": "Confirm API token"
+                  },
+                  "toolTip": "EasyDNS API token.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "API key",
+                    "confirmPassword": "Confirm API key"
+                  },
+                  "toolTip": "EasyDNS API key.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'EasyDns'), true, false)]"
             },
             {
               "name": "gandiLiveDnsSection",
@@ -1414,6 +1459,10 @@
           "dnsMadeEasy": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), steps('dnsProviderStep').dnsMadeEasySection.apiKey, '')]",
             "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'DnsMadeEasy'), steps('dnsProviderStep').dnsMadeEasySection.secretKey, '')]"
+          },
+          "easyDns": {
+            "apiToken": "[if(equals(steps('dnsProviderStep').providerType, 'EasyDns'), steps('dnsProviderStep').easyDnsSection.apiToken, '')]",
+            "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'EasyDns'), steps('dnsProviderStep').easyDnsSection.apiKey, '')]"
           },
           "gandiLiveDns": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'GandiLiveDns'), steps('dnsProviderStep').gandiLiveDnsSection.apiKey, '')]"
