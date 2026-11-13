@@ -55,7 +55,7 @@ public class EasyDnsProvider : IDnsProvider
     {
         var records = await _easyDnsClient.ListRecordsAsync(zone.Name, cancellationToken);
 
-        var recordsToDelete = records.Where(x => x.Host == relativeRecordName && x.Type == "TXT");
+        var recordsToDelete = records.Where(x => string.Equals(x.Host, relativeRecordName, StringComparison.OrdinalIgnoreCase) && x.Type == "TXT");
 
         foreach (var record in recordsToDelete)
         {
