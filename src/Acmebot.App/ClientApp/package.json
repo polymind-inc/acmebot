@@ -24,11 +24,11 @@
     "@types/node": "26.6.6",
     "@vitejs/plugin-vue": "6.0.10",
     "eslint": "10.14.0",
-    "eslint-plugin-vue": "10.12.0",
+    "eslint-plugin-vue": "10.12.1",
     "globals": "17.14.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1",
-    "vite": "8.3.6",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.8",
     "vue-eslint-parser": "10.4.2",
     "vue-tsc": "3.3.14"
   }
