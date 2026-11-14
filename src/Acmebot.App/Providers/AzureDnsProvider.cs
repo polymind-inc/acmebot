@@ -34,6 +34,8 @@ public class AzureDnsProvider(AzureDnsOptions options, ArmEnvironment environmen
 
     public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
+        relativeRecordName = ToAzureRelativeRecordName(relativeRecordName);
+
         // TXT レコードに値をセットする
         var txtRecordData = new DnsTxtRecordData
         {
@@ -52,8 +54,14 @@ public class AzureDnsProvider(AzureDnsOptions options, ArmEnvironment environmen
         return dnsTxtRecords.CreateOrUpdateAsync(WaitUntil.Completed, relativeRecordName, txtRecordData, cancellationToken: cancellationToken);
     }
 
+    // ARM DNS TXT record names use '@' for the zone apex.
+    internal static string ToAzureRelativeRecordName(string relativeRecordName)
+        => string.IsNullOrEmpty(relativeRecordName) ? "@" : relativeRecordName;
+
     public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
+        relativeRecordName = ToAzureRelativeRecordName(relativeRecordName);
+
         var dnsZoneResource = _armClient.GetDnsZoneResource(new ResourceIdentifier(zone.Id));
 
         try

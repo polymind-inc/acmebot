@@ -7,6 +7,15 @@ namespace Acmebot.App.Tests;
 public sealed class DnsRecordNameTests
 {
     [Theory]
+    [InlineData("", "@")]
+    [InlineData("_acme-challenge", "_acme-challenge")]
+    [InlineData("_acme-challenge.www", "_acme-challenge.www")]
+    public void AzureDnsTxtRecord_UsesAtSignForZoneApex(string relativeRecordName, string expected)
+    {
+        Assert.Equal(expected, AzureDnsProvider.ToAzureRelativeRecordName(relativeRecordName));
+    }
+
+    [Theory]
     [InlineData("example.com", "_acme-challenge", "_acme-challenge.example.com")]
     [InlineData("example.com.", "_acme-challenge", "_acme-challenge.example.com")]
     [InlineData("example.com", "_acme-challenge.", "_acme-challenge.example.com")]

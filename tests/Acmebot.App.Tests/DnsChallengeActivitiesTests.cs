@@ -138,6 +138,81 @@ public sealed class DnsChallengeActivitiesTests
     }
 
     [Theory]
+    [InlineData("example.com")]
+    [InlineData("*.example.com")]
+    public async Task Precondition_WithOnlyNsDelegatedChallengeZone_UsesChallengeZone(string dnsName)
+    {
+        using var handler = new AuthorizationHandler();
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com"
+        };
+        var activities = CreateActivities(factory, provider);
+
+        var zones = await activities.Dns01Precondition(CreatePolicy([dnsName]));
+
+        var zone = Assert.Single(zones);
+        Assert.Equal("_acme-challenge.example.com", zone.Name);
+        Assert.Equal("challenge-zone", zone.Id);
+        Assert.Equal(1, provider.ListCount);
+    }
+
+    [Fact]
+    public async Task Authorization_WithOnlyNsDelegatedChallengeZone_WritesAtApexAndCleansUp()
+    {
+        using var handler = new AuthorizationHandler();
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com"
+        };
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name));
+        var activities = CreateActivities(factory, lookupClient, provider);
+        var token = TestContext.Current.CancellationToken;
+
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com", "*.example.com"]));
+        var (challenges, _) = await activities.Dns01Authorization((provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2)], RoundTrip(zones)), token);
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), token);
+
+        var created = Assert.Single(provider.Created);
+        Assert.Equal(("challenge-zone", ""), (created.ZoneId, created.RecordName));
+        Assert.Equal(2, created.Values.Length);
+        Assert.Equal(2, challenges.Count);
+        Assert.Equal(new[] { "_acme-challenge.example.com" }, lookupClient.Queries);
+        Assert.Equal(2, provider.Deleted.Count);
+        Assert.All(provider.Deleted, record => Assert.Equal(("challenge-zone", "_acme-challenge.example.com", ""), record));
+    }
+
+    [Fact]
+    public async Task Authorization_WhenNsDelegatedApexHasTxt_DoesNotOverwriteIt()
+    {
+        using var handler = new AuthorizationHandler();
+        using var httpClient = new HttpClient(handler);
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com"
+        };
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name, "pre-existing-value"));
+        var activities = CreateActivities(factory, lookupClient, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var exception = await Assert.ThrowsAsync<PreconditionException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken));
+
+        Assert.Contains("Refusing to replace an existing delegated-zone apex record set", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(new[] { "_acme-challenge.example.com" }, lookupClient.Queries);
+        Assert.Empty(provider.Deleted);
+        Assert.Empty(provider.Created);
+    }
+
+    [Theory]
     [InlineData("example.com", null, "_acme-challenge.example.com")]
     [InlineData("*.example.com", null, "_acme-challenge.example.com")]
     [InlineData("example.com", "validation.example.com", "_acme-challenge.validation.example.com")]
@@ -147,7 +222,9 @@ public sealed class DnsChallengeActivitiesTests
         using var httpClient = new HttpClient(handler);
         using var factory = CreateFactory(httpClient);
         var provider = new RecordingProvider { ChallengeZone = challengeZone };
-        var activities = CreateActivities(factory, provider);
+        // The delegated apex safety check must not query live public DNS in a unit test.
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name));
+        var activities = CreateActivities(factory, lookupClient, provider);
         var zones = await activities.Dns01Precondition(CreatePolicy([dnsName], dnsAlias));
 
         var (challenges, _) = await activities.Dns01Authorization((provider.Name, dnsAlias, [AuthorizationUrl(1)], RoundTrip(zones)), TestContext.Current.CancellationToken);
@@ -160,6 +237,7 @@ public sealed class DnsChallengeActivitiesTests
         Assert.Equal("challenge-zone", created.ZoneId);
         Assert.Equal("", created.RecordName);
         Assert.All(provider.Deleted, record => Assert.Equal(("challenge-zone", challengeZone, ""), record));
+        Assert.Equal(new[] { challengeZone }, lookupClient.Queries);
         Assert.Equal(1, provider.ListCount);
     }
 
@@ -546,8 +624,8 @@ public sealed class DnsChallengeActivitiesTests
     private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, params IDnsProvider[] providers)
         => new(new LookupClient(), factory, new DnsZoneQueryService(providers, NullLogger<DnsZoneQueryService>.Instance), NullLogger<DnsChallengeActivities>.Instance);
 
-    private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, ILookupClient lookupClient)
-        => new(lookupClient, factory, new DnsZoneQueryService([], NullLogger<DnsZoneQueryService>.Instance), NullLogger<DnsChallengeActivities>.Instance);
+    private static DnsChallengeActivities CreateActivities(AcmeClientFactory factory, ILookupClient lookupClient, params IDnsProvider[] providers)
+        => new(lookupClient, factory, new DnsZoneQueryService(providers, NullLogger<DnsZoneQueryService>.Instance), NullLogger<DnsChallengeActivities>.Instance);
 
     private static AcmeClientFactory CreateFactory(HttpClient httpClient)
     {
@@ -564,6 +642,7 @@ public sealed class DnsChallengeActivitiesTests
     {
         public string Name => name;
         public TimeSpan PropagationDelay => TimeSpan.FromSeconds(60);
+        public bool IncludeParentZone { get; init; } = true;
         public string? ChallengeZone { get; init; }
         public IReadOnlyList<DnsZone> AdditionalZones { get; init; } = [];
         public Action<string, CancellationToken>? OnCreate { get; init; }
@@ -577,7 +656,9 @@ public sealed class DnsChallengeActivitiesTests
         {
             ListCount++;
             Assert.Equal(1, ListCount);
-            var zones = new List<DnsZone> { new() { Id = "zone-1", Name = "example.com" } };
+            var zones = IncludeParentZone
+                ? new List<DnsZone> { new() { Id = "zone-1", Name = "example.com" } }
+                : new List<DnsZone>();
             zones.AddRange(AdditionalZones);
             if (ChallengeZone is not null)
             {
