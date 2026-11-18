@@ -96,11 +96,21 @@ You can issue a certificate without managing its parent DNS zone when its `_acme
 - The DNS administrator delegates `_acme-challenge.example.org` to the Azure DNS zone's authoritative name servers.
 - The Azure DNS zone is named `_acme-challenge.example.org`; its ACME TXT challenge lives at the zone apex (`@`).
 
-In the **Issue Certificate** dashboard, select **NS delegation**, select the existing `_acme-challenge.example.org` Azure DNS zone, and add the domain and/or wildcard. This does not require a CNAME alias or access to the parent zone. Acmebot checks the delegated name servers and uses the selected DNS provider to write and clean up TXT records at `@`.
+Issue the certificate using the **existing CLI or HTTP API**, passing the full DNS identifiers and selecting `Azure DNS` as the provider. Do not set a DNS alias for NS delegation:
 
-**Important:** Existing TXT records at the delegated zone apex block issuance, because Acmebot replaces/deletes the entire TXT record set during challenge processing. Remove obsolete TXT values before issuing, and do not use that apex for other TXT records or simultaneous independent certificate automation. This check is a safety guard, not concurrency control. Renewals use the same DNS-01 path, so the apex must be available for renewal too.
+```bash
+acmebot certificate issue --name wildcard-example-org \
+  --dns-name example.org --dns-name "*.example.org" \
+  --dns-provider "Azure DNS"
+```
 
-The NS delegation mode is intended for root and wildcard certificates of the selected delegated zone. Other requested names require their corresponding challenge zones.
+The API accepts the same request through its existing issuance endpoint: specify `dnsNames`, `certificateName`, and `dnsProviderName: "Azure DNS"` without `dnsAlias`. Acmebot selects the most-specific zone for each actual `_acme-challenge` record, validates the target zone's name servers when available, and writes TXT records at the Azure DNS apex (`@`). No new validation mode or CLI argument is required.
+
+**Web UI limitation:** The dashboard's Issue Certificate form still requires names under its selected DNS zone and does not offer NS-delegation issuance. Create these certificates using the CLI or API instead. Existing managed certificates remain available through the usual certificate listing and renewal workflows.
+
+**Important:** For Azure DNS, delegated-zone apex TXT records are created only when no record set exists (using an atomic `If-None-Match: *` condition). Cleanup only removes the record if its values still match this challenge, using its ETag to prevent concurrent changes. An existing TXT record at `@` blocks issuance rather than being overwritten, so do not share this apex with unrelated TXT data or independent automation. Renewals require that no existing TXT record remains from an earlier operation; a failed renewal can leave records requiring investigation.
+
+A delegated `_acme-challenge.example.org` zone covers the certificate identifiers `example.org` and `*.example.org`. Other identifiers require their own corresponding challenge-zone delegation.
 
 ## Azure Private DNS
 

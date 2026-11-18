@@ -9,7 +9,6 @@ import { createCertificateName, createDelegatedDnsAlias } from '@/utils/dnsNames
 import AdvancedCertificateOptions from './AdvancedCertificateOptions.vue';
 import DelegatedDnsNameEditor from './DelegatedDnsNameEditor.vue';
 import ManagedDnsNameEditor from './ManagedDnsNameEditor.vue';
-import NsDelegatedDnsNameEditor from './NsDelegatedDnsNameEditor.vue';
 import SearchableZoneSelect from './SearchableZoneSelect.vue';
 
 const props = defineProps<{
@@ -53,14 +52,6 @@ const issueModeOptions = {
     useSelectedZoneProvider: true,
     useGeneratedDnsAlias: true,
   },
-  nsDelegated: {
-    editor: NsDelegatedDnsNameEditor,
-    zoneLabel: 'NS-delegated challenge zone',
-    zoneStepLabel: 'Challenge zone',
-    emptyStatusLabel: 'Select zone',
-    useSelectedZoneProvider: true,
-    useGeneratedDnsAlias: false,
-  },
 } as const;
 
 type IssueMode = keyof typeof issueModeOptions;
@@ -101,16 +92,6 @@ const submitValidationMessage = computed(() => {
     return 'Add at least one DNS name.';
   }
 
-  if (form.issueMode === 'nsDelegated') {
-    const zoneName = selectedZone.value?.name.replace(/\.$/, '').toLowerCase() ?? '';
-    if (!zoneName.startsWith('_acme-challenge.') || zoneName.length <= '_acme-challenge.'.length) {
-      return 'Select an existing _acme-challenge.<domain> DNS zone.';
-    }
-    const domain = zoneName.slice('_acme-challenge.'.length);
-    if (form.dnsNames.some((name) => name.toLowerCase() !== domain && name.toLowerCase() !== `*.${domain}`)) {
-      return `This zone can validate only ${domain} and *.${domain}.`;
-    }
-  }
   return certificateNameError.value || keyOptionError.value || tagError.value;
 });
 const canSubmit = computed(() => !props.sending && submitValidationMessage.value === '');
@@ -164,10 +145,6 @@ watch(
 watch(
   selectedZone,
   (zone) => {
-    if (form.issueMode === 'nsDelegated') {
-      // Clear names selected for the previous delegation.
-      form.dnsNames = [];
-    }
     if (activeIssueMode.value.useSelectedZoneProvider) {
       form.dnsProviderName = zone?.dnsProviderName ?? '';
     } else if (form.dnsNames.length === 0) {
@@ -448,13 +425,6 @@ function submit(): void {
                   @click="form.issueMode = 'delegated'"
                 >
                   CNAME alias
-                </button>
-                <button
-                  type="button"
-                  :class="{ 'is-selected': form.issueMode === 'nsDelegated' }"
-                  @click="form.issueMode = 'nsDelegated'"
-                >
-                  NS delegation
                 </button>
               </div>
             </div>

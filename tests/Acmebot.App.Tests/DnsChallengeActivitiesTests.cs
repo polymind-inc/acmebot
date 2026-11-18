@@ -96,13 +96,14 @@ public sealed class DnsChallengeActivitiesTests
                 new() { Id = "unused-zone", Name = "example.org" }
             ]
         };
-        var activities = CreateActivities(factory, provider);
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name));
+        var activities = CreateActivities(factory, lookupClient, provider);
         var token = TestContext.Current.CancellationToken;
 
         var prepared = await activities.Dns01Precondition(CreatePolicy(["example.com", "*.example.com", "www.example.net", "*.staging.example.net"]));
         var zones = RoundTrip(prepared);
         var (challenges, _) = await activities.Dns01Authorization((provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2), AuthorizationUrl(3), AuthorizationUrl(4)], zones), token);
-        var cleanupProvider = new RecordingProvider();
+        var cleanupProvider = new RecordingProvider { ApexRecords = provider.ApexRecords, OwnedApexRecordSets = provider.OwnedApexRecordSets };
         await CreateActivities(factory, cleanupProvider).CleanupDnsChallenge((provider.Name, RoundTrip(challenges), RoundTrip(zones)), token);
 
         Assert.Equal(new[] { "zone-1", "zone-2", "challenge-zone" }, zones.Select(zone => zone.Id));
@@ -132,7 +133,9 @@ public sealed class DnsChallengeActivitiesTests
             ("zone-2", "example.net", "_acme-challenge.www"),
             ("challenge-zone", "_acme-challenge.staging.example.net", "")
         }, cleanupProvider.Deleted);
-        Assert.Equal(provider.Deleted, cleanupProvider.Deleted);
+        Assert.Equal(new[] { "_acme-challenge", "_acme-challenge.www" }, provider.Deleted.Select(record => record.RecordName));
+        Assert.Empty(provider.ApexRecords);
+        Assert.Empty(lookupClient.Queries);
         Assert.Equal(1, provider.ListCount);
         Assert.Equal(0, cleanupProvider.ListCount);
     }
@@ -161,6 +164,28 @@ public sealed class DnsChallengeActivitiesTests
     }
 
     [Fact]
+    public async Task Precondition_WithParentAndDelegatedZones_ValidatesNameserversOfActualChallengeZone()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            ChallengeZone = "_acme-challenge.example.com",
+            ChallengeNameServers = ["ns1.example.net"]
+        };
+        // Empty NS answers simulate a broken delegation. The precondition must
+        // check the child challenge zone rather than the externally hosted parent.
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name), allowNsQueries: true);
+        var activities = CreateActivities(factory, lookupClient, provider);
+
+        var exception = await Assert.ThrowsAsync<PreconditionException>(() =>
+            activities.Dns01Precondition(CreatePolicy(["example.com", "*.example.com"])));
+
+        Assert.Contains("_acme-challenge.example.com", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(["_acme-challenge.example.com"], lookupClient.Queries);
+    }
+
+    [Fact]
     public async Task Authorization_WithOnlyNsDelegatedChallengeZone_WritesAtApexAndCleansUp()
     {
         using var handler = new AuthorizationHandler();
@@ -183,13 +208,14 @@ public sealed class DnsChallengeActivitiesTests
         Assert.Equal(("challenge-zone", ""), (created.ZoneId, created.RecordName));
         Assert.Equal(2, created.Values.Length);
         Assert.Equal(2, challenges.Count);
-        Assert.Equal(new[] { "_acme-challenge.example.com" }, lookupClient.Queries);
-        Assert.Equal(2, provider.Deleted.Count);
+        Assert.Empty(lookupClient.Queries);
+        Assert.Single(provider.Deleted);
+        Assert.Empty(provider.ApexRecords);
         Assert.All(provider.Deleted, record => Assert.Equal(("challenge-zone", "_acme-challenge.example.com", ""), record));
     }
 
     [Fact]
-    public async Task Authorization_WhenNsDelegatedApexHasTxt_DoesNotOverwriteIt()
+    public async Task Authorization_WhenRecursiveDnsIsEmptyButAzureApexHasTxt_PreservesExistingValues()
     {
         using var handler = new AuthorizationHandler();
         using var httpClient = new HttpClient(handler);
@@ -197,19 +223,172 @@ public sealed class DnsChallengeActivitiesTests
         var provider = new RecordingProvider
         {
             IncludeParentZone = false,
-            ChallengeZone = "_acme-challenge.example.com"
+            ChallengeZone = "_acme-challenge.example.com",
+            ApexRecords = new Dictionary<string, string[]> { ["challenge-zone"] = ["pre-existing-value"] }
         };
-        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name, "pre-existing-value"));
+        // A stale negative recursive answer must never override authoritative Azure DNS state.
+        var lookupClient = new RecordingLookupClient(name => new TxtQueryResponse(name));
         var activities = CreateActivities(factory, lookupClient, provider);
         var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
 
-        var exception = await Assert.ThrowsAsync<PreconditionException>(() => activities.Dns01Authorization(
+        var (challenges, _) = await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, provider.ApexRecords["challenge-zone"].Length);
+        Assert.Contains("pre-existing-value", provider.ApexRecords["challenge-zone"]);
+        Assert.Contains(challenges[0].DnsRecordValue, provider.ApexRecords["challenge-zone"]);
+
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+
+        Assert.Empty(lookupClient.Queries);
+        Assert.Equal(new[] { "pre-existing-value" }, provider.ApexRecords["challenge-zone"]);
+        Assert.Single(provider.Deleted);
+        Assert.Single(provider.Created);
+    }
+
+    [Fact]
+    public async Task Authorization_WhenDelegatedApexExistsEmpty_LeavesOriginalRecordSetAfterCleanup()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com",
+            ApexRecords = new Dictionary<string, string[]> { ["challenge-zone"] = [] }
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var (challenges, _) = await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+
+        Assert.True(provider.ApexRecords.ContainsKey("challenge-zone"));
+        Assert.Empty(provider.ApexRecords["challenge-zone"]);
+        Assert.Empty(provider.OwnedApexRecordSets);
+    }
+
+    [Fact]
+    public async Task Authorization_WhenApexAlreadyContainsSameChallengeToken_IsIdempotent()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com"
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var (challenges, _) = await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+
+        // A retry after a lost activity response must not duplicate tokens.
+        await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+
+        Assert.Equal([challenges[0].DnsRecordValue], provider.ApexRecords["challenge-zone"]);
+        Assert.Empty(provider.Deleted);
+
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+        Assert.Empty(provider.ApexRecords);
+    }
+
+    [Fact]
+    public async Task Cleanup_WhenExternalValueIsAddedDuringValidation_RemovesOnlyChallengeValues()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com",
+            ApexRecords = new Dictionary<string, string[]> { ["challenge-zone"] = ["existing"] }
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com", "*.example.com"]));
+
+        var (challenges, _) = await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1), AuthorizationUrl(2)], zones), TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, provider.ApexRecords["challenge-zone"].Length);
+        provider.ApexRecords["challenge-zone"] = [.. provider.ApexRecords["challenge-zone"], "added-during-validation"];
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+
+        Assert.Equal(["existing", "added-during-validation"], provider.ApexRecords["challenge-zone"]);
+    }
+
+    [Fact]
+    public async Task Cleanup_WhenDelegatedApexChangesAfterIssuance_PreservesExternalValues()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com"
+        };
+        var activities = CreateActivities(factory, new RecordingLookupClient(name => new TxtQueryResponse(name)), provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+        var (challenges, _) = await activities.Dns01Authorization((provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+
+        // Simulate another actor replacing or adding TXT values before cleanup.
+        provider.ApexRecords["challenge-zone"] = ["unrelated-TXT-value"];
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "unrelated-TXT-value" }, provider.ApexRecords["challenge-zone"]);
+        Assert.Empty(provider.Deleted);
+    }
+
+    [Fact]
+    public async Task Authorization_WhenDelegatedApexCreationResponseIsLost_CleansUpOnlyItsOwnValues()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var failure = new IOException("The create response was lost after Azure committed the record.");
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com",
+            OnApexCreate = (_, _) => throw failure
+        };
+        var activities = CreateActivities(factory, new RecordingLookupClient(name => new TxtQueryResponse(name)), provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var exception = await Assert.ThrowsAsync<IOException>(() => activities.Dns01Authorization(
             (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken));
 
-        Assert.Contains("Refusing to replace an existing delegated-zone apex record set", exception.Message, StringComparison.Ordinal);
-        Assert.Equal(new[] { "_acme-challenge.example.com" }, lookupClient.Queries);
-        Assert.Empty(provider.Deleted);
-        Assert.Empty(provider.Created);
+        Assert.Same(failure, exception);
+        Assert.Single(provider.Created);
+        Assert.Single(provider.Deleted);
+        Assert.Empty(provider.ApexRecords);
+    }
+
+    [Fact]
+    public async Task Authorization_WhenApexUpdateResponseIsLost_PreservesExistingValuesOnRecovery()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var failure = new IOException("The update response was lost after Azure committed the change.");
+        var provider = new RecordingProvider
+        {
+            IncludeParentZone = false,
+            ChallengeZone = "_acme-challenge.example.com",
+            ApexRecords = new Dictionary<string, string[]> { ["challenge-zone"] = ["existing"] },
+            OnApexCreate = (_, _) => throw failure
+        };
+        var activities = CreateActivities(factory, provider);
+        var zones = await activities.Dns01Precondition(CreatePolicy(["example.com"]));
+
+        var exception = await Assert.ThrowsAsync<IOException>(() => activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken));
+
+        Assert.Same(failure, exception);
+        Assert.Equal(["existing"], provider.ApexRecords["challenge-zone"]);
+        Assert.Single(provider.Deleted);
+        Assert.Empty(provider.OwnedApexRecordSets);
     }
 
     [Theory]
@@ -237,7 +416,7 @@ public sealed class DnsChallengeActivitiesTests
         Assert.Equal("challenge-zone", created.ZoneId);
         Assert.Equal("", created.RecordName);
         Assert.All(provider.Deleted, record => Assert.Equal(("challenge-zone", challengeZone, ""), record));
-        Assert.Equal(new[] { challengeZone }, lookupClient.Queries);
+        Assert.Empty(lookupClient.Queries);
         Assert.Equal(1, provider.ListCount);
     }
 
@@ -638,15 +817,19 @@ public sealed class DnsChallengeActivitiesTests
         return new AcmeClientFactory(options, new ExistingAccountStore(), () => new AcmeClient(httpClient, options.Value.Endpoint));
     }
 
-    private sealed class RecordingProvider(string name = "Test DNS") : IDnsProvider
+    private sealed class RecordingProvider(string name = "Test DNS") : IDnsProvider, IProtectedApexTxtProvider
     {
         public string Name => name;
         public TimeSpan PropagationDelay => TimeSpan.FromSeconds(60);
         public bool IncludeParentZone { get; init; } = true;
         public string? ChallengeZone { get; init; }
+        public IReadOnlyList<string> ChallengeNameServers { get; init; } = [];
         public IReadOnlyList<DnsZone> AdditionalZones { get; init; } = [];
         public Action<string, CancellationToken>? OnCreate { get; init; }
         public Action<string, CancellationToken>? OnDelete { get; init; }
+        public Action<string, CancellationToken>? OnApexCreate { get; init; }
+        public Dictionary<string, string[]> ApexRecords { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> OwnedApexRecordSets { get; init; } = new(StringComparer.OrdinalIgnoreCase);
         public int ListCount { get; private set; }
         public List<(string ZoneId, string RecordName, string[] Values)> Created { get; } = [];
         public List<(string ZoneId, string ZoneName, string RecordName)> Deleted { get; } = [];
@@ -662,7 +845,7 @@ public sealed class DnsChallengeActivitiesTests
             zones.AddRange(AdditionalZones);
             if (ChallengeZone is not null)
             {
-                zones.Add(new DnsZone { Id = "challenge-zone", Name = ChallengeZone });
+                zones.Add(new DnsZone { Id = "challenge-zone", Name = ChallengeZone, NameServers = ChallengeNameServers });
             }
             return Task.FromResult<IReadOnlyList<DnsZone>>(zones);
         }
@@ -681,15 +864,56 @@ public sealed class DnsChallengeActivitiesTests
             OnDelete?.Invoke(relativeRecordName, cancellationToken);
             return Task.CompletedTask;
         }
+
+        public Task AddApexTxtValuesAsync(DnsZone zone, string[] values, CancellationToken cancellationToken = default)
+        {
+            // Model Azure's management-API merge and persistent ownership metadata.
+            if (!ApexRecords.TryGetValue(zone.Id, out var existing))
+            {
+                existing = [];
+                OwnedApexRecordSets.Add(zone.Id);
+            }
+
+            ApexRecords[zone.Id] = existing.Concat(values).Distinct(StringComparer.Ordinal).ToArray();
+            Created.Add((zone.Id, "", values));
+            OnApexCreate?.Invoke(zone.Id, cancellationToken);
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveApexTxtValuesAsync(DnsZone zone, string[] values, CancellationToken cancellationToken = default)
+        {
+            if (ApexRecords.TryGetValue(zone.Id, out var actual))
+            {
+                var ours = values.ToHashSet(StringComparer.Ordinal);
+                var remaining = actual.Where(value => !ours.Contains(value)).ToArray();
+
+                if (remaining.Length != actual.Length)
+                {
+                    if (remaining.Length == 0 && OwnedApexRecordSets.Remove(zone.Id))
+                    {
+                        ApexRecords.Remove(zone.Id);
+                    }
+                    else
+                    {
+                        ApexRecords[zone.Id] = remaining;
+                    }
+
+                    Deleted.Add((zone.Id, zone.Name, ""));
+                    DeletedTokens.Add(cancellationToken);
+                }
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
-    private sealed class RecordingLookupClient(Func<string, IDnsQueryResponse> query) : LookupClient, ILookupClient
+    private sealed class RecordingLookupClient(Func<string, IDnsQueryResponse> query, bool allowNsQueries = false) : LookupClient, ILookupClient
     {
         public List<string> Queries { get; } = [];
 
         Task<IDnsQueryResponse> IDnsQuery.QueryAsync(string name, QueryType queryType, QueryClass queryClass, CancellationToken cancellationToken)
         {
-            Assert.Equal(QueryType.TXT, queryType);
+            Assert.True(queryType == QueryType.TXT || (allowNsQueries && queryType == QueryType.NS));
             Assert.Equal(QueryClass.IN, queryClass);
             Queries.Add(name);
             return Task.FromResult(query(name));
