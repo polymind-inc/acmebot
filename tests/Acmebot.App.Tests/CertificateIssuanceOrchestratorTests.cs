@@ -132,7 +132,7 @@ public sealed class CertificateIssuanceOrchestratorTests
     [Fact]
     public async Task IssueCertificate_AzureDns_HoldsChallengeLockUntilAfterCleanup()
     {
-        var context = new IssuanceContext(true) { DnsProviderName = "Azure DNS" };
+        var context = new IssuanceContext(true) { DnsProviderName = "Azure DNS", OrchestrationVersion = "1.0" };
         var policy = CreatePolicy();
         policy.DnsProviderName = "Azure DNS";
         var orchestrator = new RecordingLockOrchestrator();
@@ -151,6 +151,7 @@ public sealed class CertificateIssuanceOrchestratorTests
         var context = new IssuanceContext(true)
         {
             DnsProviderName = "Azure DNS",
+            OrchestrationVersion = "1.0",
             FailActivity = nameof(DnsChallengeActivities.CheckDnsChallenge)
         };
         var policy = CreatePolicy();
@@ -161,6 +162,23 @@ public sealed class CertificateIssuanceOrchestratorTests
 
         Assert.True(context.Calls.IndexOf(nameof(DnsChallengeActivities.CleanupDnsChallenge)) < context.Calls.IndexOf("ReleaseDnsChallengeLock"));
         Assert.True(context.Calls.IndexOf("ReleaseDnsChallengeLock") < context.Calls.IndexOf(nameof(WebhookActivities.SendFailedEvent)));
+    }
+
+    [Fact]
+    public async Task IssueCertificate_AzureDns_UnversionedInstance_PreservesLegacyReplaySequence()
+    {
+        var context = new IssuanceContext(true) { DnsProviderName = "Azure DNS" };
+        var policy = CreatePolicy();
+        policy.DnsProviderName = "Azure DNS";
+        var orchestrator = new RecordingLockOrchestrator();
+
+        await orchestrator.IssueCertificate(context, policy);
+
+        Assert.DoesNotContain("AcquireDnsChallengeLock", context.Calls);
+        Assert.DoesNotContain("ReleaseDnsChallengeLock", context.Calls);
+        Assert.Contains(nameof(DnsChallengeActivities.CleanupDnsChallenge), context.Calls);
+        Assert.True(context.Calls.IndexOf(nameof(DnsChallengeActivities.Dns01Authorization)) <
+                    context.Calls.IndexOf(nameof(DnsChallengeActivities.CleanupDnsChallenge)));
     }
 
     [Fact]
@@ -229,9 +247,11 @@ public sealed class CertificateIssuanceOrchestratorTests
         public bool OrderReady { get; init; }
         public bool NoAuthorizationUrls { get; init; }
         public string DnsProviderName { get; init; } = "Test DNS";
+        public string OrchestrationVersion { get; init; } = string.Empty;
         public List<string> Calls { get; } = [];
         public int TimerCount { get; private set; }
         public override TaskName Name => nameof(CertificateIssuanceOrchestrator.IssueCertificate);
+        public override string Version => OrchestrationVersion;
         public override string InstanceId => "issuance-test";
         public override ParentOrchestrationInstance? Parent => null;
         public override DateTime CurrentUtcDateTime => new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);

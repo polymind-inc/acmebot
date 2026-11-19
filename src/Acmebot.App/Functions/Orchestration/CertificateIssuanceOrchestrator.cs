@@ -39,7 +39,10 @@ public partial class CertificateIssuanceOrchestrator
                 }
                 else
                 {
-                    if (string.Equals(certificatePolicyItem.DnsProviderName, "Azure DNS", StringComparison.OrdinalIgnoreCase))
+                    // Orchestrations created before versioning have no version and
+                    // must retain their original durable call sequence on replay.
+                    if (!string.IsNullOrEmpty(context.Version) &&
+                        string.Equals(certificatePolicyItem.DnsProviderName, "Azure DNS", StringComparison.OrdinalIgnoreCase))
                     {
                         // ETags protect individual Azure DNS writes, while this durable
                         // lock prevents overlapping validations from sharing and then
