@@ -5,6 +5,7 @@ using Acmebot.App.Models;
 using Acmebot.App.Providers;
 
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -128,6 +129,63 @@ public sealed class CertificateIssuanceOrchestratorTests
         Assert.Equal(0, context.TimerCount);
     }
 
+    [Fact]
+    public async Task IssueCertificate_AzureDns_HoldsChallengeLockUntilAfterCleanup()
+    {
+        var context = new IssuanceContext(true) { DnsProviderName = "Azure DNS" };
+        var policy = CreatePolicy();
+        policy.DnsProviderName = "Azure DNS";
+        var orchestrator = new RecordingLockOrchestrator();
+
+        await orchestrator.IssueCertificate(context, policy);
+
+        Assert.Equal(["_acme-challenge.example.com"], orchestrator.LockIds.Select(id => id.Key));
+        Assert.True(context.Calls.IndexOf("AcquireDnsChallengeLock") < context.Calls.IndexOf(nameof(DnsChallengeActivities.Dns01Authorization)));
+        Assert.True(context.Calls.IndexOf(nameof(DnsChallengeActivities.CleanupDnsChallenge)) < context.Calls.IndexOf("ReleaseDnsChallengeLock"));
+        Assert.True(context.Calls.IndexOf("ReleaseDnsChallengeLock") < context.Calls.IndexOf(nameof(AcmeOrderActivities.FinalizeOrder)));
+    }
+
+    [Fact]
+    public async Task IssueCertificate_AzureDns_ReleasesChallengeLockAfterFailedValidationCleanup()
+    {
+        var context = new IssuanceContext(true)
+        {
+            DnsProviderName = "Azure DNS",
+            FailActivity = nameof(DnsChallengeActivities.CheckDnsChallenge)
+        };
+        var policy = CreatePolicy();
+        policy.DnsProviderName = "Azure DNS";
+        var orchestrator = new RecordingLockOrchestrator();
+
+        await Assert.ThrowsAsync<PreconditionException>(() => orchestrator.IssueCertificate(context, policy));
+
+        Assert.True(context.Calls.IndexOf(nameof(DnsChallengeActivities.CleanupDnsChallenge)) < context.Calls.IndexOf("ReleaseDnsChallengeLock"));
+        Assert.True(context.Calls.IndexOf("ReleaseDnsChallengeLock") < context.Calls.IndexOf(nameof(WebhookActivities.SendFailedEvent)));
+    }
+
+    [Fact]
+    public void DnsChallengeLock_RootAndWildcardShareAKey_WhileDistinctNamesDoNot()
+    {
+        var policy = CreatePolicy();
+        policy.DnsNames = ["example.com", "*.EXAMPLE.COM", "api.example.com"];
+
+        var lockKeys = DnsChallengeLock.ForCertificate(policy).Select(id => id.Key);
+
+        Assert.Equal(["_acme-challenge.api.example.com", "_acme-challenge.example.com"], lockKeys);
+    }
+
+    [Fact]
+    public void DnsChallengeLock_DnsAliasUsesTheActualChallengeTarget()
+    {
+        var policy = CreatePolicy();
+        policy.DnsNames = ["example.com", "*.example.com"];
+        policy.DnsAlias = "validation.example.net";
+
+        var lockKeys = DnsChallengeLock.ForCertificate(policy).Select(id => id.Key);
+
+        Assert.Equal(["_acme-challenge.validation.example.net"], lockKeys);
+    }
+
     private static CertificatePolicyItem CreatePolicy() => new()
     {
         CertificateName = "certificate",
@@ -135,6 +193,28 @@ public sealed class CertificateIssuanceOrchestratorTests
         DnsProviderName = "Test DNS",
         KeyType = "RSA"
     };
+
+    private sealed class RecordingLockOrchestrator : CertificateIssuanceOrchestrator
+    {
+        public EntityInstanceId[] LockIds { get; private set; } = [];
+
+        internal override Task<IAsyncDisposable> AcquireDnsChallengeLocksAsync(TaskOrchestrationContext context, EntityInstanceId[] lockIds)
+        {
+            LockIds = lockIds;
+            var testContext = Assert.IsType<IssuanceContext>(context);
+            testContext.Calls.Add("AcquireDnsChallengeLock");
+            return Task.FromResult<IAsyncDisposable>(new RecordingLock(() => testContext.Calls.Add("ReleaseDnsChallengeLock")));
+        }
+    }
+
+    private sealed class RecordingLock(Action release) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            release();
+            return ValueTask.CompletedTask;
+        }
+    }
 
     private sealed class IssuanceContext(bool hasChallenges) : TaskOrchestrationContext
     {
@@ -148,6 +228,7 @@ public sealed class CertificateIssuanceOrchestratorTests
         public string? FailActivity { get; init; }
         public bool OrderReady { get; init; }
         public bool NoAuthorizationUrls { get; init; }
+        public string DnsProviderName { get; init; } = "Test DNS";
         public List<string> Calls { get; } = [];
         public int TimerCount { get; private set; }
         public override TaskName Name => nameof(CertificateIssuanceOrchestrator.IssueCertificate);
@@ -177,13 +258,13 @@ public sealed class CertificateIssuanceOrchestratorTests
                     break;
                 case nameof(DnsChallengeActivities.Dns01Authorization):
                     var authorization = Assert.IsType<(string, string?, IReadOnlyList<Uri>, IReadOnlyList<DnsZone>)>(input);
-                    Assert.Equal("Test DNS", authorization.Item1);
+                    Assert.Equal(DnsProviderName, authorization.Item1);
                     Assert.Same(_zones, authorization.Item4);
                     result = (_challenges, hasChallenges ? 60 : 0);
                     break;
                 case nameof(DnsChallengeActivities.CleanupDnsChallenge):
                     var cleanup = Assert.IsType<(string, IReadOnlyList<AcmeChallengeResult>, IReadOnlyList<DnsZone>)>(input);
-                    Assert.Equal("Test DNS", cleanup.Item1);
+                    Assert.Equal(DnsProviderName, cleanup.Item1);
                     Assert.Same(_challenges, cleanup.Item2);
                     Assert.Same(_zones, cleanup.Item3);
                     break;

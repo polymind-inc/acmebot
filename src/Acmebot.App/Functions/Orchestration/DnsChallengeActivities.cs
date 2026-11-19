@@ -144,23 +144,17 @@ public partial class DnsChallengeActivities(
 
                 var values = lookup.Select(x => x.DnsRecordValue).ToArray();
 
-                if (string.IsNullOrEmpty(acmeDnsRecordName))
+                if (string.IsNullOrEmpty(acmeDnsRecordName) && provider is IProtectedApexTxtProvider protectedProvider)
                 {
-                    // Only the provider's management API can safely merge apex TXT
-                    // values and protect concurrent updates through ETags.
-                    if (provider is not IProtectedApexTxtProvider protectedProvider)
-                    {
-                        throw new PreconditionException($"Provider '{dnsProviderName}' does not support protected delegated-zone apex TXT operations.");
-                    }
-
-                    // A response can be lost after Azure commits our token. Retain
-                    // the attempt so cleanup removes only our own values.
+                    // Use the provider's management API to merge and protect apex TXT
+                    // records. Record the attempt even if Azure's response is lost.
                     attemptedRecords.Add((zone, acmeDnsRecordName, values, true));
                     await protectedProvider.AddApexTxtValuesAsync(zone, values, cancellationToken);
                 }
                 else
                 {
-                    // Preserve the established behavior for non-apex challenges.
+                    // Preserve the existing IDnsProvider behavior for non-apex
+                    // challenges and for providers without protected apex support.
                     await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
                     attemptedRecords.Add((zone, acmeDnsRecordName, values, false));
                     await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, values, cancellationToken);
@@ -259,13 +253,8 @@ public partial class DnsChallengeActivities(
 
             var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
-            if (string.IsNullOrEmpty(acmeDnsRecordName))
+            if (string.IsNullOrEmpty(acmeDnsRecordName) && provider is IProtectedApexTxtProvider protectedProvider)
             {
-                if (provider is not IProtectedApexTxtProvider protectedProvider)
-                {
-                    throw new PreconditionException($"Provider '{dnsProviderName}' does not support protected delegated-zone apex TXT operations.");
-                }
-
                 await protectedProvider.RemoveApexTxtValuesAsync(zone, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
             }
             else

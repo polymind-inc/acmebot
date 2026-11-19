@@ -215,6 +215,45 @@ public sealed class DnsChallengeActivitiesTests
     }
 
     [Fact]
+    public async Task AuthorizationAndCleanup_WithLegacyApexProvider_UsesExistingDnsProviderMethods()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new LegacyApexProvider();
+        var activities = CreateActivities(factory, provider);
+        var policy = CreatePolicy(["example.com"]);
+        policy.DnsProviderName = provider.Name;
+        var zones = await activities.Dns01Precondition(policy);
+
+        var (challenges, _) = await activities.Dns01Authorization(
+            (provider.Name, null, [AuthorizationUrl(1)], zones), TestContext.Current.CancellationToken);
+        await activities.CleanupDnsChallenge((provider.Name, challenges, zones), TestContext.Current.CancellationToken);
+
+        var created = Assert.Single(provider.Created);
+        Assert.Equal("", created.RecordName);
+        Assert.Equal([challenges[0].DnsRecordValue], created.Values);
+        Assert.Equal(["", ""], provider.Deleted);
+    }
+
+    [Fact]
+    public async Task Cleanup_WithLegacyApexProvider_AfterUpgrade_StillDeletesApexRecord()
+    {
+        using var httpClient = new HttpClient(new AuthorizationHandler());
+        using var factory = CreateFactory(httpClient);
+        var provider = new LegacyApexProvider();
+        var policy = CreatePolicy(["example.com"]);
+        policy.DnsProviderName = provider.Name;
+        var zones = await CreateActivities(factory, provider).Dns01Precondition(policy);
+
+        // Simulate cleanup from an orchestration started on an older version.
+        await CreateActivities(factory, provider).CleanupDnsChallenge(
+            (provider.Name, [CreateChallenge("_acme-challenge.example.com", "pending-value")], zones),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([""], provider.Deleted);
+    }
+
+    [Fact]
     public async Task Authorization_WhenRecursiveDnsIsEmptyButAzureApexHasTxt_PreservesExistingValues()
     {
         using var handler = new AuthorizationHandler();
@@ -815,6 +854,29 @@ public sealed class DnsChallengeActivitiesTests
             VaultBaseUrl = "https://vault.example/"
         });
         return new AcmeClientFactory(options, new ExistingAccountStore(), () => new AcmeClient(httpClient, options.Value.Endpoint));
+    }
+
+    private sealed class LegacyApexProvider : IDnsProvider
+    {
+        public string Name => "Legacy DNS";
+        public TimeSpan PropagationDelay => TimeSpan.FromSeconds(10);
+        public List<(string RecordName, string[] Values)> Created { get; } = [];
+        public List<string> Deleted { get; } = [];
+
+        public Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<DnsZone>>([new() { Id = "legacy-zone", Name = "_acme-challenge.example.com" }]);
+
+        public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
+        {
+            Created.Add((relativeRecordName, values));
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
+        {
+            Deleted.Add(relativeRecordName);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class RecordingProvider(string name = "Test DNS") : IDnsProvider, IProtectedApexTxtProvider
