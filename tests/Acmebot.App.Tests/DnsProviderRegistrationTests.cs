@@ -46,6 +46,32 @@ public sealed class DnsProviderRegistrationTests
     }
 
     [Fact]
+    public async Task AddDnsProviders_DisposesOvhAndTransIpWithServiceProvider()
+    {
+        OvhProvider ovh;
+        TransIpProvider transIp;
+        using (var services = CreateServices(configure: options =>
+        {
+            options.Ovh = new OvhOptions
+            {
+                ApplicationKey = "test-key",
+                ApplicationSecret = "test-secret",
+                ConsumerKey = "test-consumer"
+            };
+            options.TransIp = new TransIpOptions { CustomerName = "test-customer", PrivateKeyName = "test-key" };
+        }))
+        {
+            var providers = services.GetRequiredService<IEnumerable<IDnsProvider>>();
+            ovh = Assert.Single(providers.OfType<OvhProvider>());
+            transIp = Assert.Single(providers.OfType<TransIpProvider>());
+        }
+
+        var cancellationToken = new CancellationToken(canceled: true);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => ovh.ListZonesAsync(cancellationToken));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => transIp.ListZonesAsync(cancellationToken));
+    }
+
+    [Fact]
     public async Task GetDnsZones_WithoutConfiguredProviders_ReturnsOkWithEmptyList()
     {
         using var authentication = new AppServiceAuthenticationScope("true");
@@ -84,7 +110,7 @@ public sealed class DnsProviderRegistrationTests
         Assert.Contains("Configured DNS providers: (none)", exception.Message, StringComparison.Ordinal);
     }
 
-    private static ServiceProvider CreateServices(bool configureProvider = false)
+    private static ServiceProvider CreateServices(bool configureProvider = false, Action<AcmebotOptions>? configure = null)
     {
         var options = new AcmebotOptions
         {
@@ -93,6 +119,7 @@ public sealed class DnsProviderRegistrationTests
             VaultBaseUrl = "https://vault.example/",
             CustomDns = configureProvider ? new CustomDnsOptions { Endpoint = "https://dns.example/", ApiKey = "test-key" } : null
         };
+        configure?.Invoke(options);
 
         return new ServiceCollection()
             .AddLogging()

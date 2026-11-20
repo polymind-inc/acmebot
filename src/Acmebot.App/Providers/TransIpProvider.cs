@@ -14,7 +14,7 @@ using Azure.Security.KeyVault.Keys.Cryptography;
 
 namespace Acmebot.App.Providers;
 
-public class TransIpProvider : IDnsProvider
+public class TransIpProvider : IDnsProvider, IDisposable
 {
     public TransIpProvider(AcmebotOptions acmeOptions, TransIpOptions options, TokenCredential credential)
     {
@@ -72,7 +72,21 @@ public class TransIpProvider : IDnsProvider
         }
     }
 
-    private class TransIpClient
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _transIpClient.Dispose();
+        }
+    }
+
+    private sealed class TransIpClient : IDisposable
     {
         public TransIpClient(string customerName, CryptographyClient cryptoClient)
         {
@@ -80,6 +94,8 @@ public class TransIpProvider : IDnsProvider
         }
 
         private readonly HttpClient _httpClient;
+
+        public void Dispose() => _httpClient.Dispose();
 
         public async Task<IReadOnlyList<Domain>> ListDomainsAsync(CancellationToken cancellationToken = default)
         {
@@ -102,7 +118,7 @@ public class TransIpProvider : IDnsProvider
                 DnsEntry = entry
             };
 
-            var response = await _httpClient.DeleteAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
+            using var response = await _httpClient.DeleteAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
@@ -114,17 +130,27 @@ public class TransIpProvider : IDnsProvider
                 DnsEntry = entry
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
+            using var response = await _httpClient.PostAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
     }
 
-    private class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler(new HttpClientHandler())
+    private sealed class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler(new HttpClientHandler())
     {
         private readonly HttpClient _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/");
 
         private TransIpToken? _token;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _httpClient.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -163,7 +189,7 @@ public class TransIpProvider : IDnsProvider
 
             var signature = await SignRequestAsync(body, cancellationToken);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "auth")
+            using var request = new HttpRequestMessage(HttpMethod.Post, "auth")
             {
                 Headers =
                 {
@@ -172,7 +198,7 @@ public class TransIpProvider : IDnsProvider
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             };
 
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
 

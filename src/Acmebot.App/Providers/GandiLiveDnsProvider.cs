@@ -136,12 +136,9 @@ public class GandiLiveDnsProvider(GandiLiveDnsOptions options) : IDnsProvider
                     break;
                 }
 
-                foreach (var domain in domains)
+                foreach (var domain in domains.Where(domain => domain.Nameserver?.Current == "livedns"))
                 {
-                    if (domain.Nameserver?.Current == "livedns")
-                    {
-                        yield return domain;
-                    }
+                    yield return domain;
                 }
 
                 page++;

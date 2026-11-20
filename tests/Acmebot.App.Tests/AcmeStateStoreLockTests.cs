@@ -69,6 +69,53 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task FileSystemStore_RequiresPathsInsideStateDirectory()
+    {
+        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
+        try
+        {
+            var store = new FileSystemAcmeStateStore(Path.Combine(directory.FullName, "state"));
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var outsidePath = Path.Combine(directory.FullName, "outside.json");
+            await File.WriteAllTextAsync(outsidePath, "\"outside\"", cancellationToken);
+
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.LoadAsync<string>(outsidePath, cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.TryCreateAsync("new", "../new.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../outside.json", cancellationToken));
+            Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsidePath, cancellationToken));
+            Assert.False(File.Exists(Path.Combine(directory.FullName, "new.json")));
+
+            await store.SaveAsync("inside", "nested/state.json", cancellationToken);
+            Assert.Equal("inside", await store.LoadAsync<string>("nested/state.json", cancellationToken));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FileSystemStore_WhenSerializationFails_RemovesTemporaryFileAndPreservesState()
+    {
+        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
+        try
+        {
+            var store = new FileSystemAcmeStateStore(directory.FullName);
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await store.SaveAsync("existing", "state.json", cancellationToken);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => store.SaveAsync(new { Type = typeof(string) }, "state.json", cancellationToken));
+
+            Assert.Equal("existing", await store.LoadAsync<string>("state.json", cancellationToken));
+            Assert.Empty(directory.EnumerateFiles("*.tmp"));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task BlobLock_RenewsUntilDisposedAndReleasesOnlyOnce()
     {
         var client = new TestLeaseClient();
@@ -104,6 +151,27 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task BlobLock_WhenCancellationCallbackThrows_StillReleasesLease()
+    {
+        var allowRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var client = new TestLeaseClient { FailRenewal = true, RenewalGate = allowRenewal.Task };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = stateLock.CancellationToken.Register(() =>
+        {
+            callbackInvoked.TrySetResult();
+            throw new InvalidOperationException("Simulated cancellation callback failure.");
+        });
+        allowRenewal.SetResult();
+
+        await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var error = await Assert.ThrowsAsync<AggregateException>(() => stateLock.DisposeAsync().AsTask());
+
+        Assert.IsType<InvalidOperationException>(Assert.Single(error.InnerExceptions));
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
     public async Task BlobLock_WhenCallerCancels_StillReleasesWithIndependentToken()
     {
         var client = new TestLeaseClient();
@@ -120,19 +188,21 @@ public sealed class AcmeStateStoreLockTests
     private sealed class TestLeaseClient : BlobLeaseClient
     {
         public bool FailRenewal { get; init; }
+        public Task RenewalGate { get; init; } = Task.CompletedTask;
         public int RenewalCount;
         public int ReleaseCount;
         public TaskCompletionSource Renewed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public override Task<Response<BlobLease>> RenewAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)
+        public override async Task<Response<BlobLease>> RenewAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)
         {
+            await RenewalGate.WaitAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref RenewalCount);
             Renewed.TrySetResult();
 
             return FailRenewal
-                ? Task.FromException<Response<BlobLease>>(new RequestFailedException(412, "Lease lost.", "LeaseIdMismatchWithLeaseOperation", null))
-                : Task.FromResult<Response<BlobLease>>(null!);
+                ? throw new RequestFailedException(412, "Lease lost.", "LeaseIdMismatchWithLeaseOperation", null)
+                : null!;
         }
 
         public override Task<Response<ReleasedObjectInfo>> ReleaseAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)

@@ -54,18 +54,19 @@ public static class AcmeDnsPersist01Validation
             throw new InvalidOperationException("The DNS-PERSIST-01 challenge issuerDomainNames must contain 1 to 10 lowercase A-label domain names without trailing dots, each at most 253 octets.");
         }
 
-        if (!IsAccountHashPrefixValid(directory.Metadata?.AccountHashPrefix))
+        var metadata = directory.Metadata;
+        if (metadata is null || !IsAccountHashPrefixValid(metadata.AccountHashPrefix))
         {
             throw new InvalidOperationException("The ACME directory accountHashPrefix is missing or cannot form a valid absolute hashed account URI.");
         }
 
-        var directoryNames = directory.Metadata?.IssuerDomainNames;
+        var directoryNames = metadata.IssuerDomainNames;
         if (AreIssuerDomainNamesValid(directoryNames) && directoryNames!.Except(challenge.IssuerDomainNames, StringComparer.Ordinal).Any())
         {
             throw new InvalidOperationException("The DNS-PERSIST-01 challenge issuerDomainNames does not include every issuer advertised by the directory.");
         }
 
-        var caaIdentities = NormalizeCaaIdentities(directory.Metadata?.CaaIdentities);
+        var caaIdentities = NormalizeCaaIdentities(metadata.CaaIdentities);
         if (caaIdentities is not null && challenge.IssuerDomainNames.Except(caaIdentities, StringComparer.Ordinal).Any())
         {
             throw new InvalidOperationException("The DNS-PERSIST-01 challenge issuerDomainNames contains an issuer absent from the directory caaIdentities.");
@@ -74,12 +75,13 @@ public static class AcmeDnsPersist01Validation
 
     private static string? GetPreProvisioningError(AcmeDirectoryResource directory)
     {
-        if (!AreIssuerDomainNamesValid(directory.Metadata?.IssuerDomainNames))
+        var metadata = directory.Metadata;
+        if (metadata is null || !AreIssuerDomainNamesValid(metadata.IssuerDomainNames))
         {
             return "DNS-PERSIST-01 pre-provisioning is unavailable: the directory issuerDomainNames must contain 1 to 10 lowercase A-label domain names without trailing dots, each at most 253 octets.";
         }
 
-        return IsAccountHashPrefixValid(directory.Metadata?.AccountHashPrefix)
+        return IsAccountHashPrefixValid(metadata.AccountHashPrefix)
             ? null
             : "DNS-PERSIST-01 pre-provisioning is unavailable: the directory accountHashPrefix is missing or cannot form a valid absolute hashed account URI.";
     }

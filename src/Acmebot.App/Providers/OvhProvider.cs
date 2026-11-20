@@ -8,7 +8,7 @@ using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
 
-public class OvhProvider(OvhOptions options) : IDnsProvider
+public class OvhProvider(OvhOptions options) : IDnsProvider, IDisposable
 {
     private const int TxtRecordTtl = 60;
 
@@ -63,7 +63,21 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
         await _ovhClient.RefreshZoneAsync(zone.Name, cancellationToken);
     }
 
-    private class OvhClient
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _ovhClient.Dispose();
+        }
+    }
+
+    private sealed class OvhClient : IDisposable
     {
         public OvhClient(string endpoint, string applicationKey, string applicationSecret, string consumerKey)
         {
@@ -72,6 +86,8 @@ public class OvhProvider(OvhOptions options) : IDnsProvider
         }
 
         private readonly HttpClient _httpClient;
+
+        public void Dispose() => _httpClient.Dispose();
 
         private static string NormalizeEndpoint(string endpoint) => endpoint.EndsWith("/", StringComparison.Ordinal) ? endpoint : $"{endpoint}/";
 
