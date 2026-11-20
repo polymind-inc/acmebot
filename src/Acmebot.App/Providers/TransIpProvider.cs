@@ -90,7 +90,12 @@ public class TransIpProvider : IDnsProvider, IDisposable
     {
         public TransIpClient(string customerName, CryptographyClient cryptoClient)
         {
-            _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/", new TransIpSignHandler(customerName, cryptoClient));
+            var handler = new TransIpSignHandler(customerName, cryptoClient)
+            {
+                InnerHandler = new HttpClientHandler()
+            };
+
+            _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/", handler);
         }
 
         private readonly HttpClient _httpClient;
@@ -136,7 +141,7 @@ public class TransIpProvider : IDnsProvider, IDisposable
         }
     }
 
-    private sealed class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler(new HttpClientHandler())
+    private sealed class TransIpSignHandler(string customerName, CryptographyClient cryptoClient) : DelegatingHandler
     {
         private readonly HttpClient _httpClient = DnsProviderHttpClient.Create("https://api.transip.nl/v6/");
 

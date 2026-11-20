@@ -74,16 +74,16 @@ public sealed class AcmeStateStoreLockTests
         var directory = Directory.CreateTempSubdirectory("acmebot-state-");
         try
         {
-            var store = new FileSystemAcmeStateStore(Path.Combine(directory.FullName, "state"));
+            var store = new FileSystemAcmeStateStore(Path.Join(directory.FullName, "state"));
             var cancellationToken = TestContext.Current.CancellationToken;
-            var outsidePath = Path.Combine(directory.FullName, "outside.json");
+            var outsidePath = Path.Join(directory.FullName, "outside.json");
             await File.WriteAllTextAsync(outsidePath, "\"outside\"", cancellationToken);
 
             await Assert.ThrowsAsync<ArgumentException>("path", () => store.LoadAsync<string>(outsidePath, cancellationToken));
             await Assert.ThrowsAsync<ArgumentException>("path", () => store.TryCreateAsync("new", "../new.json", cancellationToken));
             await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../outside.json", cancellationToken));
             Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsidePath, cancellationToken));
-            Assert.False(File.Exists(Path.Combine(directory.FullName, "new.json")));
+            Assert.False(File.Exists(Path.Join(directory.FullName, "new.json")));
 
             await store.SaveAsync("inside", "nested/state.json", cancellationToken);
             Assert.Equal("inside", await store.LoadAsync<string>("nested/state.json", cancellationToken));
