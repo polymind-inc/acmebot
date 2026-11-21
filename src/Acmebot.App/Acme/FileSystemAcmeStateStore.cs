@@ -2,20 +2,27 @@
 
 using Acmebot.App.Options;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
+internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 {
     private readonly string _stateDirectory;
+    private readonly ILogger<FileSystemAcmeStateStore> _logger;
 
-    public FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
-        : this(Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{options.Value.Endpoint.Host}"))
+    public FileSystemAcmeStateStore(IOptions<AcmebotOptions> options, ILogger<FileSystemAcmeStateStore> logger)
+        : this(Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{options.Value.Endpoint.Host}"), logger)
     {
     }
 
-    internal FileSystemAcmeStateStore(string stateDirectory) => _stateDirectory = stateDirectory;
+    internal FileSystemAcmeStateStore(string stateDirectory, ILogger<FileSystemAcmeStateStore>? logger = null)
+    {
+        _stateDirectory = Path.GetFullPath(stateDirectory);
+        _logger = logger ?? NullLogger<FileSystemAcmeStateStore>.Instance;
+    }
 
     private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
     {
@@ -107,19 +114,40 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
         }
     }
 
-    private static void TryDeleteFile(string path)
+    private void TryDeleteFile(string path)
     {
         // Best-effort cleanup of the temp file; never let a cleanup failure mask the original error.
         try
         {
             File.Delete(path);
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            LogTemporaryFileCleanupFailed(_logger, ex, path);
         }
     }
 
-    private string ResolveStateFullPath(string path) => Path.Combine(_stateDirectory, path);
+    private string ResolveStateFullPath(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (Path.IsPathRooted(path))
+        {
+            throw new ArgumentException("The state file path must be relative to the state directory.", nameof(path));
+        }
+
+        var fullPath = Path.GetFullPath(path, _stateDirectory);
+        var relativePath = Path.GetRelativePath(_stateDirectory, fullPath);
+        if (Path.IsPathRooted(relativePath) || relativePath is "." or ".." ||
+            relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The state file path must identify a file inside the state directory.", nameof(path));
+        }
+
+        return fullPath;
+    }
+
+    [LoggerMessage(LogLevel.Warning, "Could not remove the temporary ACME state file {Path}.")]
+    private static partial void LogTemporaryFileCleanupFailed(ILogger logger, Exception exception, string path);
 
     private sealed class FileSystemAcmeStateStoreLock(FileStream stream, CancellationToken cancellationToken) : IAcmeStateStoreLock
     {

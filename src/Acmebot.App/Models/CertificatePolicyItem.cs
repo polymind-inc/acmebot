@@ -204,19 +204,13 @@ public partial class CertificatePolicyItem : IValidatableObject
 
     private IEnumerable<ValidationResult> ValidateKeyOptions()
     {
-        if (KeyType is "RSA" or "RSA-HSM")
+        if (KeyType is ("RSA" or "RSA-HSM") && KeySize is not (2048 or 3072 or 4096))
         {
-            if (KeySize is not (2048 or 3072 or 4096))
-            {
-                yield return new ValidationResult($"The {nameof(KeySize)} must be 2048, 3072, or 4096 when {nameof(KeyType)} is {KeyType}.", [nameof(KeySize)]);
-            }
+            yield return new ValidationResult($"The {nameof(KeySize)} must be 2048, 3072, or 4096 when {nameof(KeyType)} is {KeyType}.", [nameof(KeySize)]);
         }
-        else if (KeyType is "EC" or "EC-HSM")
+        else if (KeyType is ("EC" or "EC-HSM") && KeyCurveName is not ("P-256" or "P-384" or "P-521" or "P-256K"))
         {
-            if (KeyCurveName is not ("P-256" or "P-384" or "P-521" or "P-256K"))
-            {
-                yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is {KeyType}.", [nameof(KeyCurveName)]);
-            }
+            yield return new ValidationResult($"The {nameof(KeyCurveName)} must be P-256, P-384, P-521, or P-256K when {nameof(KeyType)} is {KeyType}.", [nameof(KeyCurveName)]);
         }
     }
 

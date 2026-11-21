@@ -157,6 +157,7 @@ public sealed class BlobAcmeStateStoreTests
 
     private sealed class LeaseStorageHandler : HttpMessageHandler
     {
+        private readonly Lock _gate = new();
         private bool _containerExists;
         private string? _leaseId;
 
@@ -170,7 +171,7 @@ public sealed class BlobAcmeStateStoreTests
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            lock (this)
+            lock (_gate)
             {
                 if (request.RequestUri!.Query.Contains("restype=container", StringComparison.Ordinal))
                 {

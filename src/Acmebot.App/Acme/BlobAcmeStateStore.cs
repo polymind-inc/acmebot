@@ -141,9 +141,20 @@ internal sealed class BlobAcmeStateStoreLock : IAcmeStateStoreLock
             return;
         }
 
-        await _renewalCancellation.CancelAsync();
-        await _renewalTask;
+        using var operationCancellation = _operationCancellation;
+        using var renewalCancellation = _renewalCancellation;
+        try
+        {
+            await Task.WhenAll(renewalCancellation.CancelAsync(), _renewalTask);
+        }
+        finally
+        {
+            await ReleaseLeaseAsync();
+        }
+    }
 
+    private async Task ReleaseLeaseAsync()
+    {
         try
         {
             // Cleanup must still run when the caller or lease-loss token has been cancelled.
@@ -153,11 +164,6 @@ internal sealed class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         catch (Exception ex) when (ex is RequestFailedException or OperationCanceledException)
         {
             // The finite lease expires after a worker crash or an unsuccessful release.
-        }
-        finally
-        {
-            _operationCancellation.Dispose();
-            _renewalCancellation.Dispose();
         }
     }
 
