@@ -95,6 +95,43 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task FileSystemStore_RejectsLinksInStatePaths()
+    {
+        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
+        try
+        {
+            var stateDirectory = directory.CreateSubdirectory("state");
+            var outsideDirectory = directory.CreateSubdirectory("outside");
+            var outsideFile = Path.Join(outsideDirectory.FullName, "state.json");
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await File.WriteAllTextAsync(outsideFile, "\"outside\"", cancellationToken);
+
+            try
+            {
+                Directory.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "nested"), outsideDirectory.FullName);
+                File.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "state.json"), outsideFile);
+                File.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "account.lock"), outsideFile);
+            }
+            catch (IOException ex) when (OperatingSystem.IsWindows() && (ex.HResult & 0xffff) is 5 or 1314)
+            {
+                Assert.Skip("Creating symbolic links requires Windows privileges or Developer Mode.");
+            }
+
+            var store = new FileSystemAcmeStateStore(stateDirectory.FullName);
+            await Assert.ThrowsAsync<IOException>(() => store.LoadAsync<string>("state.json", cancellationToken));
+            await Assert.ThrowsAsync<IOException>(() => store.SaveAsync("updated", "nested/state.json", cancellationToken));
+            await Assert.ThrowsAsync<IOException>(() => store.TryCreateAsync("new", "nested/new.json", cancellationToken));
+            await Assert.ThrowsAsync<IOException>(() => store.AcquireLockAsync(cancellationToken));
+            Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsideFile, cancellationToken));
+            Assert.False(File.Exists(Path.Join(outsideDirectory.FullName, "new.json")));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task FileSystemStore_WhenSerializationFails_RemovesTemporaryFileAndPreservesState()
     {
         var directory = Directory.CreateTempSubdirectory("acmebot-state-");

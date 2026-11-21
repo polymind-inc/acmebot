@@ -130,12 +130,12 @@ public class TransIpProvider : IDnsProvider, IDisposable
 
         public async Task CreateRecordAsync(string zoneName, DnsEntry entry, CancellationToken cancellationToken = default)
         {
-            var request = new DnsEntryRequest
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"domains/{zoneName}/dns")
             {
-                DnsEntry = entry
+                Content = JsonContent.Create(new DnsEntryRequest { DnsEntry = entry })
             };
 
-            using var response = await _httpClient.PostAsJsonAsync($"domains/{zoneName}/dns", request, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }

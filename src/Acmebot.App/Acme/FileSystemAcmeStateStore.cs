@@ -32,6 +32,7 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 
     public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
     {
+        RejectReparsePoint(_stateDirectory);
         Directory.CreateDirectory(_stateDirectory);
 
         while (true)
@@ -95,10 +96,11 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
         // recycle mid-write cannot leave a truncated state file (a corrupt account_key.json would
         // permanently orphan the ACME account).
         var tempPath = $"{fullPath}.{Guid.NewGuid():N}.tmp";
+        var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
         try
         {
-            await using (var stream = File.Create(tempPath))
+            await using (stream)
             {
                 await JsonSerializer.SerializeAsync(stream, value, s_jsonSerializerOptions, cancellationToken);
             }
@@ -143,7 +145,35 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
             throw new ArgumentException("The state file path must identify a file inside the state directory.", nameof(path));
         }
 
+        // The configured share and its parent directories must be trusted. These checks reject
+        // existing links below that boundary, but path-based IO cannot prevent concurrent replacement.
+        var currentPath = _stateDirectory;
+        RejectReparsePoint(currentPath);
+        foreach (var component in relativePath.Split(Path.DirectorySeparatorChar))
+        {
+            currentPath = Path.Join(currentPath, component);
+            RejectReparsePoint(currentPath);
+        }
+
         return fullPath;
+    }
+
+    private static void RejectReparsePoint(string path)
+    {
+        FileAttributes attributes;
+        try
+        {
+            attributes = File.GetAttributes(path);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return;
+        }
+
+        if ((attributes & FileAttributes.ReparsePoint) != 0)
+        {
+            throw new IOException($"The ACME state path contains a symbolic link or reparse point: '{path}'.");
+        }
     }
 
     [LoggerMessage(LogLevel.Warning, "Could not remove the temporary ACME state file {Path}.")]

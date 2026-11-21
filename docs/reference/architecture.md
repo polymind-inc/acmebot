@@ -80,6 +80,8 @@ Initialization saves a new account key before registering it with the certificat
 
 File system locking depends on the operating system and mount configuration. The exclusive file handle has been tested on local Windows storage; exclusion across hosts on mounted Azure Files has not been verified. On Linux, `FileShare.None` uses advisory locking, whose propagation across SMB mounts depends on the kernel and mount options. The file system store currently uses file locking rather than Blob leases.
 
+Limit write access to the file system state directory and its ancestors to trusted principals. The store checks for existing symbolic links and junctions in state paths. A process with write access can still replace a path after validation.
+
 ## Identity
 
 Azure resource access uses managed identity. Acmebot is designed to run in Azure and does not fall back to developer credentials such as Azure CLI or Visual Studio sign-ins.
