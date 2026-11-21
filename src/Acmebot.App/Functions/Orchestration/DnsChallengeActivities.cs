@@ -29,13 +29,18 @@ public partial class DnsChallengeActivities(
 
         var zones = await dnsZoneQueryService.ListZonesAsync(certificatePolicyItem.DnsProviderName);
 
-        var foundZones = new List<DnsZone>();
         var recordZones = new List<DnsZone>();
         var notFoundZoneDnsNames = new List<string>();
 
         foreach (var dnsName in certificatePolicyItem.AliasedDnsNames)
         {
-            var zone = zones.FindDnsZone(dnsName);
+            var identifier = dnsName.StartsWith("*.", StringComparison.Ordinal) ? dnsName[2..] : dnsName;
+            var challengeRecordName = $"_acme-challenge.{identifier}";
+
+            // Always select the zone for the actual challenge record, not the
+            // certificate identifier. This works for ordinary zones, CNAME
+            // aliases, and separately NS-delegated _acme-challenge zones.
+            var zone = zones.FindDnsZone(challengeRecordName);
 
             if (zone is null)
             {
@@ -43,12 +48,7 @@ public partial class DnsChallengeActivities(
                 continue;
             }
 
-            foundZones.Add(zone);
-
-            // Resolve the record separately: an _acme-challenge child zone can be more specific
-            // than the zone used for the existing domain and name server precondition checks.
-            var identifier = dnsName.StartsWith("*.", StringComparison.Ordinal) ? dnsName[2..] : dnsName;
-            recordZones.Add(zones.FindDnsZone($"_acme-challenge.{identifier}") ?? zone);
+            recordZones.Add(zone);
         }
 
         if (notFoundZoneDnsNames.Count > 0)
@@ -56,7 +56,7 @@ public partial class DnsChallengeActivities(
             throw new PreconditionException($"No DNS zone was found for the following domain name(s): {string.Join(", ", notFoundZoneDnsNames)}.");
         }
 
-        foreach (var zone in foundZones.DistinctBy(x => x.Id).Where(x => x.NameServers is { Count: > 0 }))
+        foreach (var zone in recordZones.DistinctBy(x => x.Id).Where(x => x.NameServers is { Count: > 0 }))
         {
             var queryResult = await lookupClient.QueryAsync(zone.Name, QueryType.NS);
 
@@ -125,7 +125,7 @@ public partial class DnsChallengeActivities(
         }
 
         var provider = dnsZoneQueryService.GetProvider(dnsProviderName);
-        var attemptedRecords = new List<(DnsZone Zone, string RecordName)>();
+        var attemptedRecords = new List<(DnsZone Zone, string RecordName, string[] Values, bool ProtectedApex)>();
 
         try
         {
@@ -142,11 +142,23 @@ public partial class DnsChallengeActivities(
 
                 var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
-                await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+                var values = lookup.Select(x => x.DnsRecordValue).ToArray();
 
-                // Creation may succeed remotely even when its response fails or is cancelled.
-                attemptedRecords.Add((zone, acmeDnsRecordName));
-                await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
+                if (string.IsNullOrEmpty(acmeDnsRecordName) && provider is IProtectedApexTxtProvider protectedProvider)
+                {
+                    // Use the provider's management API to merge and protect apex TXT
+                    // records. Record the attempt even if Azure's response is lost.
+                    attemptedRecords.Add((zone, acmeDnsRecordName, values, true));
+                    await protectedProvider.AddApexTxtValuesAsync(zone, values, cancellationToken);
+                }
+                else
+                {
+                    // Preserve the existing IDnsProvider behavior for non-apex
+                    // challenges and for providers without protected apex support.
+                    await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+                    attemptedRecords.Add((zone, acmeDnsRecordName, values, false));
+                    await provider.CreateTxtRecordAsync(zone, acmeDnsRecordName, values, cancellationToken);
+                }
             }
 
             return (challengeResults, (int)provider.PropagationDelay.TotalSeconds);
@@ -156,11 +168,18 @@ public partial class DnsChallengeActivities(
             // Cleanup must remain possible after cancellation, but must not wait indefinitely.
             using var cleanupTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(1));
 
-            foreach (var (zone, recordName) in attemptedRecords)
+            foreach (var (zone, recordName, values, protectedApex) in attemptedRecords)
             {
                 try
                 {
-                    await provider.DeleteTxtRecordAsync(zone, recordName, cleanupTimeout.Token);
+                    if (protectedApex)
+                    {
+                        await ((IProtectedApexTxtProvider)provider).RemoveApexTxtValuesAsync(zone, values, cleanupTimeout.Token);
+                    }
+                    else
+                    {
+                        await provider.DeleteTxtRecordAsync(zone, recordName, cleanupTimeout.Token);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -234,7 +253,14 @@ public partial class DnsChallengeActivities(
 
             var acmeDnsRecordName = GetRelativeRecordName(dnsRecordName, zone);
 
-            await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+            if (string.IsNullOrEmpty(acmeDnsRecordName) && provider is IProtectedApexTxtProvider protectedProvider)
+            {
+                await protectedProvider.RemoveApexTxtValuesAsync(zone, lookup.Select(x => x.DnsRecordValue).ToArray(), cancellationToken);
+            }
+            else
+            {
+                await provider.DeleteTxtRecordAsync(zone, acmeDnsRecordName, cancellationToken);
+            }
         }
     }
 

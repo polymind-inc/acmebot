@@ -177,7 +177,17 @@ By default, `certificate issue` waits for the Durable Functions operation to com
 
 To switch a certificate imported from another certificate authority to an ACME certificate, issue a certificate with the same `--name` and `--replace-existing`. The ACME certificate is added as a new version of the existing Key Vault certificate.
 
-For delegated DNS-01 validation, pass full certificate DNS names with `--dns-name`, pass a unique alias record with `--dns-alias`, and create CNAME records from `_acme-challenge.<dns-name>` to `_acme-challenge.<dns-alias>` before issuing.
+For **CNAME-delegated** DNS-01 validation, pass full certificate DNS names with `--dns-name`, pass a unique alias record with `--dns-alias`, and create CNAME records from `_acme-challenge.<dns-name>` to `_acme-challenge.<dns-alias>` before issuing.
+
+For **NS-delegated Azure DNS** validation, delegate `_acme-challenge.example.org` from the externally managed parent zone to a public Azure DNS zone of that exact name. Do **not** pass `--dns-alias`:
+
+```bash
+acmebot certificate issue --name wildcard-example-org \
+  --dns-name example.org --dns-name "*.example.org" \
+  --dns-provider "Azure DNS"
+```
+
+The CLI uses the existing issuance API and no new validation mode. The Web UI does not currently offer NS-delegated issuance, so use the CLI or HTTP API for the initial request. See [DNS Providers](../guide/dns-providers.md#ns-delegated-azure-dns-challenge-zones) for the required delegation and Azure apex TXT constraints.
 
 ### `certificate renew`
 

@@ -5,6 +5,7 @@ using Acmebot.App.Providers;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Acmebot.App.Functions.Orchestration;
@@ -38,7 +39,24 @@ public partial class CertificateIssuanceOrchestrator
                 }
                 else
                 {
-                    await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
+                    // Orchestrations created before versioning have no version and
+                    // must retain their original durable call sequence on replay.
+                    if (!string.IsNullOrEmpty(context.Version) &&
+                        string.Equals(certificatePolicyItem.DnsProviderName, "Azure DNS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // ETags protect individual Azure DNS writes, while this durable
+                        // lock prevents overlapping validations from sharing and then
+                        // prematurely removing the same pending ACME authorization.
+                        // Keep it until the validation's finally block has cleaned up.
+                        await using (await AcquireDnsChallengeLocksAsync(context, DnsChallengeLock.ForCertificate(certificatePolicyItem)))
+                        {
+                            await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
+                        }
+                    }
+                    else
+                    {
+                        await ValidateOrderAsync(context, certificatePolicyItem, orderDetails, zones, logger);
+                    }
                 }
             }
 
@@ -69,6 +87,9 @@ public partial class CertificateIssuanceOrchestrator
             throw;
         }
     }
+
+    internal virtual Task<IAsyncDisposable> AcquireDnsChallengeLocksAsync(TaskOrchestrationContext context, EntityInstanceId[] lockIds)
+        => context.Entities.LockEntitiesAsync(lockIds);
 
     private static async Task ValidateOrderAsync(
         TaskOrchestrationContext context,

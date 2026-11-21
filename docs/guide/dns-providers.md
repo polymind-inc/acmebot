@@ -1,4 +1,4 @@
----
+﻿---
 description: "Configure ACME DNS-01 validation for Acmebot with Azure DNS, Cloudflare, Route 53, Google Cloud DNS, and 15+ supported DNS providers."
 ---
 
@@ -86,6 +86,33 @@ Acmebot__AzureDns__ManagedIdentityClientId=<user-assigned-client-id>
 Assign the identity a role that can list DNS zones and manage TXT records, such as `DNS Zone Contributor`, on the DNS zone or a tightly scoped resource group.
 
 If the DNS zone is in a different subscription than the Function App, set `SubscriptionId` to the DNS zone subscription and assign the identity in that subscription.
+
+### NS-delegated Azure DNS challenge zones
+
+You can issue a certificate without managing its parent DNS zone when its `_acme-challenge` name is delegated with **NS records** to a separate public Azure DNS zone. For example:
+
+- The certificate identifiers are `example.org`, `*.example.org`, or both.
+- The parent `example.org` zone is managed externally.
+- The DNS administrator delegates `_acme-challenge.example.org` to the Azure DNS zone's authoritative name servers.
+- The Azure DNS zone is named `_acme-challenge.example.org`; its ACME TXT challenge lives at the zone apex (`@`).
+
+Issue the certificate using the **existing CLI or HTTP API**, passing the full DNS identifiers and selecting `Azure DNS` as the provider. Do not set a DNS alias for NS delegation:
+
+```bash
+acmebot certificate issue --name wildcard-example-org \
+  --dns-name example.org --dns-name "*.example.org" \
+  --dns-provider "Azure DNS"
+```
+
+The API accepts the same request through its existing issuance endpoint: specify `dnsNames`, `certificateName`, and `dnsProviderName: "Azure DNS"` without `dnsAlias`. Acmebot selects the most-specific zone for each actual `_acme-challenge` record, validates the target zone's name servers when available, and writes TXT records at the Azure DNS apex (`@`). No new validation mode or CLI argument is required.
+
+**Web UI limitation:** The dashboard's Issue Certificate form still requires names under its selected DNS zone and does not offer NS-delegation issuance. Create these certificates using the CLI or API instead. Existing managed certificates remain available through the usual certificate listing and renewal workflows.
+
+**Important:** For Azure DNS, Acmebot reads delegated-zone apex (`@`) TXT records through the Azure DNS management API. Existing TXT values, TTL, and metadata are preserved while ACME challenge values are added using ETag-protected conditional updates (`If-Match`). New record sets are created using `If-None-Match: *` to prevent overwriting concurrent changes. During cleanup, Acmebot removes only its own challenge values and deletes an empty record set only if Acmebot originally created it. Concurrent modifications trigger a fresh read and bounded retry. Other certificate clients sharing the same apex must also preserve existing TXT values; Acmebot cannot prevent an independent client from overwriting the record set. Failed operations may leave challenge values requiring investigation. Manual and automatic renewals use the same protected DNS-01 handling.
+
+New Azure DNS issuance and renewal operations in the same Acmebot Function App also hold a durable lock for each DNS-01 challenge name through validation and cleanup. This prevents one Acmebot operation from cleaning up an authorization still needed by another operation with the same challenge name. The Function App assigns an orchestration version to new operations; existing unversioned operations retain their previous execution sequence to allow safe replay after upgrades. Avoid overlapping issuance for the same challenge name until such in-flight operations have completed. Separate deployments and independent ACME clients do not share these locks and must coordinate their own use of the zone.
+
+A delegated `_acme-challenge.example.org` zone covers the certificate identifiers `example.org` and `*.example.org`. Other identifiers require their own corresponding challenge-zone delegation.
 
 ## Azure Private DNS
 
