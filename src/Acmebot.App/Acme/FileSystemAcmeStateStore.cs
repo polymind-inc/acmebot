@@ -32,8 +32,8 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 
     public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
     {
-        RejectReparsePoint(_stateDirectory);
         Directory.CreateDirectory(_stateDirectory);
+        var lockPath = Path.Join(_stateDirectory, "account.lock");
 
         while (true)
         {
@@ -41,7 +41,7 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 
             try
             {
-                var stream = new FileStream(ResolveStateFullPath("account.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
                 return new FileSystemAcmeStateStoreLock(stream, cancellationToken);
             }
@@ -85,12 +85,7 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
     private async Task SaveCoreAsync<TState>(TState value, string path, bool overwrite, CancellationToken cancellationToken)
     {
         var fullPath = ResolveStateFullPath(path);
-        var directoryPath = Path.GetDirectoryName(fullPath);
-
-        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
+        Directory.CreateDirectory(_stateDirectory);
 
         // Write to a temporary file first and atomically replace the target so that a crash or host
         // recycle mid-write cannot leave a truncated state file (a corrupt account_key.json would
@@ -131,49 +126,12 @@ internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 
     private string ResolveStateFullPath(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (Path.IsPathRooted(path))
+        if (path is not ("account.json" or "account_key.json"))
         {
-            throw new ArgumentException("The state file path must be relative to the state directory.", nameof(path));
+            throw new ArgumentException("The state file must be account.json or account_key.json.", nameof(path));
         }
 
-        var fullPath = Path.GetFullPath(path, _stateDirectory);
-        var relativePath = Path.GetRelativePath(_stateDirectory, fullPath);
-        if (Path.IsPathRooted(relativePath) || relativePath is "." or ".." ||
-            relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-        {
-            throw new ArgumentException("The state file path must identify a file inside the state directory.", nameof(path));
-        }
-
-        // The configured share and its parent directories must be trusted. These checks reject
-        // existing links below that boundary, but path-based IO cannot prevent concurrent replacement.
-        var currentPath = _stateDirectory;
-        RejectReparsePoint(currentPath);
-        foreach (var component in relativePath.Split(Path.DirectorySeparatorChar))
-        {
-            currentPath = Path.Join(currentPath, component);
-            RejectReparsePoint(currentPath);
-        }
-
-        return fullPath;
-    }
-
-    private static void RejectReparsePoint(string path)
-    {
-        FileAttributes attributes;
-        try
-        {
-            attributes = File.GetAttributes(path);
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
-        {
-            return;
-        }
-
-        if ((attributes & FileAttributes.ReparsePoint) != 0)
-        {
-            throw new IOException($"The ACME state path contains a symbolic link or reparse point: '{path}'.");
-        }
+        return Path.Join(_stateDirectory, path);
     }
 
     [LoggerMessage(LogLevel.Warning, "Could not remove the temporary ACME state file {Path}.")]

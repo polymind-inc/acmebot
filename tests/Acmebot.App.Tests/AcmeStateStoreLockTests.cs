@@ -26,11 +26,11 @@ public sealed class AcmeStateStoreLockTests
                 var waiting = secondStore.AcquireLockAsync(TestContext.Current.CancellationToken);
 
                 Assert.False(waiting.IsCompleted);
-                await firstStore.SaveAsync(new { Value = "initialized" }, "state.json", firstLock.CancellationToken);
+                await firstStore.SaveAsync(new { Value = "initialized" }, "account.json", firstLock.CancellationToken);
                 await firstLock.DisposeAsync();
 
                 await using var secondLock = await waiting.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-                var state = await secondStore.LoadAsync<System.Text.Json.JsonElement>("state.json", secondLock.CancellationToken);
+                var state = await secondStore.LoadAsync<System.Text.Json.JsonElement>("account.json", secondLock.CancellationToken);
 
                 Assert.Equal("initialized", state.GetProperty("Value").GetString());
             }
@@ -69,61 +69,25 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
-    public async Task FileSystemStore_RequiresPathsInsideStateDirectory()
+    public async Task FileSystemStore_RequiresKnownStateFileNames()
     {
         var directory = Directory.CreateTempSubdirectory("acmebot-state-");
         try
         {
             var store = new FileSystemAcmeStateStore(Path.Join(directory.FullName, "state"));
             var cancellationToken = TestContext.Current.CancellationToken;
-            var outsidePath = Path.Join(directory.FullName, "outside.json");
+            var outsidePath = Path.Join(directory.FullName, "account.json");
             await File.WriteAllTextAsync(outsidePath, "\"outside\"", cancellationToken);
 
             await Assert.ThrowsAsync<ArgumentException>("path", () => store.LoadAsync<string>(outsidePath, cancellationToken));
-            await Assert.ThrowsAsync<ArgumentException>("path", () => store.TryCreateAsync("new", "../new.json", cancellationToken));
-            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../outside.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.TryCreateAsync("new", "nested/account_key.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../account.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../STATE/account.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "account.lock", cancellationToken));
             Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsidePath, cancellationToken));
-            Assert.False(File.Exists(Path.Join(directory.FullName, "new.json")));
 
-            await store.SaveAsync("inside", "nested/state.json", cancellationToken);
-            Assert.Equal("inside", await store.LoadAsync<string>("nested/state.json", cancellationToken));
-        }
-        finally
-        {
-            directory.Delete(recursive: true);
-        }
-    }
-
-    [Fact]
-    public async Task FileSystemStore_RejectsLinksInStatePaths()
-    {
-        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
-        try
-        {
-            var stateDirectory = directory.CreateSubdirectory("state");
-            var outsideDirectory = directory.CreateSubdirectory("outside");
-            var outsideFile = Path.Join(outsideDirectory.FullName, "state.json");
-            var cancellationToken = TestContext.Current.CancellationToken;
-            await File.WriteAllTextAsync(outsideFile, "\"outside\"", cancellationToken);
-
-            try
-            {
-                Directory.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "nested"), outsideDirectory.FullName);
-                File.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "state.json"), outsideFile);
-                File.CreateSymbolicLink(Path.Join(stateDirectory.FullName, "account.lock"), outsideFile);
-            }
-            catch (IOException ex) when (OperatingSystem.IsWindows() && (ex.HResult & 0xffff) is 5 or 1314)
-            {
-                Assert.Skip("Creating symbolic links requires Windows privileges or Developer Mode.");
-            }
-
-            var store = new FileSystemAcmeStateStore(stateDirectory.FullName);
-            await Assert.ThrowsAsync<IOException>(() => store.LoadAsync<string>("state.json", cancellationToken));
-            await Assert.ThrowsAsync<IOException>(() => store.SaveAsync("updated", "nested/state.json", cancellationToken));
-            await Assert.ThrowsAsync<IOException>(() => store.TryCreateAsync("new", "nested/new.json", cancellationToken));
-            await Assert.ThrowsAsync<IOException>(() => store.AcquireLockAsync(cancellationToken));
-            Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsideFile, cancellationToken));
-            Assert.False(File.Exists(Path.Join(outsideDirectory.FullName, "new.json")));
+            await store.SaveAsync("inside", "account.json", cancellationToken);
+            Assert.Equal("inside", await store.LoadAsync<string>("account.json", cancellationToken));
         }
         finally
         {
@@ -139,11 +103,11 @@ public sealed class AcmeStateStoreLockTests
         {
             var store = new FileSystemAcmeStateStore(directory.FullName);
             var cancellationToken = TestContext.Current.CancellationToken;
-            await store.SaveAsync("existing", "state.json", cancellationToken);
+            await store.SaveAsync("existing", "account.json", cancellationToken);
 
-            await Assert.ThrowsAsync<NotSupportedException>(() => store.SaveAsync(new { Type = typeof(string) }, "state.json", cancellationToken));
+            await Assert.ThrowsAsync<NotSupportedException>(() => store.SaveAsync(new { Type = typeof(string) }, "account.json", cancellationToken));
 
-            Assert.Equal("existing", await store.LoadAsync<string>("state.json", cancellationToken));
+            Assert.Equal("existing", await store.LoadAsync<string>("account.json", cancellationToken));
             Assert.Empty(directory.EnumerateFiles("*.tmp"));
         }
         finally
