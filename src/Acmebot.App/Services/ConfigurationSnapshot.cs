@@ -40,6 +40,11 @@ internal static class ConfigurationSnapshot
             Add("DNS Made Easy", Secret("API key", dnsMadeEasy.ApiKey), Secret("Secret key", dnsMadeEasy.SecretKey));
         }
 
+        if (options.EasyDns is { } easyDns)
+        {
+            Add("EasyDNS", Secret("API token", easyDns.ApiToken), Secret("API key", easyDns.ApiKey));
+        }
+
         if (options.GandiLiveDns is { } gandi)
         {
             Add("Gandi LiveDNS", Secret("API key", gandi.ApiKey));

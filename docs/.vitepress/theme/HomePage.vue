@@ -203,6 +203,7 @@ function scrollToSection(event: MouseEvent, selector: string) {
           <div class="provider-card">GoDaddy</div>
           <div class="provider-card">Akamai Edge DNS</div>
           <div class="provider-card">DNS Made Easy</div>
+          <div class="provider-card">EasyDNS</div>
           <div class="provider-card">Gandi LiveDNS</div>
           <div class="provider-card">OVH</div>
           <div class="provider-card">TransIP DNS</div>

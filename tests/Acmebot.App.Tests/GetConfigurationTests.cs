@@ -114,7 +114,7 @@ public sealed class GetConfigurationTests : IDisposable
         var snapshot = ConfigurationSnapshot.Create(options);
         var json = JsonSerializer.Serialize(snapshot);
 
-        Assert.Equal(16, snapshot.DnsProviders.Count);
+        Assert.Equal(17, snapshot.DnsProviders.Count);
         Assert.DoesNotContain(secret, json);
         var credentials = snapshot.DnsProviders.SelectMany(x => x.Settings).Concat(snapshot.Acme.Settings).Where(x => x.IsConfigured.HasValue).ToArray();
         Assert.NotEmpty(credentials);
