@@ -8,7 +8,6 @@
   },
   "extensions": {
     "durableTask": {
-      "defaultVersion": "1.0",
       "storageProvider": {
         "maxQueuePollingInterval": "00:00:30"
       },
