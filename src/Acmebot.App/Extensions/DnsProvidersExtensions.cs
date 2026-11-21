@@ -14,6 +14,13 @@ internal static class DnsProvidersExtensions
 {
     public static IServiceCollection AddDnsProviders(this IServiceCollection services)
     {
+        services.AddSingleton(provider => new OvhProvider(provider.GetRequiredService<IOptions<AcmebotOptions>>().Value.Ovh!));
+        services.AddSingleton(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
+            return new TransIpProvider(options, options.TransIp!, provider.GetRequiredService<TokenCredential>());
+        });
+
         services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
@@ -41,14 +48,14 @@ internal static class DnsProvidersExtensions
                 environment.ResourceManager.Audience,
                 ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
             dnsProviders.TryAdd(options.IonosDns, o => new IonosDnsProvider(o));
-            dnsProviders.TryAdd(options.Ovh, o => new OvhProvider(o));
+            dnsProviders.TryAdd(options.Ovh, _ => provider.GetRequiredService<OvhProvider>());
             dnsProviders.TryAdd(options.PowerDns, o => new PowerDnsProvider(o));
             dnsProviders.TryAdd(options.Regfish, o => new RegfishProvider(o));
             dnsProviders.TryAdd(options.Route53, o => new Route53Provider(
                 o,
                 environment.ResourceManager.Audience,
                 ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
-            dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, tokenCredential));
+            dnsProviders.TryAdd(options.TransIp, _ => provider.GetRequiredService<TransIpProvider>());
             dnsProviders.TryAdd(options.UnitedDomains, o => new UnitedDomainsProvider(o));
 
             return dnsProviders;

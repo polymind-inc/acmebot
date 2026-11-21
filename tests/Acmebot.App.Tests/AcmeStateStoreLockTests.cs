@@ -26,11 +26,11 @@ public sealed class AcmeStateStoreLockTests
                 var waiting = secondStore.AcquireLockAsync(TestContext.Current.CancellationToken);
 
                 Assert.False(waiting.IsCompleted);
-                await firstStore.SaveAsync(new { Value = "initialized" }, "state.json", firstLock.CancellationToken);
+                await firstStore.SaveAsync(new { Value = "initialized" }, "account.json", firstLock.CancellationToken);
                 await firstLock.DisposeAsync();
 
                 await using var secondLock = await waiting.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-                var state = await secondStore.LoadAsync<System.Text.Json.JsonElement>("state.json", secondLock.CancellationToken);
+                var state = await secondStore.LoadAsync<System.Text.Json.JsonElement>("account.json", secondLock.CancellationToken);
 
                 Assert.Equal("initialized", state.GetProperty("Value").GetString());
             }
@@ -65,6 +65,54 @@ public sealed class AcmeStateStoreLockTests
         finally
         {
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FileSystemStore_RequiresKnownStateFileNames()
+    {
+        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
+        try
+        {
+            var store = new FileSystemAcmeStateStore(Path.Join(directory.FullName, "state"));
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var outsidePath = Path.Join(directory.FullName, "account.json");
+            await File.WriteAllTextAsync(outsidePath, "\"outside\"", cancellationToken);
+
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.LoadAsync<string>(outsidePath, cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.TryCreateAsync("new", "nested/account_key.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../account.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "../STATE/account.json", cancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>("path", () => store.SaveAsync("updated", "account.lock", cancellationToken));
+            Assert.Equal("\"outside\"", await File.ReadAllTextAsync(outsidePath, cancellationToken));
+
+            await store.SaveAsync("inside", "account.json", cancellationToken);
+            Assert.Equal("inside", await store.LoadAsync<string>("account.json", cancellationToken));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FileSystemStore_WhenSerializationFails_RemovesTemporaryFileAndPreservesState()
+    {
+        var directory = Directory.CreateTempSubdirectory("acmebot-state-");
+        try
+        {
+            var store = new FileSystemAcmeStateStore(directory.FullName);
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await store.SaveAsync("existing", "account.json", cancellationToken);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => store.SaveAsync(new { Type = typeof(string) }, "account.json", cancellationToken));
+
+            Assert.Equal("existing", await store.LoadAsync<string>("account.json", cancellationToken));
+            Assert.Empty(directory.EnumerateFiles("*.tmp"));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
         }
     }
 
@@ -104,6 +152,27 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task BlobLock_WhenCancellationCallbackThrows_StillReleasesLease()
+    {
+        var allowRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var client = new TestLeaseClient { FailRenewal = true, RenewalGate = allowRenewal.Task };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = stateLock.CancellationToken.Register(() =>
+        {
+            callbackInvoked.TrySetResult();
+            throw new InvalidOperationException("Simulated cancellation callback failure.");
+        });
+        allowRenewal.SetResult();
+
+        await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var error = await Assert.ThrowsAsync<AggregateException>(() => stateLock.DisposeAsync().AsTask());
+
+        Assert.IsType<InvalidOperationException>(Assert.Single(error.InnerExceptions));
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
     public async Task BlobLock_WhenCallerCancels_StillReleasesWithIndependentToken()
     {
         var client = new TestLeaseClient();
@@ -120,19 +189,21 @@ public sealed class AcmeStateStoreLockTests
     private sealed class TestLeaseClient : BlobLeaseClient
     {
         public bool FailRenewal { get; init; }
+        public Task RenewalGate { get; init; } = Task.CompletedTask;
         public int RenewalCount;
         public int ReleaseCount;
         public TaskCompletionSource Renewed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public override Task<Response<BlobLease>> RenewAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)
+        public override async Task<Response<BlobLease>> RenewAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)
         {
+            await RenewalGate.WaitAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref RenewalCount);
             Renewed.TrySetResult();
 
             return FailRenewal
-                ? Task.FromException<Response<BlobLease>>(new RequestFailedException(412, "Lease lost.", "LeaseIdMismatchWithLeaseOperation", null))
-                : Task.FromResult<Response<BlobLease>>(null!);
+                ? throw new RequestFailedException(412, "Lease lost.", "LeaseIdMismatchWithLeaseOperation", null)
+                : null!;
         }
 
         public override Task<Response<ReleasedObjectInfo>> ReleaseAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)

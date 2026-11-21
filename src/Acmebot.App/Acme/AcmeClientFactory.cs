@@ -104,14 +104,11 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
                     throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
                 }
 
-                if (isNewAccountKey)
+                // Creation must be atomic even if this worker resumes after its lease has expired.
+                // Never register with a key that lost a race to another initializer.
+                if (isNewAccountKey && !await stateStore.TryCreateAsync(accountKey, "account_key.json", stateCancellationToken))
                 {
-                    // Creation must be atomic even if this worker resumes after its lease has expired.
-                    // Never register with a key that lost a race to another initializer.
-                    if (!await stateStore.TryCreateAsync(accountKey, "account_key.json", stateCancellationToken))
-                    {
-                        throw new InvalidOperationException("The ACME account key was created by another worker. Retry initialization to use the existing account key.");
-                    }
+                    throw new InvalidOperationException("The ACME account key was created by another worker. Retry initialization to use the existing account key.");
                 }
 
                 accountHandle = await client.CreateAccountAsync(
@@ -154,15 +151,16 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
 
     private AcmeExternalAccountBindingOptions? CreateExternalAccountBinding()
     {
-        if (string.IsNullOrEmpty(_options.ExternalAccountBinding?.KeyId) || string.IsNullOrEmpty(_options.ExternalAccountBinding?.HmacKey))
+        var binding = _options.ExternalAccountBinding;
+        if (binding is null || string.IsNullOrEmpty(binding.KeyId) || string.IsNullOrEmpty(binding.HmacKey))
         {
             return null;
         }
 
         return AcmeExternalAccountBindingOptions.FromBase64Url(
-            _options.ExternalAccountBinding.KeyId,
-            _options.ExternalAccountBinding.HmacKey,
-            _options.ExternalAccountBinding.Algorithm);
+            binding.KeyId,
+            binding.HmacKey,
+            binding.Algorithm);
     }
 
     private string[] GetContacts() => [$"mailto:{_options.Contacts}"];

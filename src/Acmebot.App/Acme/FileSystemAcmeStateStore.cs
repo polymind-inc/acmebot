@@ -2,20 +2,27 @@
 
 using Acmebot.App.Options;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
+internal sealed partial class FileSystemAcmeStateStore : IAcmeStateStore
 {
     private readonly string _stateDirectory;
+    private readonly ILogger<FileSystemAcmeStateStore> _logger;
 
-    public FileSystemAcmeStateStore(IOptions<AcmebotOptions> options)
-        : this(Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{options.Value.Endpoint.Host}"))
+    public FileSystemAcmeStateStore(IOptions<AcmebotOptions> options, ILogger<FileSystemAcmeStateStore> logger)
+        : this(Environment.ExpandEnvironmentVariables($"%HOME%/data/.acmebot/{options.Value.Endpoint.Host}"), logger)
     {
     }
 
-    internal FileSystemAcmeStateStore(string stateDirectory) => _stateDirectory = stateDirectory;
+    internal FileSystemAcmeStateStore(string stateDirectory, ILogger<FileSystemAcmeStateStore>? logger = null)
+    {
+        _stateDirectory = Path.GetFullPath(stateDirectory);
+        _logger = logger ?? NullLogger<FileSystemAcmeStateStore>.Instance;
+    }
 
     private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
     {
@@ -26,6 +33,7 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
     public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_stateDirectory);
+        var lockPath = Path.Join(_stateDirectory, "account.lock");
 
         while (true)
         {
@@ -33,7 +41,7 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
 
             try
             {
-                var stream = new FileStream(ResolveStateFullPath("account.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
                 return new FileSystemAcmeStateStoreLock(stream, cancellationToken);
             }
@@ -77,21 +85,17 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
     private async Task SaveCoreAsync<TState>(TState value, string path, bool overwrite, CancellationToken cancellationToken)
     {
         var fullPath = ResolveStateFullPath(path);
-        var directoryPath = Path.GetDirectoryName(fullPath);
-
-        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
+        Directory.CreateDirectory(_stateDirectory);
 
         // Write to a temporary file first and atomically replace the target so that a crash or host
         // recycle mid-write cannot leave a truncated state file (a corrupt account_key.json would
         // permanently orphan the ACME account).
         var tempPath = $"{fullPath}.{Guid.NewGuid():N}.tmp";
+        var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
         try
         {
-            await using (var stream = File.Create(tempPath))
+            await using (stream)
             {
                 await JsonSerializer.SerializeAsync(stream, value, s_jsonSerializerOptions, cancellationToken);
             }
@@ -107,19 +111,31 @@ internal sealed class FileSystemAcmeStateStore : IAcmeStateStore
         }
     }
 
-    private static void TryDeleteFile(string path)
+    private void TryDeleteFile(string path)
     {
         // Best-effort cleanup of the temp file; never let a cleanup failure mask the original error.
         try
         {
             File.Delete(path);
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            LogTemporaryFileCleanupFailed(_logger, ex, path);
         }
     }
 
-    private string ResolveStateFullPath(string path) => Path.Combine(_stateDirectory, path);
+    private string ResolveStateFullPath(string path)
+    {
+        if (path is not ("account.json" or "account_key.json"))
+        {
+            throw new ArgumentException("The state file must be account.json or account_key.json.", nameof(path));
+        }
+
+        return Path.Join(_stateDirectory, path);
+    }
+
+    [LoggerMessage(LogLevel.Warning, "Could not remove the temporary ACME state file {Path}.")]
+    private static partial void LogTemporaryFileCleanupFailed(ILogger logger, Exception exception, string path);
 
     private sealed class FileSystemAcmeStateStoreLock(FileStream stream, CancellationToken cancellationToken) : IAcmeStateStoreLock
     {
