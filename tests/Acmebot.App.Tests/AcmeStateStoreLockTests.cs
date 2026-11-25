@@ -278,6 +278,78 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task BlobLock_WhenDisposalStartsAfterDeadlineBeforeTimerCallback_CancelsProtectedOperation()
+    {
+        var timeProvider = new RenewalTimeProvider();
+        var client = new TestLeaseClient { OnRenewal = token => Task.Delay(Timeout.InfiniteTimeSpan, token) };
+        var testCancellation = TestContext.Current.CancellationToken;
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, testCancellation,
+            renewalInterval: TimeSpan.FromMilliseconds(10), timeProvider: timeProvider);
+        var operationToken = stateLock.CancellationToken;
+
+        await client.Renewed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+        timeProvider.AdvanceToRenewalDeadline();
+        await stateLock.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        Assert.True(operationToken.IsCancellationRequested);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlobLock_WhenTimedOutRenewalCompletesLater_CancelsOperationBeforeRelease(bool callbackFails)
+    {
+        var timeProvider = new RenewalTimeProvider();
+        var allowResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var operationStopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callbackFailure = new RequestFailedException("Unexpected failure from an operation cancellation callback.");
+        var client = new TestLeaseClient { OnRenewal = _ => allowResponse.Task };
+        var testCancellation = TestContext.Current.CancellationToken;
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, testCancellation,
+            renewalInterval: TimeSpan.FromMilliseconds(10), timeProvider: timeProvider);
+        var operationToken = stateLock.CancellationToken;
+        using var registration = operationToken.Register(() =>
+        {
+            operationStopped.TrySetResult();
+            if (callbackFails)
+            {
+                throw callbackFailure;
+            }
+        });
+        Task disposal;
+
+        try
+        {
+            await client.Renewed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            timeProvider.ExpireRenewal();
+
+            await operationStopped.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            disposal = stateLock.DisposeAsync().AsTask();
+            Assert.False(disposal.IsCompleted);
+            Assert.Equal(0, client.ReleaseCount);
+        }
+        finally
+        {
+            allowResponse.TrySetResult();
+        }
+
+        if (callbackFails)
+        {
+            var error = await Assert.ThrowsAsync<AggregateException>(() => disposal.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
+            Assert.Same(callbackFailure, Assert.Single(error.Flatten().InnerExceptions));
+        }
+        else
+        {
+            await disposal.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+        }
+
+        Assert.True(operationToken.IsCancellationRequested);
+        Assert.Equal(1, client.RenewalCount);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
     public async Task BlobLock_WhenRenewalFailsUnexpectedly_CancelsOperationAndReleasesLease()
     {
         var failure = new InvalidOperationException("Unexpected renewal failure.");
@@ -355,11 +427,26 @@ public sealed class AcmeStateStoreLockTests
     private sealed class RenewalTimeProvider : TimeProvider
     {
         private RenewalTimer? _timer;
+        private long _timestamp;
+        private long _deadline;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => Interlocked.Read(ref _timestamp);
 
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
-            => _timer = new RenewalTimer(callback, state);
+        {
+            Interlocked.Exchange(ref _deadline, GetTimestamp() + dueTime.Ticks);
+            return _timer = new RenewalTimer(callback, state);
+        }
 
-        public void ExpireRenewal() => Assert.IsType<RenewalTimer>(_timer).Fire();
+        public void AdvanceToRenewalDeadline() => Interlocked.Exchange(ref _timestamp, Interlocked.Read(ref _deadline));
+
+        public void ExpireRenewal()
+        {
+            AdvanceToRenewalDeadline();
+            Assert.IsType<RenewalTimer>(_timer).Fire();
+        }
 
         private sealed class RenewalTimer(TimerCallback callback, object? state) : ITimer
         {
