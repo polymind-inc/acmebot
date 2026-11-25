@@ -142,6 +142,7 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
             }
 
             stateCancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             return context;
         }

@@ -212,6 +212,56 @@ public sealed class AcmeStateStoreLockTests
         Assert.Equal(1, client.ReleaseCount);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlobLock_WhenRenewalTimesOutBeforeDisposal_CancelsProtectedOperation(bool wrapsCancellation)
+    {
+        var timedOut = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reportFailure = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var client = new TestLeaseClient
+        {
+            OnRenewal = async cancellationToken =>
+            {
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    timedOut.TrySetResult();
+                    await reportFailure.Task;
+
+                    if (wrapsCancellation)
+                    {
+                        throw new AggregateException(new RequestFailedException("Initial attempt failed."), ex);
+                    }
+
+                    throw;
+                }
+            }
+        };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken,
+            renewalInterval: TimeSpan.FromMilliseconds(10), renewalTimeout: TimeSpan.FromMilliseconds(100));
+        var operationToken = stateLock.CancellationToken;
+        Task disposal;
+
+        try
+        {
+            await timedOut.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            disposal = stateLock.DisposeAsync().AsTask();
+        }
+        finally
+        {
+            reportFailure.TrySetResult();
+        }
+
+        await disposal.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        Assert.True(operationToken.IsCancellationRequested);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
     [Fact]
     public async Task BlobLock_WhenRenewalFailsUnexpectedly_CancelsOperationAndReleasesLease()
     {
@@ -226,24 +276,41 @@ public sealed class AcmeStateStoreLockTests
         Assert.Equal(1, client.ReleaseCount);
     }
 
-    [Fact]
-    public async Task BlobLock_WhenCancellationCallbackThrows_StillReleasesLease()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlobLock_WhenCancellationCallbackThrows_PreservesFailuresAndReleasesLease(bool unexpectedRenewalFailure)
     {
         var allowRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var client = new TestLeaseClient { RenewalFailure = new RequestFailedException(412, "Lease lost."), RenewalGate = allowRenewal.Task };
+        var renewalFailure = unexpectedRenewalFailure
+            ? (Exception)new IOException("Unexpected renewal failure.")
+            : new RequestFailedException(412, "Lease lost.");
+        var callbackFailure = new InvalidOperationException("Simulated cancellation callback failure.");
+        var client = new TestLeaseClient { RenewalFailure = renewalFailure, RenewalGate = allowRenewal.Task };
         await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
         var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = stateLock.CancellationToken.Register(() =>
         {
             callbackInvoked.TrySetResult();
-            throw new InvalidOperationException("Simulated cancellation callback failure.");
+            throw callbackFailure;
         });
         allowRenewal.SetResult();
 
         await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         var error = await Assert.ThrowsAsync<AggregateException>(() => stateLock.DisposeAsync().AsTask());
 
-        Assert.IsType<InvalidOperationException>(Assert.Single(error.InnerExceptions));
+        var failures = error.Flatten().InnerExceptions;
+        Assert.Contains(callbackFailure, failures);
+        if (unexpectedRenewalFailure)
+        {
+            Assert.Equal(2, failures.Count);
+            Assert.Contains(renewalFailure, failures);
+        }
+        else
+        {
+            Assert.Single(failures);
+        }
+
         Assert.Equal(1, client.ReleaseCount);
     }
 

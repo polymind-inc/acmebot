@@ -127,12 +127,12 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
     private readonly Task _renewalTask;
     private int _disposed;
 
-    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, ILogger logger, CancellationToken cancellationToken, TimeSpan? renewalInterval = null)
+    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, ILogger logger, CancellationToken cancellationToken, TimeSpan? renewalInterval = null, TimeSpan? renewalTimeout = null)
     {
         _leaseClient = leaseClient;
         _logger = logger;
         _operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _renewalTask = RenewAsync(renewalInterval ?? TimeSpan.FromSeconds(20));
+        _renewalTask = RenewAsync(renewalInterval ?? TimeSpan.FromSeconds(20), renewalTimeout ?? TimeSpan.FromSeconds(20));
     }
 
     public CancellationToken CancellationToken => _operationCancellation.Token;
@@ -168,70 +168,76 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         {
             // The finite lease expires after a worker crash or an unsuccessful release.
         }
-        catch (AggregateException ex) when (IsExpectedRetryFailure(ex, out _))
+        catch (AggregateException ex) when (IsExpectedRetryFailure(ex))
         {
             // The Azure retry policy can aggregate failures from multiple attempts.
         }
     }
 
-    private async Task RenewAsync(TimeSpan renewalInterval)
+    private async Task RenewAsync(TimeSpan renewalInterval, TimeSpan renewalTimeout)
     {
-        var stoppedNormally = false;
+        var disposalToken = _renewalCancellation.Token;
 
         try
         {
             using var timer = new PeriodicTimer(renewalInterval);
 
-            while (await timer.WaitForNextTickAsync(_renewalCancellation.Token))
+            while (await timer.WaitForNextTickAsync(disposalToken))
             {
-                using var renewalTimeout = CancellationTokenSource.CreateLinkedTokenSource(_renewalCancellation.Token);
-                renewalTimeout.CancelAfter(TimeSpan.FromSeconds(20));
+                using var timeout = new CancellationTokenSource(renewalTimeout);
+                using var renewal = CancellationTokenSource.CreateLinkedTokenSource(disposalToken, timeout.Token);
 
-                await _leaseClient.RenewAsync(cancellationToken: renewalTimeout.Token);
+                try
+                {
+                    await _leaseClient.RenewAsync(cancellationToken: renewal.Token);
+                }
+                catch (OperationCanceledException ex) when (IsDisposalCancellation(ex, disposalToken, timeout, renewal.Token))
+                {
+                    return;
+                }
+                catch (AggregateException ex) when (IsExpectedRetryFailure(ex) && ex.InnerExceptions[^1] is OperationCanceledException cancellation &&
+                                                    IsDisposalCancellation(cancellation, disposalToken, timeout, renewal.Token))
+                {
+                    return;
+                }
             }
 
-            stoppedNormally = true;
+            return;
         }
-        catch (OperationCanceledException) when (_renewalCancellation.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (ex.CancellationToken == disposalToken && disposalToken.IsCancellationRequested)
         {
-            stoppedNormally = true;
+            return;
         }
-        catch (OperationCanceledException ex)
+        catch (Exception ex) when (ex is RequestFailedException or OperationCanceledException ||
+                                   ex is AggregateException retryFailure && IsExpectedRetryFailure(retryFailure))
         {
             LogLeaseRenewalFailed(_logger, ex);
         }
-        catch (RequestFailedException ex)
+        catch (Exception renewalFailure)
         {
-            LogLeaseRenewalFailed(_logger, ex);
-        }
-        catch (AggregateException ex) when (IsExpectedRetryFailure(ex, out var endedWithCancellation))
-        {
-            stoppedNormally = endedWithCancellation && _renewalCancellation.IsCancellationRequested;
-
-            if (!stoppedNormally)
-            {
-                LogLeaseRenewalFailed(_logger, ex);
-            }
-        }
-        finally
-        {
-            // Cancel the protected operation on any renewal failure, including unexpected faults.
-            if (!stoppedNormally)
+            try
             {
                 await _operationCancellation.CancelAsync();
             }
+            catch (AggregateException cancellationFailure)
+            {
+                throw new AggregateException(renewalFailure, cancellationFailure);
+            }
+
+            throw;
         }
+
+        await _operationCancellation.CancelAsync();
     }
 
-    private static bool IsExpectedRetryFailure(AggregateException exception, out bool endedWithCancellation)
+    private static bool IsDisposalCancellation(OperationCanceledException exception, CancellationToken disposalToken, CancellationTokenSource timeout, CancellationToken renewalToken)
     {
-        // Azure.Core reports the failed attempts in order. The last attempt distinguishes a
-        // retry interrupted by disposal from a request failure that happened during disposal.
-        var failures = exception.InnerExceptions;
-        endedWithCancellation = failures.LastOrDefault() is OperationCanceledException;
-
-        return failures.Count > 0 && failures.All(failure => failure is RequestFailedException or OperationCanceledException);
+        // Only treat cancellation of this request as a normal stop when disposal is its sole source.
+        return exception.CancellationToken == renewalToken && disposalToken.IsCancellationRequested && !timeout.IsCancellationRequested;
     }
+
+    private static bool IsExpectedRetryFailure(AggregateException exception)
+        => exception.InnerExceptions.Count > 0 && exception.InnerExceptions.All(failure => failure is RequestFailedException or OperationCanceledException);
 
     [LoggerMessage(LogLevel.Warning, "Failed to renew the ACME state lock blob lease. Cancelling the state operation.")]
     private static partial void LogLeaseRenewalFailed(ILogger logger, Exception exception);

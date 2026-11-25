@@ -301,10 +301,14 @@ public sealed class AcmeClientFactoryTests
 
         private sealed class NotifyingLock(IAcmeStateStoreLock inner, Action onDispose) : IAcmeStateStoreLock
         {
-            public CancellationToken CancellationToken => inner.CancellationToken;
+            private readonly CancellationTokenSource _cancellation = CancellationTokenSource.CreateLinkedTokenSource(inner.CancellationToken);
+
+            public CancellationToken CancellationToken => _cancellation.Token;
 
             public async ValueTask DisposeAsync()
             {
+                // Match the Blob lock, disconnecting its token before the caller cancels.
+                _cancellation.Dispose();
                 await inner.DisposeAsync();
                 onDispose();
             }
