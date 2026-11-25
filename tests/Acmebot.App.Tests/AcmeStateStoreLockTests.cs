@@ -213,11 +213,14 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task BlobLock_WhenRenewalTimesOutBeforeDisposal_CancelsProtectedOperation(bool wrapsCancellation)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task BlobLock_WhenTimeoutAndDisposalOverlap_UsesFirstCancellationSource(bool disposalFirst, bool wrapsCancellation)
     {
-        var timedOut = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var timeProvider = new RenewalTimeProvider();
+        var cancellationObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var reportFailure = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var client = new TestLeaseClient
         {
@@ -229,7 +232,7 @@ public sealed class AcmeStateStoreLockTests
                 }
                 catch (OperationCanceledException ex)
                 {
-                    timedOut.TrySetResult();
+                    cancellationObserved.TrySetResult();
                     await reportFailure.Task;
 
                     if (wrapsCancellation)
@@ -242,14 +245,26 @@ public sealed class AcmeStateStoreLockTests
             }
         };
         await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken,
-            renewalInterval: TimeSpan.FromMilliseconds(10), renewalTimeout: TimeSpan.FromMilliseconds(100));
+            renewalInterval: TimeSpan.FromMilliseconds(10), timeProvider: timeProvider);
         var operationToken = stateLock.CancellationToken;
         Task disposal;
 
         try
         {
-            await timedOut.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-            disposal = stateLock.DisposeAsync().AsTask();
+            await client.Renewed.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+            if (disposalFirst)
+            {
+                disposal = stateLock.DisposeAsync().AsTask();
+                await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+                timeProvider.ExpireRenewal();
+            }
+            else
+            {
+                timeProvider.ExpireRenewal();
+                await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+                disposal = stateLock.DisposeAsync().AsTask();
+            }
         }
         finally
         {
@@ -258,7 +273,7 @@ public sealed class AcmeStateStoreLockTests
 
         await disposal.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
-        Assert.True(operationToken.IsCancellationRequested);
+        Assert.Equal(!disposalFirst, operationToken.IsCancellationRequested);
         Assert.Equal(1, client.ReleaseCount);
     }
 
@@ -277,16 +292,23 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task BlobLock_WhenCancellationCallbackThrows_PreservesFailuresAndReleasesLease(bool unexpectedRenewalFailure)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task BlobLock_WhenCancellationCallbackThrows_PreservesFailuresAndAttemptsLeaseRelease(bool unexpectedRenewalFailure, bool releaseFails)
     {
         var allowRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var renewalFailure = unexpectedRenewalFailure
             ? (Exception)new IOException("Unexpected renewal failure.")
             : new RequestFailedException(412, "Lease lost.");
         var callbackFailure = new InvalidOperationException("Simulated cancellation callback failure.");
-        var client = new TestLeaseClient { RenewalFailure = renewalFailure, RenewalGate = allowRenewal.Task };
+        var releaseFailure = new IOException("Unexpected lease release failure.");
+        var client = new TestLeaseClient
+        {
+            RenewalFailure = renewalFailure,
+            RenewalGate = allowRenewal.Task,
+            ReleaseFailure = releaseFails ? releaseFailure : null
+        };
         await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
         var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = stateLock.CancellationToken.Register(() =>
@@ -300,17 +322,19 @@ public sealed class AcmeStateStoreLockTests
         var error = await Assert.ThrowsAsync<AggregateException>(() => stateLock.DisposeAsync().AsTask());
 
         var failures = error.Flatten().InnerExceptions;
-        Assert.Contains(callbackFailure, failures);
+        var expectedFailures = new List<Exception> { callbackFailure };
         if (unexpectedRenewalFailure)
         {
-            Assert.Equal(2, failures.Count);
-            Assert.Contains(renewalFailure, failures);
-        }
-        else
-        {
-            Assert.Single(failures);
+            expectedFailures.Add(renewalFailure);
         }
 
+        if (releaseFails)
+        {
+            expectedFailures.Add(releaseFailure);
+        }
+
+        Assert.Equal(expectedFailures.Count, failures.Count);
+        Assert.All(expectedFailures, failure => Assert.Contains(failure, failures));
         Assert.Equal(1, client.ReleaseCount);
     }
 
@@ -326,6 +350,38 @@ public sealed class AcmeStateStoreLockTests
         await stateLock.DisposeAsync();
 
         Assert.Equal(1, client.ReleaseCount);
+    }
+
+    private sealed class RenewalTimeProvider : TimeProvider
+    {
+        private RenewalTimer? _timer;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            => _timer = new RenewalTimer(callback, state);
+
+        public void ExpireRenewal() => Assert.IsType<RenewalTimer>(_timer).Fire();
+
+        private sealed class RenewalTimer(TimerCallback callback, object? state) : ITimer
+        {
+            private TimerCallback? _callback = callback;
+
+            public void Fire()
+            {
+                var expire = Interlocked.Exchange(ref _callback, null);
+                Assert.NotNull(expire);
+                expire(state);
+            }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period) => throw new NotSupportedException();
+
+            public void Dispose() => Interlocked.Exchange(ref _callback, null);
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return ValueTask.CompletedTask;
+            }
+        }
     }
 
     private sealed class TestLeaseClient : BlobLeaseClient

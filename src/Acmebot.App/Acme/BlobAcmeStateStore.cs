@@ -125,34 +125,56 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
     private readonly CancellationTokenSource _operationCancellation;
     private readonly CancellationTokenSource _renewalCancellation = new();
     private readonly Task _renewalTask;
-    private int _disposed;
+    private readonly Lock _renewalGate = new();
+    private TaskCompletionSource<bool>? _activeRenewal;
+    private bool _disposed;
 
-    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, ILogger logger, CancellationToken cancellationToken, TimeSpan? renewalInterval = null, TimeSpan? renewalTimeout = null)
+    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, ILogger logger, CancellationToken cancellationToken, TimeSpan? renewalInterval = null, TimeProvider? timeProvider = null)
     {
         _leaseClient = leaseClient;
         _logger = logger;
         _operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _renewalTask = RenewAsync(renewalInterval ?? TimeSpan.FromSeconds(20), renewalTimeout ?? TimeSpan.FromSeconds(20));
+        _renewalTask = RenewAsync(renewalInterval ?? TimeSpan.FromSeconds(20), timeProvider ?? TimeProvider.System);
     }
 
     public CancellationToken CancellationToken => _operationCancellation.Token;
 
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        lock (_renewalGate)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _activeRenewal?.TrySetResult(true);
         }
 
         using var operationCancellation = _operationCancellation;
         using var renewalCancellation = _renewalCancellation;
+        Exception? renewalFailure = null;
+
         try
         {
-            await Task.WhenAll(renewalCancellation.CancelAsync(), _renewalTask);
+            await AwaitBothAsync(renewalCancellation.CancelAsync(), _renewalTask);
+        }
+        catch (Exception ex)
+        {
+            renewalFailure = ex;
+            throw;
         }
         finally
         {
-            await ReleaseLeaseAsync();
+            try
+            {
+                await ReleaseLeaseAsync();
+            }
+            catch (Exception releaseFailure) when (renewalFailure is not null)
+            {
+                throw new AggregateException(renewalFailure, releaseFailure);
+            }
         }
     }
 
@@ -174,7 +196,7 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         }
     }
 
-    private async Task RenewAsync(TimeSpan renewalInterval, TimeSpan renewalTimeout)
+    private async Task RenewAsync(TimeSpan renewalInterval, TimeProvider timeProvider)
     {
         var disposalToken = _renewalCancellation.Token;
 
@@ -184,19 +206,7 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
 
             while (await timer.WaitForNextTickAsync(disposalToken))
             {
-                using var timeout = new CancellationTokenSource(renewalTimeout);
-                using var renewal = CancellationTokenSource.CreateLinkedTokenSource(disposalToken, timeout.Token);
-
-                try
-                {
-                    await _leaseClient.RenewAsync(cancellationToken: renewal.Token);
-                }
-                catch (OperationCanceledException ex) when (IsDisposalCancellation(ex, disposalToken, timeout, renewal.Token))
-                {
-                    return;
-                }
-                catch (AggregateException ex) when (IsExpectedRetryFailure(ex) && ex.InnerExceptions[^1] is OperationCanceledException cancellation &&
-                                                    IsDisposalCancellation(cancellation, disposalToken, timeout, renewal.Token))
+                if (!await RenewLeaseAsync(timeProvider))
                 {
                     return;
                 }
@@ -230,10 +240,81 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         await _operationCancellation.CancelAsync();
     }
 
-    private static bool IsDisposalCancellation(OperationCanceledException exception, CancellationToken disposalToken, CancellationTokenSource timeout, CancellationToken renewalToken)
+    private async Task<bool> RenewLeaseAsync(TimeProvider timeProvider)
     {
-        // Only treat cancellation of this request as a normal stop when disposal is its sole source.
-        return exception.CancellationToken == renewalToken && disposalToken.IsCancellationRequested && !timeout.IsCancellationRequested;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20), timeProvider);
+        using var requestCancellation = new CancellationTokenSource();
+        // Only the first source can complete the signal. Record it before cancelling the request.
+        var disposalWon = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var timeoutRegistration = timeout.Token.Register(() =>
+        {
+            lock (_renewalGate)
+            {
+                disposalWon.TrySetResult(false);
+            }
+        });
+        lock (_renewalGate)
+        {
+            if (_disposed)
+            {
+                return false;
+            }
+
+            _activeRenewal = disposalWon;
+        }
+
+        var requestToken = requestCancellation.Token;
+        var cancelledByDisposal = false;
+
+        try
+        {
+            var renewal = _leaseClient.RenewAsync(cancellationToken: requestToken);
+            if (await Task.WhenAny(renewal, disposalWon.Task) == disposalWon.Task)
+            {
+                cancelledByDisposal = await disposalWon.Task;
+                await AwaitBothAsync(requestCancellation.CancelAsync(), renewal);
+            }
+            else
+            {
+                await renewal;
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (cancelledByDisposal && IsRequestCancellation(ex, requestToken))
+        {
+            return false;
+        }
+        finally
+        {
+            lock (_renewalGate)
+            {
+                _activeRenewal = null;
+            }
+        }
+    }
+
+    private static bool IsRequestCancellation(Exception exception, CancellationToken requestToken)
+    {
+        if (exception is AggregateException retryFailure && IsExpectedRetryFailure(retryFailure))
+        {
+            exception = retryFailure.InnerExceptions[^1];
+        }
+
+        return exception is OperationCanceledException cancelled && cancelled.CancellationToken == requestToken;
+    }
+
+    private static async Task AwaitBothAsync(Task first, Task second)
+    {
+        var completion = Task.WhenAll(first, second);
+        try
+        {
+            await completion;
+        }
+        catch (Exception) when (completion.Exception is { InnerExceptions.Count: > 1 } failures)
+        {
+            throw failures;
+        }
     }
 
     private static bool IsExpectedRetryFailure(AggregateException exception)
