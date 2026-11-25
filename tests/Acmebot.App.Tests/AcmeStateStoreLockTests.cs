@@ -4,6 +4,8 @@ using Azure;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 
 namespace Acmebot.App.Tests;
@@ -120,7 +122,7 @@ public sealed class AcmeStateStoreLockTests
     public async Task BlobLock_RenewsUntilDisposedAndReleasesOnlyOnce()
     {
         var client = new TestLeaseClient();
-        var stateLock = new BlobAcmeStateStoreLock(client, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
 
         try
         {
@@ -140,11 +142,16 @@ public sealed class AcmeStateStoreLockTests
         Assert.Equal(1, client.ReleaseCount);
     }
 
-    [Fact]
-    public async Task BlobLock_WhenRenewalFails_CancelsProtectedOperation()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlobLock_WhenRenewalFails_CancelsProtectedOperation(bool timesOut)
     {
-        var client = new TestLeaseClient { FailRenewal = true };
-        await using var stateLock = new BlobAcmeStateStoreLock(client, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var client = new TestLeaseClient
+        {
+            RenewalFailure = timesOut ? new OperationCanceledException("Renewal timed out.") : new RequestFailedException(412, "Lease lost.")
+        };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), stateLock.CancellationToken));
 
@@ -152,11 +159,25 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task BlobLock_WhenRenewalFailsUnexpectedly_CancelsOperationAndReleasesLease()
+    {
+        var failure = new InvalidOperationException("Unexpected renewal failure.");
+        var client = new TestLeaseClient { RenewalFailure = failure };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), stateLock.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => stateLock.DisposeAsync().AsTask());
+
+        Assert.Same(failure, error);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
     public async Task BlobLock_WhenCancellationCallbackThrows_StillReleasesLease()
     {
         var allowRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var client = new TestLeaseClient { FailRenewal = true, RenewalGate = allowRenewal.Task };
-        await using var stateLock = new BlobAcmeStateStoreLock(client, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var client = new TestLeaseClient { RenewalFailure = new RequestFailedException(412, "Lease lost."), RenewalGate = allowRenewal.Task };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
         var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = stateLock.CancellationToken.Register(() =>
         {
@@ -177,7 +198,7 @@ public sealed class AcmeStateStoreLockTests
     {
         var client = new TestLeaseClient();
         using var cancellation = new CancellationTokenSource();
-        var stateLock = new BlobAcmeStateStoreLock(client, cancellation.Token);
+        var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, cancellation.Token);
 
         await cancellation.CancelAsync();
         Assert.True(stateLock.CancellationToken.IsCancellationRequested);
@@ -188,7 +209,7 @@ public sealed class AcmeStateStoreLockTests
 
     private sealed class TestLeaseClient : BlobLeaseClient
     {
-        public bool FailRenewal { get; init; }
+        public Exception? RenewalFailure { get; init; }
         public Task RenewalGate { get; init; } = Task.CompletedTask;
         public int RenewalCount;
         public int ReleaseCount;
@@ -201,9 +222,7 @@ public sealed class AcmeStateStoreLockTests
             Interlocked.Increment(ref RenewalCount);
             Renewed.TrySetResult();
 
-            return FailRenewal
-                ? throw new RequestFailedException(412, "Lease lost.", "LeaseIdMismatchWithLeaseOperation", null)
-                : null!;
+            return RenewalFailure is { } failure ? throw failure : null!;
         }
 
         public override Task<Response<ReleasedObjectInfo>> ReleaseAsync(RequestConditions? conditions = null, CancellationToken cancellationToken = default)

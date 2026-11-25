@@ -10,51 +10,36 @@ public partial class DnsZoneQueryService(IEnumerable<IDnsProvider> dnsProviders,
 {
     public async Task<IReadOnlyList<DnsZoneGroup>> GetAllDnsZonesAsync(CancellationToken cancellationToken = default)
     {
-        try
+        return await Task.WhenAll(dnsProviders.Select(async dnsProvider =>
         {
-            var zones = await Task.WhenAll(dnsProviders.Select(async dnsProvider =>
+            try
             {
-                try
+                var dnsZones = await dnsProvider.ListZonesAsync(cancellationToken);
+
+                return new DnsZoneGroup
                 {
-                    var dnsZones = await dnsProvider.ListZonesAsync(cancellationToken);
+                    DnsProviderName = dnsProvider.Name,
+                    DnsZones = dnsZones.Select(x => x.ToDnsZoneItem()).OrderBy(x => x.Name).ToArray()
+                };
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // A provider outage must not hide the zones of the other providers, but the failure
+                // still has to be recorded. Otherwise an expired credential is indistinguishable from
+                // a provider that genuinely hosts no zones.
+                LogDnsZoneListingFailed(logger, ex, dnsProvider.Name);
 
-                    return new DnsZoneGroup
-                    {
-                        DnsProviderName = dnsProvider.Name,
-                        DnsZones = dnsZones.Select(x => x.ToDnsZoneItem()).OrderBy(x => x.Name).ToArray()
-                    };
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                return new DnsZoneGroup
                 {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    // A provider outage must not hide the zones of the other providers, but the failure
-                    // still has to be recorded. Otherwise an expired credential is indistinguishable from
-                    // a provider that genuinely hosts no zones.
-                    LogDnsZoneListingFailed(logger, ex, dnsProvider.Name);
-
-                    return new DnsZoneGroup
-                    {
-                        DnsProviderName = dnsProvider.Name,
-                        DnsZones = []
-                    };
-                }
-            }));
-
-            return zones.ToArray();
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            LogDnsZoneEnumerationFailed(logger, ex);
-
-            return [];
-        }
+                    DnsProviderName = dnsProvider.Name,
+                    DnsZones = []
+                };
+            }
+        }));
     }
 
     public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(string dnsProviderName, CancellationToken cancellationToken = default)
@@ -82,7 +67,4 @@ public partial class DnsZoneQueryService(IEnumerable<IDnsProvider> dnsProviders,
 
     [LoggerMessage(LogLevel.Warning, "Listing DNS zones failed and the provider was reported as having no zones. DnsProviderName: {DnsProviderName}")]
     private static partial void LogDnsZoneListingFailed(ILogger logger, Exception exception, string dnsProviderName);
-
-    [LoggerMessage(LogLevel.Error, "Enumerating the configured DNS providers failed. No DNS zones were returned.")]
-    private static partial void LogDnsZoneEnumerationFailed(ILogger logger, Exception exception);
 }

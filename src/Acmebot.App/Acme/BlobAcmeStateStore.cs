@@ -7,11 +7,12 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Acmebot.App.Acme;
 
-internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IOptions<AcmebotOptions> options) : IAcmeStateStore
+internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IOptions<AcmebotOptions> options, ILogger<BlobAcmeStateStore> logger) : IAcmeStateStore
 {
     private const string ContentType = "application/json";
 
@@ -49,7 +50,7 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
             {
                 await leaseClient.AcquireAsync(TimeSpan.FromSeconds(60), cancellationToken: cancellationToken);
 
-                return new BlobAcmeStateStoreLock(leaseClient, cancellationToken);
+                return new BlobAcmeStateStoreLock(leaseClient, logger, cancellationToken);
             }
             catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.LeaseAlreadyPresent ||
                                                     ex.ErrorCode == BlobErrorCode.LeaseIsBreakingAndCannotBeAcquired)
@@ -117,17 +118,19 @@ internal sealed class BlobAcmeStateStore(BlobContainerClient containerClient, IO
     private string CreateBlobName(string path) => $"{_endpoint.Host}/{path}";
 }
 
-internal sealed class BlobAcmeStateStoreLock : IAcmeStateStoreLock
+internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
 {
     private readonly BlobLeaseClient _leaseClient;
+    private readonly ILogger _logger;
     private readonly CancellationTokenSource _operationCancellation;
     private readonly CancellationTokenSource _renewalCancellation = new();
     private readonly Task _renewalTask;
     private int _disposed;
 
-    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, CancellationToken cancellationToken, TimeSpan? renewalInterval = null)
+    public BlobAcmeStateStoreLock(BlobLeaseClient leaseClient, ILogger logger, CancellationToken cancellationToken, TimeSpan? renewalInterval = null)
     {
         _leaseClient = leaseClient;
+        _logger = logger;
         _operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _renewalTask = RenewAsync(renewalInterval ?? TimeSpan.FromSeconds(20));
     }
@@ -169,6 +172,8 @@ internal sealed class BlobAcmeStateStoreLock : IAcmeStateStoreLock
 
     private async Task RenewAsync(TimeSpan renewalInterval)
     {
+        var stoppedNormally = false;
+
         try
         {
             using var timer = new PeriodicTimer(renewalInterval);
@@ -180,15 +185,31 @@ internal sealed class BlobAcmeStateStoreLock : IAcmeStateStoreLock
 
                 await _leaseClient.RenewAsync(cancellationToken: renewalTimeout.Token);
             }
+
+            stoppedNormally = true;
         }
         catch (OperationCanceledException) when (_renewalCancellation.IsCancellationRequested)
         {
-            // Normal disposal stops the renewal loop.
+            stoppedNormally = true;
         }
-        catch (Exception)
+        catch (OperationCanceledException ex)
         {
-            // Fail closed: callers must stop using state when lease ownership is uncertain.
-            await _operationCancellation.CancelAsync();
+            LogLeaseRenewalFailed(_logger, ex);
+        }
+        catch (RequestFailedException ex)
+        {
+            LogLeaseRenewalFailed(_logger, ex);
+        }
+        finally
+        {
+            // Cancel the protected operation on any renewal failure, including unexpected faults.
+            if (!stoppedNormally)
+            {
+                await _operationCancellation.CancelAsync();
+            }
         }
     }
+
+    [LoggerMessage(LogLevel.Warning, "Failed to renew the ACME state lock blob lease. Cancelling the state operation.")]
+    private static partial void LogLeaseRenewalFailed(ILogger logger, Exception exception);
 }

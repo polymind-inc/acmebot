@@ -7,6 +7,8 @@ using Azure;
 using Azure.Core.Pipeline;
 using Azure.Storage.Blobs;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 
 namespace Acmebot.App.Tests;
@@ -152,7 +154,7 @@ public sealed class BlobAcmeStateStoreTests
             VaultBaseUrl = "https://vault.example/"
         });
 
-        return new BlobAcmeStateStore(container, options);
+        return new BlobAcmeStateStore(container, options, NullLogger<BlobAcmeStateStore>.Instance);
     }
 
     private sealed class LeaseStorageHandler : HttpMessageHandler

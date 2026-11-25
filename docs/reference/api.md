@@ -201,6 +201,8 @@ GET /api/dns-zones
 Accept: application/json
 ```
 
+If a DNS provider fails to list its zones, its group is empty and the response still includes the other providers. If the configured providers cannot be enumerated, the request fails.
+
 ```json
 [
   {
