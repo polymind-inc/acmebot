@@ -159,6 +159,60 @@ public sealed class AcmeStateStoreLockTests
     }
 
     [Fact]
+    public async Task BlobLock_WhenAzureRetriesFail_CancelsOperationAndAllowsDisposal()
+    {
+        var failure = new AggregateException(new RequestFailedException("Transport failed."), new OperationCanceledException("Renewal timed out."));
+        var client = new TestLeaseClient { RenewalFailure = failure, ReleaseFailure = failure };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), stateLock.CancellationToken));
+        await stateLock.DisposeAsync();
+
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
+    public async Task BlobLock_WhenDisposalInterruptsRetry_KeepsOperationTokenActive()
+    {
+        var client = new TestLeaseClient
+        {
+            OnRenewal = async cancellationToken =>
+            {
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new AggregateException(new RequestFailedException("Initial attempt failed."), ex);
+                }
+            }
+        };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+        var operationToken = stateLock.CancellationToken;
+
+        await client.Renewed.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await stateLock.DisposeAsync();
+
+        Assert.False(operationToken.IsCancellationRequested);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
+    public async Task BlobLock_WhenRetryAggregateContainsUnexpectedFailure_PropagatesFailure()
+    {
+        var failure = new AggregateException(new RequestFailedException("Transport failed."), new InvalidOperationException("Unexpected renewal failure."));
+        var client = new TestLeaseClient { RenewalFailure = failure };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, NullLogger.Instance, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(10));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), stateLock.CancellationToken));
+        var error = await Assert.ThrowsAsync<AggregateException>(() => stateLock.DisposeAsync().AsTask());
+
+        Assert.Same(failure, error);
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
     public async Task BlobLock_WhenRenewalFailsUnexpectedly_CancelsOperationAndReleasesLease()
     {
         var failure = new InvalidOperationException("Unexpected renewal failure.");
@@ -210,6 +264,8 @@ public sealed class AcmeStateStoreLockTests
     private sealed class TestLeaseClient : BlobLeaseClient
     {
         public Exception? RenewalFailure { get; init; }
+        public Exception? ReleaseFailure { get; init; }
+        public Func<CancellationToken, Task>? OnRenewal { get; init; }
         public Task RenewalGate { get; init; } = Task.CompletedTask;
         public int RenewalCount;
         public int ReleaseCount;
@@ -222,6 +278,11 @@ public sealed class AcmeStateStoreLockTests
             Interlocked.Increment(ref RenewalCount);
             Renewed.TrySetResult();
 
+            if (OnRenewal is not null)
+            {
+                await OnRenewal(cancellationToken);
+            }
+
             return RenewalFailure is { } failure ? throw failure : null!;
         }
 
@@ -230,7 +291,9 @@ public sealed class AcmeStateStoreLockTests
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref ReleaseCount);
 
-            return Task.FromResult<Response<ReleasedObjectInfo>>(null!);
+            return ReleaseFailure is { } failure
+                ? Task.FromException<Response<ReleasedObjectInfo>>(failure)
+                : Task.FromResult<Response<ReleasedObjectInfo>>(null!);
         }
     }
 }

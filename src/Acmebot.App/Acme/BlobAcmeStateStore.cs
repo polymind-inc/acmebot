@@ -168,6 +168,10 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         {
             // The finite lease expires after a worker crash or an unsuccessful release.
         }
+        catch (AggregateException ex) when (IsExpectedRetryFailure(ex, out _))
+        {
+            // The Azure retry policy can aggregate failures from multiple attempts.
+        }
     }
 
     private async Task RenewAsync(TimeSpan renewalInterval)
@@ -200,6 +204,15 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         {
             LogLeaseRenewalFailed(_logger, ex);
         }
+        catch (AggregateException ex) when (IsExpectedRetryFailure(ex, out var endedWithCancellation))
+        {
+            stoppedNormally = endedWithCancellation && _renewalCancellation.IsCancellationRequested;
+
+            if (!stoppedNormally)
+            {
+                LogLeaseRenewalFailed(_logger, ex);
+            }
+        }
         finally
         {
             // Cancel the protected operation on any renewal failure, including unexpected faults.
@@ -208,6 +221,16 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
                 await _operationCancellation.CancelAsync();
             }
         }
+    }
+
+    private static bool IsExpectedRetryFailure(AggregateException exception, out bool endedWithCancellation)
+    {
+        // Azure.Core reports the failed attempts in order. The last attempt distinguishes a
+        // retry interrupted by disposal from a request failure that happened during disposal.
+        var failures = exception.InnerExceptions;
+        endedWithCancellation = failures.LastOrDefault() is OperationCanceledException;
+
+        return failures.Count > 0 && failures.All(failure => failure is RequestFailedException or OperationCanceledException);
     }
 
     [LoggerMessage(LogLevel.Warning, "Failed to renew the ACME state lock blob lease. Cancelling the state operation.")]

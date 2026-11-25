@@ -55,94 +55,100 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
         var account = await stateStore.LoadAsync<AccountDetails>("account.json", cancellationToken);
         var accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json", cancellationToken);
 
-        // Existing state is immutable during initialization, so established workers need no lock.
-        await using var stateLock = account is null || accountKey is null
-            ? await stateStore.AcquireLockAsync(cancellationToken)
-            : null;
-        var stateCancellationToken = stateLock?.CancellationToken ?? cancellationToken;
-
-        if (stateLock is not null)
-        {
-            // Another worker may have initialized state while this worker was waiting.
-            account = await stateStore.LoadAsync<AccountDetails>("account.json", stateCancellationToken);
-            accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json", stateCancellationToken);
-        }
-        var contacts = GetContacts();
-        var isNewAccountKey = false;
-
-        if (accountKey is null)
-        {
-            if (account is not null)
-            {
-                throw new PreconditionException("The ACME account exists, but its private key could not be found.");
-            }
-
-            accountKey = AccountKey.CreateDefault();
-            isNewAccountKey = true;
-        }
-
-        var signer = accountKey.GenerateSigner();
+        AcmeSigner? signer = null;
         AcmeClient? client = null;
 
-        // The client owns an HttpClient, and both it and the signer are only handed to the caller once
-        // the context has been fully built. Anything that fails in between (a directory fetch against an
-        // unreachable ACME endpoint, missing EAB credentials, a state store write) would otherwise leak
-        // them on every retry.
         try
         {
-            client = _createClient();
+            // Established workers need no lock. When acquired, the lock must be disposed before
+            // ownership of the client and signer passes to the caller.
+            AcmeClientContext context;
+            CancellationToken stateCancellationToken;
 
-            var directory = await client.GetDirectoryAsync(stateCancellationToken);
-            AcmeAccountHandle accountHandle;
-
-            if (account is null)
+            await using (var stateLock = account is null || accountKey is null
+                ? await stateStore.AcquireLockAsync(cancellationToken)
+                : null)
             {
-                var externalAccountBinding = CreateExternalAccountBinding();
+                stateCancellationToken = stateLock?.CancellationToken ?? cancellationToken;
 
-                if (externalAccountBinding is null && (directory.Metadata?.ExternalAccountRequired ?? false))
+                if (stateLock is not null)
                 {
-                    throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
+                    // Another worker may have initialized state while this worker was waiting.
+                    account = await stateStore.LoadAsync<AccountDetails>("account.json", stateCancellationToken);
+                    accountKey = await stateStore.LoadAsync<AccountKey>("account_key.json", stateCancellationToken);
                 }
 
-                // Creation must be atomic even if this worker resumes after its lease has expired.
-                // Never register with a key that lost a race to another initializer.
-                if (isNewAccountKey && !await stateStore.TryCreateAsync(accountKey, "account_key.json", stateCancellationToken))
-                {
-                    throw new InvalidOperationException("The ACME account key was created by another worker. Retry initialization to use the existing account key.");
-                }
+                var contacts = GetContacts();
+                var isNewAccountKey = false;
 
-                accountHandle = await client.CreateAccountAsync(
-                    signer,
-                    new AcmeNewAccountRequest
+                if (accountKey is null)
+                {
+                    if (account is not null)
                     {
-                        Contact = contacts,
-                        TermsOfServiceAgreed = true
-                    },
-                    externalAccountBinding,
-                    stateCancellationToken);
-                account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
+                        throw new PreconditionException("The ACME account exists, but its private key could not be found.");
+                    }
 
-                await stateStore.SaveAsync(account, "account.json", stateCancellationToken);
-            }
-            else
-            {
-                accountHandle = account.ToAccountHandle(signer);
+                    accountKey = AccountKey.CreateDefault();
+                    isNewAccountKey = true;
+                }
+
+                signer = accountKey.GenerateSigner();
+                client = _createClient();
+
+                var directory = await client.GetDirectoryAsync(stateCancellationToken);
+                AcmeAccountHandle accountHandle;
+
+                if (account is null)
+                {
+                    var externalAccountBinding = CreateExternalAccountBinding();
+
+                    if (externalAccountBinding is null && (directory.Metadata?.ExternalAccountRequired ?? false))
+                    {
+                        throw new PreconditionException("This ACME endpoint requires External Account Binding (EAB). Configure EAB credentials and try again.");
+                    }
+
+                    // Creation must be atomic even if this worker resumes after its lease has expired.
+                    // Never register with a key that lost a race to another initializer.
+                    if (isNewAccountKey && !await stateStore.TryCreateAsync(accountKey, "account_key.json", stateCancellationToken))
+                    {
+                        throw new InvalidOperationException("The ACME account key was created by another worker. Retry initialization to use the existing account key.");
+                    }
+
+                    accountHandle = await client.CreateAccountAsync(
+                        signer,
+                        new AcmeNewAccountRequest
+                        {
+                            Contact = contacts,
+                            TermsOfServiceAgreed = true
+                        },
+                        externalAccountBinding,
+                        stateCancellationToken);
+                    account = AccountDetails.FromAccountHandle(accountHandle, directory.Metadata?.TermsOfService);
+
+                    await stateStore.SaveAsync(account, "account.json", stateCancellationToken);
+                }
+                else
+                {
+                    accountHandle = account.ToAccountHandle(signer);
+                }
+
+                context = new AcmeClientContext
+                {
+                    Client = client,
+                    Directory = directory,
+                    Signer = signer,
+                    Account = accountHandle
+                };
             }
 
             stateCancellationToken.ThrowIfCancellationRequested();
 
-            return new AcmeClientContext
-            {
-                Client = client,
-                Directory = directory,
-                Signer = signer,
-                Account = accountHandle
-            };
+            return context;
         }
         catch
         {
-            // Same order as AcmeClientContext.Dispose(), which owns these once the context exists.
-            signer.Dispose();
+            // Same order as AcmeClientContext.Dispose().
+            signer?.Dispose();
             client?.Dispose();
 
             throw;

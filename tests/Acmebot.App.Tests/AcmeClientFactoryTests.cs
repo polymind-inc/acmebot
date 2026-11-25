@@ -85,6 +85,41 @@ public sealed class AcmeClientFactoryTests
         Assert.Equal(new Uri("https://acme.example/accounts/1"), context.Account.AccountUrl);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CreateClientAsync_WhenLockDisposalFailsOrCancels_DisposesUnreturnedClientAndCanRetry(bool cancels)
+    {
+        using var state = new TestStateDirectory();
+        using var handler = new AccountHandler();
+        using var httpClient = new HttpClient(handler);
+        using var firstClient = new AcmeClient(httpClient, new Uri("https://acme.example/directory"));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var failure = new IOException("Could not dispose the account lock.");
+        var store = new LockDisposalStore(new FileSystemAcmeStateStore(state.Path), cancels ? cancellation.Cancel : () => throw failure);
+        var clientCount = 0;
+        using var factory = CreateFactory(store, httpClient, () => ++clientCount == 1
+            ? firstClient
+            : new AcmeClient(httpClient, new Uri("https://acme.example/directory")));
+
+        if (cancels)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => factory.CreateClientAsync(cancellation.Token));
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<IOException>(() => factory.CreateClientAsync(cancellation.Token));
+            Assert.Same(failure, error);
+        }
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => firstClient.GetDirectoryAsync(TestContext.Current.CancellationToken));
+
+        var context = await factory.CreateClientAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotSame(firstClient, context.Client);
+        Assert.Equal(1, handler.RegistrationCount);
+    }
+
     [Fact]
     public async Task CreateClientAsync_WhenWaitingIsCancelled_LeavesOwnerStateUsable()
     {
@@ -195,7 +230,7 @@ public sealed class AcmeClientFactoryTests
         }
     }
 
-    private static AcmeClientFactory CreateFactory(IAcmeStateStore store, HttpClient httpClient)
+    private static AcmeClientFactory CreateFactory(IAcmeStateStore store, HttpClient httpClient, Func<AcmeClient>? createClient = null)
     {
         var options = Microsoft.Extensions.Options.Options.Create(new AcmebotOptions
         {
@@ -204,7 +239,7 @@ public sealed class AcmeClientFactoryTests
             VaultBaseUrl = "https://vault.example/"
         });
 
-        return new AcmeClientFactory(options, store, () => new AcmeClient(httpClient, options.Value.Endpoint));
+        return new AcmeClientFactory(options, store, createClient ?? (() => new AcmeClient(httpClient, options.Value.Endpoint)));
     }
 
     private sealed class TestStateDirectory : IDisposable
@@ -251,6 +286,29 @@ public sealed class AcmeClientFactoryTests
         public Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.TryCreateAsync(value, path, cancellationToken);
 
         public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.SaveAsync(value, path, cancellationToken);
+    }
+
+    private sealed class LockDisposalStore(IAcmeStateStore inner, Action onDispose) : IAcmeStateStore
+    {
+        public async Task<IAcmeStateStoreLock> AcquireLockAsync(CancellationToken cancellationToken = default)
+            => new NotifyingLock(await inner.AcquireLockAsync(cancellationToken), onDispose);
+
+        public Task<TState?> LoadAsync<TState>(string path, CancellationToken cancellationToken = default) => inner.LoadAsync<TState>(path, cancellationToken);
+
+        public Task<bool> TryCreateAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.TryCreateAsync(value, path, cancellationToken);
+
+        public Task SaveAsync<TState>(TState value, string path, CancellationToken cancellationToken = default) => inner.SaveAsync(value, path, cancellationToken);
+
+        private sealed class NotifyingLock(IAcmeStateStoreLock inner, Action onDispose) : IAcmeStateStoreLock
+        {
+            public CancellationToken CancellationToken => inner.CancellationToken;
+
+            public async ValueTask DisposeAsync()
+            {
+                await inner.DisposeAsync();
+                onDispose();
+            }
+        }
     }
 
     private sealed class CancellingStore(IAcmeStateStore inner, CancellationToken lockLost) : IAcmeStateStore
