@@ -284,9 +284,31 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
 
             // Stop initialization at the deadline, even if Azure later returns a successful response.
             var operationStopped = _operationCancellation.CancelAsync();
-            LogLeaseRenewalFailed(_logger, new TimeoutException("The ACME state lock blob lease renewal timed out."));
             var requestStopped = AwaitBothAsync(requestCancellation.CancelAsync(), ObserveRenewalAsync(renewal, timedOut: true));
-            await AwaitBothAsync(operationStopped, requestStopped);
+            var stopped = AwaitBothAsync(operationStopped, requestStopped);
+            Exception? loggingFailure = null;
+
+            try
+            {
+                LogLeaseRenewalFailed(_logger, new TimeoutException("The ACME state lock blob lease renewal timed out."));
+            }
+            catch (Exception ex)
+            {
+                loggingFailure = ex;
+                throw;
+            }
+            finally
+            {
+                try
+                {
+                    await stopped;
+                }
+                catch (Exception cleanupFailure) when (loggingFailure is not null)
+                {
+                    throw new AggregateException(loggingFailure, cleanupFailure);
+                }
+            }
+
             return false;
         }
         finally

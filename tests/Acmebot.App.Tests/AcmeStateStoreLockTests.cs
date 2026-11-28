@@ -4,6 +4,7 @@ using Azure;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Xunit;
@@ -349,6 +350,75 @@ public sealed class AcmeStateStoreLockTests
         Assert.Equal(1, client.ReleaseCount);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlobLock_WhenTimeoutLoggingThrows_WaitsForRenewalBeforeReleasingLease(bool cleanupFails)
+    {
+        var timeProvider = new RenewalTimeProvider();
+        var loggerFailure = new InvalidOperationException("The logging provider failed.");
+        var renewalFailure = new IOException("The renewal request failed while stopping.");
+        var callbackFailure = new InvalidOperationException("The operation cancellation callback failed.");
+        var logged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var requestCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishRenewal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var client = new TestLeaseClient
+        {
+            OnRenewal = async token =>
+            {
+                using var registration = token.Register(() => requestCancelled.TrySetResult());
+                await finishRenewal.Task;
+            },
+            RenewalFailure = cleanupFails ? renewalFailure : null
+        };
+        var testCancellation = TestContext.Current.CancellationToken;
+        await using var stateLock = new BlobAcmeStateStoreLock(client, new ThrowingLogger(loggerFailure, logged), testCancellation,
+            renewalInterval: TimeSpan.FromMilliseconds(10), timeProvider: timeProvider);
+        var operationToken = stateLock.CancellationToken;
+        using var operationRegistration = operationToken.Register(() =>
+        {
+            if (cleanupFails)
+            {
+                throw callbackFailure;
+            }
+        });
+        Task disposal;
+
+        try
+        {
+            await client.Renewed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            timeProvider.ExpireRenewal();
+            await logged.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            disposal = stateLock.DisposeAsync().AsTask();
+
+            await requestCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            Assert.True(operationToken.IsCancellationRequested);
+            Assert.False(disposal.IsCompleted);
+            Assert.Equal(0, client.ReleaseCount);
+        }
+        finally
+        {
+            finishRenewal.TrySetResult();
+        }
+
+        if (cleanupFails)
+        {
+            var error = await Assert.ThrowsAsync<AggregateException>(() => disposal.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
+            var failures = error.Flatten().InnerExceptions;
+            Assert.Equal(3, failures.Count);
+            Assert.Contains(loggerFailure, failures);
+            Assert.Contains(renewalFailure, failures);
+            Assert.Contains(callbackFailure, failures);
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => disposal.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
+            Assert.Same(loggerFailure, error);
+        }
+
+        Assert.Equal(1, client.ReleaseCount);
+    }
+
     [Fact]
     public async Task BlobLock_WhenRenewalFailsUnexpectedly_CancelsOperationAndReleasesLease()
     {
@@ -422,6 +492,19 @@ public sealed class AcmeStateStoreLockTests
         await stateLock.DisposeAsync();
 
         Assert.Equal(1, client.ReleaseCount);
+    }
+
+    private sealed class ThrowingLogger(Exception failure, TaskCompletionSource logged) : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            logged.TrySetResult();
+            throw failure;
+        }
     }
 
     private sealed class RenewalTimeProvider : TimeProvider
