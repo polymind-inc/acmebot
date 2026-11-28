@@ -51,6 +51,23 @@ public sealed class DnsZoneQueryServiceTests
     }
 
     [Fact]
+    public async Task GetAllDnsZonesAsync_WhenProviderEnumerationFails_PropagatesFailure()
+    {
+        var failure = new InvalidOperationException("Could not enumerate DNS providers.");
+        var service = new DnsZoneQueryService(EnumerateProviders(), NullLogger<DnsZoneQueryService>.Instance);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetAllDnsZonesAsync(TestContext.Current.CancellationToken));
+
+        Assert.Same(failure, error);
+
+        IEnumerable<IDnsProvider> EnumerateProviders()
+        {
+            yield return new TestDnsProvider("Working DNS");
+            throw failure;
+        }
+    }
+
+    [Fact]
     public async Task GetAllDnsZonesAsync_WhenCancellationIsRequested_ThrowsOperationCanceledException()
     {
         var provider = new TestDnsProvider("Test DNS", [CreateZone("example", "example.com")]);
