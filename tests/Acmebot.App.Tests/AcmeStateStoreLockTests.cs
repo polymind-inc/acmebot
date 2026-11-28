@@ -372,7 +372,12 @@ public sealed class AcmeStateStoreLockTests
             RenewalFailure = cleanupFails ? renewalFailure : null
         };
         var testCancellation = TestContext.Current.CancellationToken;
-        await using var stateLock = new BlobAcmeStateStoreLock(client, new ThrowingLogger(loggerFailure, logged), testCancellation,
+        var logger = new CallbackLogger(() =>
+        {
+            logged.TrySetResult();
+            throw loggerFailure;
+        });
+        await using var stateLock = new BlobAcmeStateStoreLock(client, logger, testCancellation,
             renewalInterval: TimeSpan.FromMilliseconds(10), timeProvider: timeProvider);
         var operationToken = stateLock.CancellationToken;
         using var operationRegistration = operationToken.Register(() =>
@@ -417,6 +422,34 @@ public sealed class AcmeStateStoreLockTests
         }
 
         Assert.Equal(1, client.ReleaseCount);
+    }
+
+    [Fact]
+    public async Task BlobLock_WhenRenewalFails_CancelsProtectedOperationBeforeLogging()
+    {
+        var loggingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var finishLogging = new ManualResetEventSlim();
+        var testCancellation = TestContext.Current.CancellationToken;
+        var logger = new CallbackLogger(() =>
+        {
+            loggingStarted.TrySetResult();
+            if (!finishLogging.Wait(TimeSpan.FromSeconds(5), testCancellation))
+            {
+                throw new TimeoutException("The test did not release the logger.");
+            }
+        });
+        var client = new TestLeaseClient { RenewalFailure = new RequestFailedException(412, "Lease lost.") };
+        await using var stateLock = new BlobAcmeStateStoreLock(client, logger, testCancellation, TimeSpan.FromMilliseconds(10));
+
+        try
+        {
+            await loggingStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            Assert.True(stateLock.CancellationToken.IsCancellationRequested);
+        }
+        finally
+        {
+            finishLogging.Set();
+        }
     }
 
     [Fact]
@@ -494,17 +527,14 @@ public sealed class AcmeStateStoreLockTests
         Assert.Equal(1, client.ReleaseCount);
     }
 
-    private sealed class ThrowingLogger(Exception failure, TaskCompletionSource logged) : ILogger
+    private sealed class CallbackLogger(Action onLog) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            logged.TrySetResult();
-            throw failure;
-        }
+            => onLog();
     }
 
     private sealed class RenewalTimeProvider : TimeProvider

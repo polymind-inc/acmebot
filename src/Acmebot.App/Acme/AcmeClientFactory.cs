@@ -65,9 +65,12 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
             AcmeClientContext context;
             CancellationToken stateCancellationToken;
 
-            await using (var stateLock = account is null || accountKey is null
+            var stateLock = account is null || accountKey is null
                 ? await stateStore.AcquireLockAsync(cancellationToken)
-                : null)
+                : null;
+            Exception? initializationFailure = null;
+
+            try
             {
                 stateCancellationToken = stateLock?.CancellationToken ?? cancellationToken;
 
@@ -139,6 +142,25 @@ public sealed class AcmeClientFactory(IOptions<AcmebotOptions> options, IAcmeSta
                     Signer = signer,
                     Account = accountHandle
                 };
+            }
+            catch (Exception ex)
+            {
+                initializationFailure = ex;
+                throw;
+            }
+            finally
+            {
+                if (stateLock is not null)
+                {
+                    try
+                    {
+                        await stateLock.DisposeAsync();
+                    }
+                    catch (Exception disposalFailure) when (initializationFailure is not null)
+                    {
+                        throw new AggregateException(initializationFailure, disposalFailure);
+                    }
+                }
             }
 
             stateCancellationToken.ThrowIfCancellationRequested();

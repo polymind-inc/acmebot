@@ -121,6 +121,26 @@ public sealed class AcmeClientFactoryTests
     }
 
     [Fact]
+    public async Task CreateClientAsync_WhenInitializationAndLockDisposalFail_PreservesBothFailures()
+    {
+        using var state = new TestStateDirectory();
+        using var handler = new AccountHandler();
+        using var httpClient = new HttpClient(handler);
+        using var client = new AcmeClient(httpClient, new Uri("https://acme.example/directory"));
+        var disposalFailure = new InvalidOperationException("Could not dispose the account lock.");
+        var store = new LockDisposalStore(new FailingAccountStore(new FileSystemAcmeStateStore(state.Path)), () => throw disposalFailure);
+        using var factory = CreateFactory(store, httpClient, () => client);
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        var error = await Assert.ThrowsAsync<AggregateException>(() => factory.CreateClientAsync(cancellationToken));
+
+        Assert.Collection(error.InnerExceptions,
+            failure => Assert.Equal("Simulated failure after ACME registration.", Assert.IsType<IOException>(failure).Message),
+            failure => Assert.Same(disposalFailure, failure));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.GetDirectoryAsync(cancellationToken));
+    }
+
+    [Fact]
     public async Task CreateClientAsync_WhenWaitingIsCancelled_LeavesOwnerStateUsable()
     {
         using var state = new TestStateDirectory();

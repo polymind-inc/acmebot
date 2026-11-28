@@ -285,30 +285,8 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
             // Stop initialization at the deadline, even if Azure later returns a successful response.
             var operationStopped = _operationCancellation.CancelAsync();
             var requestStopped = AwaitBothAsync(requestCancellation.CancelAsync(), ObserveRenewalAsync(renewal, timedOut: true));
-            var stopped = AwaitBothAsync(operationStopped, requestStopped);
-            Exception? loggingFailure = null;
-
-            try
-            {
-                LogLeaseRenewalFailed(_logger, new TimeoutException("The ACME state lock blob lease renewal timed out."));
-            }
-            catch (Exception ex)
-            {
-                loggingFailure = ex;
-                throw;
-            }
-            finally
-            {
-                try
-                {
-                    await stopped;
-                }
-                catch (Exception cleanupFailure) when (loggingFailure is not null)
-                {
-                    throw new AggregateException(loggingFailure, cleanupFailure);
-                }
-            }
-
+            await LogRenewalFailureAsync(new TimeoutException("The ACME state lock blob lease renewal timed out."),
+                AwaitBothAsync(operationStopped, requestStopped));
             return false;
         }
         finally
@@ -351,11 +329,37 @@ internal sealed partial class BlobAcmeStateStoreLock : IAcmeStateStoreLock
         {
             if (!timedOut && !(disposalRequestToken.CanBeCanceled && IsRequestCancellation(ex, disposalRequestToken)))
             {
-                LogLeaseRenewalFailed(_logger, ex);
-                await _operationCancellation.CancelAsync();
+                var operationStopped = _operationCancellation.CancelAsync();
+                await LogRenewalFailureAsync(ex, operationStopped);
             }
 
             return false;
+        }
+    }
+
+    private async Task LogRenewalFailureAsync(Exception failure, Task stopped)
+    {
+        Exception? loggingFailure = null;
+
+        try
+        {
+            LogLeaseRenewalFailed(_logger, failure);
+        }
+        catch (Exception ex)
+        {
+            loggingFailure = ex;
+            throw;
+        }
+        finally
+        {
+            try
+            {
+                await stopped;
+            }
+            catch (Exception cleanupFailure) when (loggingFailure is not null)
+            {
+                throw new AggregateException(loggingFailure, cleanupFailure);
+            }
         }
     }
 
